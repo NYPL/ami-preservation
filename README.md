@@ -1,6 +1,8 @@
-# ami-handbooks
-NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting to provide long-term preservation and access for our audiovisla collections. This repository contains resources, tools, and scripts internal handbooks that describe the digitization, quality assurance, and quality control processes that comprise our AMI workflow.
+# ami-preservation
+NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting to provide long-term preservation and access for our audiovisla collections. 
 
-**Please continue to the [wiki](https://github.com/NYPL/ami-handbooks/wiki).**
+This repository contains the resources, tools, internal handbooks that support digitization, quality assurance, and quality control processes within the PAMI workflow.
+
+**Please continue to the [wiki](https://github.com/NYPL/ami-handbooks/wiki) to access PAMI handbooks.**
 
 
