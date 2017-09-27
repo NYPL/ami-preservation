@@ -1,11 +1,6 @@
-# ami-qc
-NYPL's Preservation of Audio and Moving Image team performs quality control (QC) to ensure that preservation and access deliverables meet our technical specifications and metadata requirements and adhere to best practices for handling and digitization of audiovisual collections. This repository is the resource hub for our quality control workflow, which is currently comprised of the following processes:
-* Fixity check using custom scripts that incorporate Bagit.py
-* JSON metadata validation using [ajv](https://github.com/epoberezkin/ajv)
-* Technical specification conformance check using [MediaConch](https://mediaarea.net/MediaConch/)
-* Content inspection using [QCTools](https://bavc.org/preserve-media/preservation-tools)
-* Folder structure, filenaming, and manual metadata inspection.
+# ami-handbooks
+NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting to provide long-term preservation and access for our audiovisla collections. This repository contains resources, tools, and scripts internal handbooks that describe the digitization, quality assurance, and quality control processes that comprise our AMI workflow.
 
-**Please continue to the [ami-qc wiki](https://github.com/NYPL/ami-qc/wiki) for details about each QC process.**
+**Please continue to the [wiki](https://github.com/NYPL/ami-handbooks/wiki).**
 
 
