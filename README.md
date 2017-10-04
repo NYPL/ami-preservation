@@ -1,5 +1,5 @@
 # ami-preservation
-NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting to provide long-term preservation and access for our audiovisla collections. 
+NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting to provide long-term preservation and access for our audiovisual collections. 
 
 This repository contains the resources, tools, internal handbooks that support digitization, quality assurance, and quality control processes within the PAMI workflow.
 
