@@ -1,8 +1,8 @@
 # PAMI Productions Scripts
 
-The following instructions will allow you to extract the appropriate metadata using the `pull_mediainfo.py` script and to import the metadata into the FilemakerPro 15 database. This script requires you to download the `python3` and `pymediainfo` which allows for the interaction with mediainfo and the python script below. 
+## pull_mediainfo.py
 
-## Extract MediaInfo Metadata
+The following instructions will allow you to extract the appropriate metadata using the `pull_mediainfo.py` script and to import the metadata into the FilemakerPro 15 database. This script requires `python3` and `pymediainfo,` which allow for  interaction with the MediaInfo Library. 
 
 * Open Terminal on your Mac 
 
