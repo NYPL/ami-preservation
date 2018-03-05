@@ -10,7 +10,7 @@ import csv
 LOGGER = logging.getLogger(__name__)
 
 def _make_parser():
-    parser = argparse.ArgumentParser(description="Pull MediaInfo attributes from a bunch of video or audio files")
+    parser = argparse.ArgumentParser(description="Pull MediaInfo from a bunch of video or audio files")
     parser.add_argument("-d", "--directory",
                         help = "path to folder full of media files",
                         required = False)
@@ -34,15 +34,15 @@ def main():
     #validate that dir exists and add all files to queue
     if args.directory:
         if os.path.isdir(args.directory):
-            glob_abspath = os.path.abspath(os.path.join(args.directory, '*'))
-            for filename in glob.iglob(glob_abspath, recursive = True):
-                if filename.endswith('.mkv') or filename.endswith('.mov') or filename.endswith('.wav') or filename.endswith('.mp4'):
+            glob_abspath = os.path.abspath(os.path.join(args.directory, '**/*'))
+            for filename in glob.glob(glob_abspath, recursive = True):
+                if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso')):
                     files_to_examine.append(filename)
 
     if args.file:
         if os.path.isfile(args.file):
             filename = args.file
-            if filename.endswith('.mkv') or filename.endswith('.mov') or filename.endswith('.wav') or filename.endswith('.mp4'):
+            if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso')):
                 files_to_examine.append(filename)
 
     all_file_data = []
@@ -57,28 +57,38 @@ def main():
         for track in media_info.tracks:
             if track.track_type == "General":
                 file_data = [
+                    path,
                     '.'.join([track.file_name, track.file_extension]),
                     track.file_name,
                     track.file_extension,
                     track.file_size,
                     track.file_last_modification_date.split()[1],
                     track.format,
-                    track.audio_format_list.split()[0],
+                    track.audio_format_list.split()[0] if track.audio_format_list else None,
                     track.codecs_video,
                     track.duration
                 ]
-                hours = track.duration // 3600000
-                minutes = (track.duration % 3600000) // 60000
-                seconds = (track.duration % 60000) // 1000
-                ms = track.duration % 1000
-                human_duration = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(hours, minutes, seconds, ms)
-                file_data.append(human_duration)
+                if track.duration:
+                    hours = track.duration // 3600000
+                    minutes = (track.duration % 3600000) // 60000
+                    seconds = (track.duration % 60000) // 1000
+                    ms = track.duration % 1000
+                    human_duration = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(hours, minutes, seconds, ms)
+                    file_data.append(human_duration)
+                else:
+                    file_data.append(None)
+                primaryID = str(track.file_name)
+                try:
+                    file_data.append(primaryID.split('_')[1])
+                except:
+                    file_data.append(None)
                 print(file_data)
                 all_file_data.append(file_data)
 
     with open(args.output, 'w') as f:
         md_csv = csv.writer(f)
         md_csv.writerow([
+            'path',
             'asset.referenceFilename',
             'technical.filename',
             'technical.extension',
@@ -88,7 +98,8 @@ def main():
             'technical.audioCodec',
             'technical.videoCodec',
             'technical.durationMilli.measure',
-            'technical.durationHuman'
+            'technical.durationHuman',
+            'primaryID'
         ])
         md_csv.writerows(all_file_data)
 
