@@ -2,7 +2,7 @@
 
 ## pull_mediainfo.py
 
-The following instructions will show you how to extract select MediaInfo attributesusing the `pull_mediainfo.py` script. Dependencies include: `python3` and `pymediainfo.` 
+The following instructions will describe how to extract select MediaInfo attributes by using the `pull_mediainfo.py` script. Dependencies include: `python3` and `pymediainfo.` 
 
 * Open Terminal on your Mac 
 
@@ -20,4 +20,4 @@ The following instructions will show you how to extract select MediaInfo attribu
 
 * The .csv will include a top row of JSON schema terms, which will allow for  proper matching upon FileMaker import.
 
-For instructions on imporitng into Filemaker, see [NYPL AMI Lab wiki](NYPL-AMI-Lab.md).
+For instructions on importing into Filemaker, see [NYPL AMI Lab wiki](NYPL-AMI-Lab.md).
