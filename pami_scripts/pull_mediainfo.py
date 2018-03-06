@@ -88,7 +88,7 @@ def main():
     with open(args.output, 'w') as f:
         md_csv = csv.writer(f)
         md_csv.writerow([
-            'path',
+            'file_path',
             'asset.referenceFilename',
             'technical.filename',
             'technical.extension',
