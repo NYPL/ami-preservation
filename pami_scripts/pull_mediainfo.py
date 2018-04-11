@@ -58,8 +58,8 @@ def main():
             if track.track_type == "General":
                 file_data = [
                     path,
-                    '.'.join([track.file_name, track.file_extension]),
-                    track.file_name,
+                    '.'.join([track.file_name.split('.')[0], track.file_extension]),
+                    track.file_name.split('.')[0],
                     track.file_extension,
                     track.file_size,
                     track.file_last_modification_date.split()[1],
