@@ -58,8 +58,8 @@ def main():
             if track.track_type == "General":
                 file_data = [
                     path,
-                    '.'.join([track.file_name.split('.')[0], track.file_extension]),
-                    track.file_name.split('.')[0],
+                    '.'.join([str(track.file_name).split('.')[0], str(track.file_extension)]),
+                    str(track.file_name).split('.')[0],
                     track.file_extension,
                     track.file_size,
                     track.file_last_modification_date.split()[1],
@@ -77,6 +77,11 @@ def main():
                     file_data.append(human_duration)
                 else:
                     file_data.append(None)
+                file_no_ext = str(track.file_name).split('.')[0]
+                role = file_no_ext.split('_')[-1]
+                division = file_no_ext.split('_')[0]
+                driveID = path.split('/')[2]
+                file_data.extend([role, division, driveID])
                 primaryID = str(track.file_name)
                 try:
                     file_data.append(primaryID.split('_')[1])
@@ -99,10 +104,12 @@ def main():
             'technical.videoCodec',
             'technical.durationMilli.measure',
             'technical.durationHuman',
+            'role',
+            'division',
+            'driveID',
             'primaryID'
         ])
         md_csv.writerows(all_file_data)
-
 
 
 if __name__ == "__main__":
