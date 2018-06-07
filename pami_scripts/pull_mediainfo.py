@@ -6,6 +6,7 @@ import os
 import glob
 import logging
 import csv
+import re
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,64 +54,66 @@ def main():
         print('examining: {}'.format(', '.join(files_to_examine)))
 
     for path in files_to_examine:
-        media_info = MediaInfo.parse(path)
-        for track in media_info.tracks:
-            if track.track_type == "General":
-                file_data = [
-                    path,
-                    '.'.join([str(track.file_name).split('.')[0], str(track.file_extension)]),
-                    str(track.file_name).split('.')[0],
-                    track.file_extension,
-                    track.file_size,
-                    track.file_last_modification_date.split()[1],
-                    track.format,
-                    track.audio_format_list.split()[0] if track.audio_format_list else None,
-                    track.codecs_video,
-                    track.duration
-                ]
-                if track.duration:
-                    hours = track.duration // 3600000
-                    minutes = (track.duration % 3600000) // 60000
-                    seconds = (track.duration % 60000) // 1000
-                    ms = track.duration % 1000
-                    human_duration = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(hours, minutes, seconds, ms)
-                    file_data.append(human_duration)
-                else:
-                    file_data.append(None)
-                file_no_ext = str(track.file_name).split('.')[0]
-                role = file_no_ext.split('_')[-1]
-                division = file_no_ext.split('_')[0]
-                driveID = path.split('/')[2]
-                file_data.extend([role, division, driveID])
-                primaryID = str(track.file_name)
-                try:
-                    file_data.append(primaryID.split('_')[1])
-                except:
-                    file_data.append(None)
-                print(file_data)
-                all_file_data.append(file_data)
+        if re.search(r'RECYCLE.BIN', path):
+            print('RECYCLING BIN WITH MEDIA FILES!!!')
+        else:
+            media_info = MediaInfo.parse(path)
+            for track in media_info.tracks:
+                if track.track_type == "General":
+                    file_data = [
+                        path,
+                        '.'.join([str(track.file_name).split('.')[0], str(track.file_extension)]),
+                        str(track.file_name).split('.')[0],
+                        track.file_extension,
+                        track.file_size,
+                        track.file_last_modification_date.split()[1],
+                        track.format,
+                        track.audio_format_list.split()[0] if track.audio_format_list else None,
+                        track.codecs_video,
+                        track.duration
+                    ]
+                    if track.duration:
+                        hours = track.duration // 3600000
+                        minutes = (track.duration % 3600000) // 60000
+                        seconds = (track.duration % 60000) // 1000
+                        ms = track.duration % 1000
+                        human_duration = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(hours, minutes, seconds, ms)
+                        file_data.append(human_duration)
+                    else:
+                        file_data.append(None)
+                    file_no_ext = str(track.file_name).split('.')[0]
+                    role = file_no_ext.split('_')[-1]
+                    division = file_no_ext.split('_')[0]
+                    driveID = path.split('/')[2]
+                    file_data.extend([role, division, driveID])
+                    primaryID = str(track.file_name)
+                    try:
+                        file_data.append(primaryID.split('_')[1])
+                    except:
+                        file_data.append(None)
+                    print(file_data)
+                    all_file_data.append(file_data)
 
-    with open(args.output, 'w') as f:
-        md_csv = csv.writer(f)
-        md_csv.writerow([
-            'file_path',
-            'asset.referenceFilename',
-            'technical.filename',
-            'technical.extension',
-            'technical.fileSize.measure',
-            'technical.dateCreated',
-            'technical.fileFormat',
-            'technical.audioCodec',
-            'technical.videoCodec',
-            'technical.durationMilli.measure',
-            'technical.durationHuman',
-            'role',
-            'division',
-            'driveID',
-            'primaryID'
-        ])
-        md_csv.writerows(all_file_data)
-
+        with open(args.output, 'w') as f:
+            md_csv = csv.writer(f)
+            md_csv.writerow([
+                'file_path',
+                'asset.referenceFilename',
+                'technical.filename',
+                'technical.extension',
+                'technical.fileSize.measure',
+                'technical.dateCreated',
+                'technical.fileFormat',
+                'technical.audioCodec',
+                'technical.videoCodec',
+                'technical.durationMilli.measure',
+                'technical.durationHuman',
+                'role',
+                'division',
+                'driveID',
+                'primaryID'
+            ])
+            md_csv.writerows(all_file_data)
 
 if __name__ == "__main__":
     main()
