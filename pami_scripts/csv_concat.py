@@ -7,7 +7,7 @@ import argparse
 import os
 
 def _make_parser():
-    parser = argparse.ArgumentParser(description="Pull MediaInfo from a bunch of video or audio files")
+    parser = argparse.ArgumentParser(description="concat a bunch of csvs")
     parser.add_argument("-d", "--directory",
                         help = "path to folder full of media files",
                         required = False)
