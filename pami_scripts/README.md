@@ -1,5 +1,12 @@
 # PAMI Production Scripts
 
+## csv_concat.py
+
+For when cat ain't quite right. Will concat a directory of csvs, killing the first row of all but the first csv (so organize yourself carefully). Usage is typical:
+
+ * `-d` for the directory of csvs
+ * `-o` for the path and name of the output csv 
+ 
 ## pull_mediainfo.py
 
 The following instructions will describe how to extract select MediaInfo attributes by using the `pull_mediainfo.py` script. Dependencies include: `python3` and `pymediainfo.` 
