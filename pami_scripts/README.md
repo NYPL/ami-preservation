@@ -6,6 +6,12 @@ For counting up the number of files AND the number of unique CMS IDs in a chosen
 
 * `./cms_count.py /Volumes/NYPL_16107/FreezeTest`
 
+## cms2hdd.py
+
+For identifying hard drives as part of a CMS collection-level file pull. For this to work, you'll need: (1) a master PAMI survey MediaInfo CSV (like the one you'll get from csv_concat.py), and (2) a plain-text list of CMS IDs. Will spit out a list of HDDs for you to pull files from (using file_pull.sh!). Usage looks like:
+
+* `./cms2hdd.py /Users/pamiaudio/Desktop/mastermediainfo.csv /Users/pamiaudio/Desktop/cms_tester.txt`
+
 ## csv_concat.py
 
 For when cat ain't quite right. Will concat a directory of csvs, killing the first row of all but the first csv (so organize yourself carefully). Usage is typical:
