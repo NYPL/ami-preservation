@@ -7,9 +7,15 @@ For when cat ain't quite right. Will concat a directory of csvs, killing the fir
  * `-d` for the directory of csvs
  * `-o` for the path and name of the output csv 
  
+## file_pull.sh
+
+For automating CMS collection-level file pulls. Will rsync a user-provided list of Service Copy MP4s or Edit Master Wavs from a hard drive, then transcode the Wavs to MP4s. To get started, you'll need a text file (recommend "make plain text") with your list of CMS numbers. Usage is script, CMS list, source directory, and destination. It looks like:
+
+* ./file_pull.sh /Users/pamiaudio/Desktop/cmslist.txt /Volumes/NYPL230332 /Volumes/NYPL_16107/FreezeTest
+
 ## pull_mediainfo.py
 
-The following instructions will describe how to extract select MediaInfo attributes by using the `pull_mediainfo.py` script. Dependencies include: `python3` and `pymediainfo.` 
+For pulling specific MediaInfo attributes from a bunch of files, making a csv. Dependencies include: `pymediainfo.` 
 
 * Open Terminal on your Mac 
 
@@ -25,6 +31,6 @@ The following instructions will describe how to extract select MediaInfo attribu
     
     _Note: If you do not specify the full output file path, the .csv will either be saved to your current working directory._
 
-* The .csv will include a top row of JSON schema terms, which will allow for  proper matching upon FileMaker import.
+* The .csv will include a top row of JSON schema terms, which will allow for proper matching upon FileMaker import.
 
 For instructions on importing into Filemaker, see [NYPL AMI Lab wiki](NYPL-AMI-Lab.md).
