@@ -34,5 +34,5 @@ for cms_dict in cms_list:
 
 hdd_set = set(hdd_pull)
 print("You need to pull the following drives: ")
-for item in hdd_set:
+for item in sorted(list(hdd_set)):
     print(item)
