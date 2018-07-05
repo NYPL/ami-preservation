@@ -11,9 +11,6 @@ def _make_parser():
     parser.add_argument("-d", "--directory",
                         help = "path to folder full of media files",
                         required = False)
-    parser.add_argument("-f", "--file",
-                        help = "path to folder full of media files",
-                        required = False)
     parser.add_argument("-o", "--output",
                         help = "path to save csv",
                        required = True)
