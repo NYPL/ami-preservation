@@ -1,5 +1,11 @@
 # PAMI Production Scripts
 
+## cms_count.py
+
+For counting up the number of files AND the number of unique CMS IDs in a chosen directory. Good for confirming large-scale files pulls that include a large number of multi-part audio. Will print in the terminal window, in order, the total number of files, the total number of CMS IDs, and a list of the CMS IDs. Note: currently only counts MP4s. Usage looks like:
+
+* `./cms_count.py /Volumes/NYPL_16107/FreezeTest`
+
 ## csv_concat.py
 
 For when cat ain't quite right. Will concat a directory of csvs, killing the first row of all but the first csv (so organize yourself carefully). Usage is typical:
@@ -7,12 +13,6 @@ For when cat ain't quite right. Will concat a directory of csvs, killing the fir
  * `-d` for the directory of csvs
  * `-o` for the path and name of the output csv 
  
-## csv_count.py
-
-For counting up the number of files AND the number of unique CMS IDs in a chosen directory. Good for confirming large-scale files pulls that include a large number of multi-part audio. Will print in the terminal window, in order, the total number of files, the total number of CMS IDs, and a list of the CMS IDs. Note: currently only counts MP4s. Usage looks like:
-
-* `./cms_count.py /Volumes/NYPL_16107/FreezeTest`
-
 ## file_pull.sh
 
 For automating CMS collection-level file pulls. Will rsync a user-provided list of Service Copy MP4s or Edit Master Wavs from a hard drive, then transcode the Wavs to MP4s. To get started, you'll need a text file (recommend "make plain text") with your list of CMS numbers. Usage is script, CMS list, source directory, and destination. It looks like:
