@@ -25,7 +25,7 @@ For automating CMS collection-level file pulls. Will rsync a user-provided list 
 
 * `./file_pull.sh /Users/pamiaudio/Desktop/cmslist.txt /Volumes/NYPL230332 /Volumes/NYPL_16107/FreezeTest`
 
-Note: if you're puuling files off a a hard drive that has thousands of Wavs on it, it may take some time for the rsyncing to being. Just go do something else.
+Note: if you're pulling files off of a hard drive that has thousands of Wavs on it, it may take some time for the rsyncing to begin. Go do something else.
 
 ## pull_mediainfo.py
 
