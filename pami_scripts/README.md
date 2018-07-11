@@ -8,7 +8,7 @@ For counting up the number of files AND the number of unique CMS IDs in a chosen
 
 ## cms2hdd.py
 
-For identifying hard drives as part of a CMS collection-level file pull. For this to work, you'll need: (1) a master PAMI survey MediaInfo CSV (like the one you'll get from csv_concat.py), and (2) a plain-text list of CMS IDs. Will spit out a list of HDDs for you to pull files from (using file_pull.sh!). Usage looks like:
+For identifying which hard drives need to be gathered as part of a CMS collection-level file pull. For this to work, you'll need: (1) a master PAMI survey MediaInfo CSV (like the one you'll get from csv_concat.py), and (2) a plain-text list of CMS IDs. Will spit out a list of HDDs for you to pull files from (using file_pull.sh!). Usage looks like:
 
 * `./cms2hdd.py /Users/pamiaudio/Desktop/mastermediainfo.csv /Users/pamiaudio/Desktop/cms_tester.txt`
 
@@ -24,6 +24,8 @@ For when cat ain't quite right. Will concat a directory of csvs, killing the fir
 For automating CMS collection-level file pulls. Will rsync a user-provided list of Service Copy MP4s or Edit Master Wavs from a hard drive, then transcode the Wavs to MP4s. To get started, you'll need a text file (recommend "make plain text") with your list of CMS numbers. Usage is script, CMS list, source directory, and destination. It looks like:
 
 * `./file_pull.sh /Users/pamiaudio/Desktop/cmslist.txt /Volumes/NYPL230332 /Volumes/NYPL_16107/FreezeTest`
+
+Note: if you're puuling files off a a hard drive that has thousands of Wavs on it, it may take some time for the rsyncing to being. Just go do something else.
 
 ## pull_mediainfo.py
 
