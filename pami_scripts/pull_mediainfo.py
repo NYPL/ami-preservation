@@ -37,13 +37,13 @@ def main():
         if os.path.isdir(args.directory):
             glob_abspath = os.path.abspath(os.path.join(args.directory, '**/*'))
             for filename in glob.glob(glob_abspath, recursive = True):
-                if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso')):
+                if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso', '.flac')):
                     files_to_examine.append(filename)
 
     if args.file:
         if os.path.isfile(args.file):
             filename = args.file
-            if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso')):
+            if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso', '.flac')):
                 files_to_examine.append(filename)
 
     all_file_data = []
