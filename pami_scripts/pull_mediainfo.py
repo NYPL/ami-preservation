@@ -120,7 +120,7 @@ def main():
                 'technical.durationHuman',
                 'mediaType',
                 'role',
-                'division',
+                'divisionCode',
                 'driveID',
                 'primaryID',
                 'projectCode'
