@@ -85,6 +85,12 @@ def main():
                     role = file_no_ext.split('_')[-1]
                     division = file_no_ext.split('_')[0]
                     driveID = path.split('/')[2]
+                    if track.file_extension in ('mkv', 'mov', 'iso', 'mp4', 'dv'):
+                        mediaType = 'video'
+                        file_data.append(mediaType)
+                    if track.file_extension in ('wav', 'WAV', 'flac'):
+                        mediaType = 'audio'
+                        file_data.append(mediaType)
                     file_data.extend([role, division, driveID])
                     primaryID = str(track.file_name)
                     try:
@@ -108,6 +114,7 @@ def main():
                 'technical.videoCodec',
                 'technical.durationMilli.measure',
                 'technical.durationHuman',
+                'mediaType',
                 'role',
                 'division',
                 'driveID',
