@@ -123,7 +123,7 @@ def main():
                 'divisionCode',
                 'driveID',
                 'primaryID',
-                'projectCode'
+                'projectID'
             ])
             md_csv.writerows(all_file_data)
 
