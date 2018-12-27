@@ -97,6 +97,10 @@ def main():
                         file_data.append(primaryID.split('_')[1])
                     except:
                         file_data.append(None)
+                    match = re.search(r'(\d\d\d\d\_\d+\_\w+)', path)
+                    if match != None:
+                        projectcode = match.group(1)
+                        file_data.append(projectcode)
                     print(file_data)
                     all_file_data.append(file_data)
 
@@ -118,7 +122,8 @@ def main():
                 'role',
                 'division',
                 'driveID',
-                'primaryID'
+                'primaryID',
+                'projectCode'
             ])
             md_csv.writerows(all_file_data)
 
