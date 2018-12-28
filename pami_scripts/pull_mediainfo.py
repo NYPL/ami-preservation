@@ -97,7 +97,7 @@ def main():
                         file_data.append(primaryID.split('_')[1])
                     except:
                         file_data.append(None)
-                    match = re.search(r'(\d\d\d\d\_\d+\_\w+)', path)
+                    match = re.search(r'(\d\d\d\d\_\d+)', path)
                     if match != None:
                         projectcode = match.group(1)
                         file_data.append(projectcode)
