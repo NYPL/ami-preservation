@@ -69,9 +69,13 @@ def main():
                         track.file_last_modification_date.split()[1],
                         track.format,
                         track.audio_format_list.split()[0] if track.audio_format_list else None,
-                        track.codecs_video,
-                        track.duration
                     ]
+                    if track.codecs_video == "YUV":
+                        track.codecs_video = "v210"
+                        file_data.append(track.codecs_video)
+                    else:
+                        file_data.append(track.codecs_video)
+                    file_data.append(track.duration)
                     if track.duration:
                         hours = track.duration // 3600000
                         minutes = (track.duration % 3600000) // 60000
