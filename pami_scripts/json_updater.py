@@ -23,12 +23,12 @@ def get_directory(args):
     source_directory = args.source
     return source_directory
 
-def get_flac_info(source_directory):
+def get_info(source_directory):
     file_list = []
     json_list = []
     for root, dirs, files in os.walk(source_directory):
         for file in files:
-            if file.endswith('.flac'):
+            if file.endswith('.mp4'):
                 item_path = os.path.join(root, file)
                 filename = os.path.basename(item_path)
                 file_list.append(item_path)
@@ -51,14 +51,14 @@ def get_flac_info(source_directory):
             ]
             ).rstrip()
         date = str(date_raw).split(' ')[1]
-        flac_format = subprocess.check_output(
+        media_format = subprocess.check_output(
             [
                 'mediainfo', '--Language=raw',
                 '--Full', "--Inform=General;%Format%",
                 filename
             ]
             ).rstrip()
-        flac_format = flac_format.decode('UTF-8')
+        media_format = media_format.decode('UTF-8')
         codec = subprocess.check_output(
             [
                 'mediainfo', '--Language=raw',
@@ -82,7 +82,7 @@ def get_flac_info(source_directory):
         data['technical']['filename'] = technicalFilename
         data['technical']['extension'] = extension
         data['technical']['dateCreated'] = date
-        data['technical']['fileFormat'] = flac_format
+        data['technical']['fileFormat'] = media_format
         data['technical']['audioCodec'] = codec
         data['technical']['fileSize']['measure'] = size
 
@@ -94,7 +94,7 @@ def get_flac_info(source_directory):
 def main():
     arguments = get_args()
     source = get_directory(arguments)
-    json_info = get_flac_info(source)
+    json_info = get_info(source)
 
 
 if __name__ == '__main__':
