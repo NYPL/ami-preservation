@@ -82,7 +82,11 @@ Shell script for transcoding and packaging video files. Will be reworked in the 
 
 ## pandas_stats.py
 
-A very specific (but adaptable) script for FY annual reporting. Requires a master Excel files (DB export) of all FY projects, with MediaInfo information. Will report on: total # of files, total # of CMS objects, total data, total data by media type, average size, average size of MKVs and WAVs, total number of hours of content, average duration of MKVs and WAVs, total duration by media type, objects by media type, format and role breakdown, Division breakdown, CMS collection breakdown, CMS project breakdown, PAMI Staff breakdown, and PAMI equipment breakdown). Usage:
+A very specific (but adaptable) script for FY annual reporting. Requires a master Excel files (DB export) of all FY projects, with MediaInfo information. Will report on: total # of files, total # of CMS objects, total data, total data by media type, average size, average size of MKVs and WAVs, total number of hours of content, average duration of MKVs and WAVs, total duration by media type, objects by media type, format and role breakdown, Division breakdown, CMS collection breakdown, CMS project breakdown, PAMI Staff breakdown, and PAMI equipment breakdown). 
+
+Dependencies: Python module hurry.filesize (pip3 install hurry.filesize). Script also requires that your sheet be named "Sheet1."
+
+Usage:
 
 * `./pandas_stats.py /Users/benjaminturkus/Desktop/pamiaudio_desktop/stats/FY18Stats_PAMI.xlsx *`
 
