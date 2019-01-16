@@ -44,6 +44,11 @@ For when cat ain't quite right. Will concat a directory of csvs, killing the fir
  * `-d` for the directory of csvs
  * `-o` for the path and name of the output csv 
  
+ Alt/UNIX Method:
+ 
+ * `head -1 director/one_file.csv > output csv   ## writing the header to the final file` 
+ * `tail -n +2  director/*.csv >> output.csv  ## writing the content of all csv starting with second line into final file` 
+
 ## dv_concatenator.py
 
 For automating the FFmpeg concatenation process for a direcotry of DV files (with .dv extension). Will first generate a mylist.txt of all DV files within a directory, and then use that list to concatenate, copying specs and creating a single DV file (named appropriately). NOTE: your DV clips should probably be named in the corredct sequential order. Usage:
