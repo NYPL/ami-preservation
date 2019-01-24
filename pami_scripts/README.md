@@ -93,7 +93,7 @@ Dependencies: Python module hurry.filesize (pip3 install hurry.filesize). Script
 
 Usage:
 
-* `./pandas_stats.py /Users/benjaminturkus/Desktop/pamiaudio_desktop/stats/FY18Stats_PAMI.xlsx *`
+* `./pandas_stats.py /Users/benjaminturkus/Desktop/pamiaudio_desktop/stats/FY18Stats_PAMI.xlsx`
 
 ## pull_mediainfo.py
 
