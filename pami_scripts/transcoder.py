@@ -30,14 +30,33 @@ def get_directory(args):
 
 def get_file_list(source_directory, destination_directory):
     file_list = []
+    uncompressed_list = []
+    dv_list = []
+
     for root, dirs, files in os.walk(source_directory):
         for file in files:
             if file.endswith('.mov'):
                 item_path = os.path.join(root, file)
                 filename = os.path.basename(item_path)
                 file_list.append(item_path)
-    print(file_list)
+
     for filename in file_list:
+        vidformat = subprocess.check_output(
+            [
+                'mediainfo', '--Language=raw',
+                '--Full', "--Inform=Video;%Format%",
+                filename
+            ]
+            ).rstrip()
+        if vidformat.decode('UTF-8') == "YUV":
+            uncompressed_list.append(filename)
+        elif vidformat.decode('UTF-8') == "DV":
+            dv_list.append(filename)
+    print('V210 Count: {}'.format(len(uncompressed_list)))
+    print(uncompressed_list)
+    print('DV Count: {}'.format(len(dv_list)))
+    print(dv_list)
+    for filename in uncompressed_list:
         filenoext = os.path.splitext(filename)[0]
         output_names = "%s.mkv" % (os.path.splitext(os.path.basename(filenoext))[0])
         output_path = os.path.join(destination_directory, output_names)
@@ -61,6 +80,7 @@ def get_file_list(source_directory, destination_directory):
             '-g', '1',
             '-slicecrc', '1',
             '-slices', '24',
+            '-max_muxing_queue_size', '9999',
             '-c:a', 'copy',
             ]
         if height.decode('UTF-8') == '486':
@@ -84,6 +104,21 @@ def get_file_list(source_directory, destination_directory):
         print(ffv1_command)
         ffv1_command += [output_path]
         subprocess.call(ffv1_command)
+
+    for filename in dv_list:
+        filenoext = os.path.splitext(filename)[0]
+        output_names = "%s.dv" % (os.path.splitext(os.path.basename(filenoext))[0])
+        output_path = os.path.join(destination_directory, output_names)
+        dv_command = [
+            'ffmpeg',
+            '-i', filename,
+            '-f', 'rawvideo',
+            '-c:v', 'copy',
+            ]
+        print(dv_command)
+        dv_command += [output_path]
+        subprocess.call(dv_command)
+
     return file_list
 
 def bag_mkvs(source_directory, destination_directory):
@@ -99,8 +134,12 @@ def bag_mkvs(source_directory, destination_directory):
     for filename in glob.glob(glob_abspath, recursive = True):
         if filename.endswith(('xlsx')):
             shutil.copy2(filename, path2)
-    files = glob.iglob(os.path.join(destination_directory, '*mkv'))
-    for file in files:
+    mkvs = glob.iglob(os.path.join(destination_directory, '*mkv'))
+    for file in mkvs:
+        if os.path.isfile(file):
+            shutil.move(file, path)
+    dvs = glob.iglob(os.path.join(destination_directory, '*dv'))
+    for file in dvs:
         if os.path.isfile(file):
             shutil.move(file, path)
     print("Bagging...")
