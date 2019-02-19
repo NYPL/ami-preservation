@@ -81,7 +81,7 @@ def get_file_list(source_directory, destination_directory):
             '-slicecrc', '1',
             '-slices', '24',
             '-max_muxing_queue_size', '9999',
-            '-c:a', 'copy',
+            '-c:a', 'flac',
             ]
         if height.decode('UTF-8') == '486':
             ffv1_command += [
