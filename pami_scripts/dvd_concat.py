@@ -52,6 +52,8 @@ def get_file_list(source_directory, destination_directory):
         'ffmpeg',
         '-f', 'concat',
         '-i', 'mylist.txt',
+        '-map', '0:a',
+        '-map', '0:v',
         '-c:v', 'libx264',
         '-movflags', 'faststart',
         '-pix_fmt', 'yuv420p',
@@ -64,7 +66,6 @@ def get_file_list(source_directory, destination_directory):
         '-2',
         '-b:a', '320000',
         '-ar', '48000',
-        '-aspect', '4:3'
         ]
     print(concat_command)
     concat_command += [output_path]
