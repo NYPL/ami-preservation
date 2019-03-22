@@ -8,27 +8,35 @@ import glob
 import shutil
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Transcode a directory of video files')
+    parser = argparse.ArgumentParser(description='Transcode directories of video files')
     parser.add_argument('-s', '--source',
-                        help = 'path to the source directory files', required=True)
+                        help = 'path to the source directory of bags', required=True)
     parser.add_argument('-d', '--destination',
                         help = 'path to the output directory', required=True)
     args = parser.parse_args()
     return args
 
-def get_directory(args):
+def get_directories(args):
     try:
         test_directory = os.listdir(args.source)
     except OSError:
         exit('please retry with a valid directory of video files')
-    source_directory = args.source
+
+    bags = []
+
+    if args.source:
+        directory_path = os.path.abspath(args.source)
+        for path in os.listdir(directory_path):
+            path = os.path.join(directory_path, path)
+            if os.path.isdir(path):
+                bags.append(path)
     if os.path.exists(args.destination):
         destination_directory = os.path.abspath(args.destination)
     else:
         raise OSError("No such directory")
-    return source_directory, destination_directory
+    return bags, destination_directory
 
-def get_file_list(source_directory, destination_directory):
+def get_file_list(source_directory):
     file_list = []
     uncompressed_list = []
     dv_list = []
@@ -40,13 +48,18 @@ def get_file_list(source_directory, destination_directory):
                 filename = os.path.basename(item_path)
                 file_list.append(item_path)
 
+    return file_list
+
+def transcode_files(file_list, destination_directory):
+    uncompressed_list = []
+    dv_list = []
     for filename in file_list:
         vidformat = subprocess.check_output(
             [
                 'mediainfo', '--Language=raw',
                 '--Full', "--Inform=Video;%Format%",
                 filename
-            ]
+                ]
             ).rstrip()
         if vidformat.decode('UTF-8') == "YUV":
             uncompressed_list.append(filename)
@@ -56,6 +69,7 @@ def get_file_list(source_directory, destination_directory):
     print(uncompressed_list)
     print('DV Count: {}'.format(len(dv_list)))
     print(dv_list)
+
     for filename in uncompressed_list:
         filenoext = os.path.splitext(filename)[0]
         output_names = "%s.mkv" % (os.path.splitext(os.path.basename(filenoext))[0])
@@ -66,7 +80,7 @@ def get_file_list(source_directory, destination_directory):
                 '--Full', "--Inform=Video;%Height%",
                 filename
             ]
-            ).rstrip()
+        ).rstrip()
         ffv1_command = [
             'ffmpeg',
             '-vsync', '0',
@@ -119,37 +133,37 @@ def get_file_list(source_directory, destination_directory):
         dv_command += [output_path]
         subprocess.call(dv_command)
 
-    return file_list
+def bag_transcoded_files(destination_directory, bag):
+    bag_name = os.path.split(bag)[1]
+    newbag_abspath = os.path.join(destination_directory, bag_name)
+    pm_path = os.path.join(newbag_abspath, 'PreservationMasters')
+    os.makedirs(pm_path)
+    md_path = os.path.join(newbag_abspath, 'Metadata')
+    os.makedirs(md_path)
 
-def bag_mkvs(source_directory, destination_directory):
-    os.chdir(destination_directory)
-    src_name = os.path.split(source_directory)[1]
-    os.mkdir(src_name)
-    os.chdir(src_name)
-    path = 'PreservationMasters'
-    path2 = 'Metadata'
-    os.mkdir(path)
-    os.mkdir(path2)
-    glob_abspath = os.path.abspath(os.path.join(source_directory, '**/*'))
+    glob_abspath = os.path.abspath(os.path.join(bag, '**/*'))
     for filename in glob.glob(glob_abspath, recursive = True):
         if filename.endswith(('xlsx')):
-            shutil.copy2(filename, path2)
+            shutil.copy2(filename, md_path)
     mkvs = glob.iglob(os.path.join(destination_directory, '*mkv'))
     for file in mkvs:
         if os.path.isfile(file):
-            shutil.move(file, path)
+            shutil.move(file, pm_path)
     dvs = glob.iglob(os.path.join(destination_directory, '*dv'))
     for file in dvs:
         if os.path.isfile(file):
-            shutil.move(file, path)
+            shutil.move(file, pm_path)
     print("Bagging...")
-    bag = bagit.make_bag(os.getcwd(), checksums=['md5'])
+    bag = bagit.make_bag(newbag_abspath, checksums=['md5'])
 
 def main():
     arguments = get_args()
-    source, destination = get_directory(arguments)
-    list_of_files = get_file_list(source, destination)
-    bags = bag_mkvs(source, destination)
+    bags, destination = get_directories(arguments)
+    for bag in bags:
+        print("now working on: {}".format(bag))
+        list_of_files = get_file_list(bag)
+        transcode_files(list_of_files, destination)
+        bag_transcoded_files(destination, bag)
 
 if __name__ == '__main__':
     main()
