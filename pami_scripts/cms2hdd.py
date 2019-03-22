@@ -14,8 +14,8 @@ for record in reader:
     path = record[0]
     if path.startswith('/'):
         hdd = path.split('/')[2]
-    if record[11]:
-        cmsID = record[11]
+    if record[15]:
+        cmsID = record[15]
     else:
         cmsID = None
     cms_dict = {cmsID: hdd}
