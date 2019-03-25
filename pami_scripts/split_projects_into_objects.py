@@ -56,6 +56,7 @@ def make_object_dirs(source_directory, file_list):
 def make_object_bags(source_directory, cms_objects):
     for cms_id in cms_objects:
         bagit.make_bag(os.path.join(source_directory, cms_id), checksums=['md5'])
+        print('Bagging: {}'.format(cms_id))
 
 
 def clean_up(source_directory):
