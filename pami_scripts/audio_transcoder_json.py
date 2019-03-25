@@ -40,6 +40,14 @@ def get_file_list(source_directory, destination_directory):
     print(file_list)
     for filename in file_list:
         filenoext = os.path.splitext(filename)[0]
+        techinicalname = filenoext.split('/')[-1]
+        bwf_command = [
+            'bwfmetaedit',
+            '--OriginatorReference={}'.format(techinicalname),
+            filename
+        ]
+        print(bwf_command)
+        subprocess.call(bwf_command)
         output_names = "%s.flac" % (os.path.splitext(os.path.basename(filenoext))[0])
         output_path = os.path.join(destination_directory, output_names)
         flac_command = [
@@ -146,8 +154,8 @@ def get_flac_info(destination_directory):
 
         with open(media_json, "w") as jsonFile:
             json.dump(data, jsonFile, indent = 4)
-    print("Bagging...")
-    bag = bagit.make_bag(os.getcwd(), checksums=['md5'])
+    #print("Bagging...")
+    #bag = bagit.make_bag(os.getcwd(), checksums=['md5'])
 
 def main():
     arguments = get_args()
