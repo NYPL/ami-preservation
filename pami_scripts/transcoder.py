@@ -27,9 +27,10 @@ def get_directories(args):
     if args.source:
         directory_path = os.path.abspath(args.source)
         for path in os.listdir(directory_path):
-            path = os.path.join(directory_path, path)
-            if os.path.isdir(path):
-                bags.append(path)
+            if not path.startswith('.'):
+                path = os.path.join(directory_path, path)
+                if os.path.isdir(path):
+                    bags.append(path)
     if os.path.exists(args.destination):
         destination_directory = os.path.abspath(args.destination)
     else:
