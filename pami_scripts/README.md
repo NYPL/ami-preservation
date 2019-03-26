@@ -51,7 +51,7 @@ For when cat ain't quite right. Will concat a directory of csvs, killing the fir
 
 ## dv_concatenator.py
 
-For automating the FFmpeg concatenation process for a direcotry of DV files (with .dv extension). Will first generate a mylist.txt of all DV files within a directory, and then use that list to concatenate, copying specs and creating a single DV file (named appropriately). NOTE: your DV clips should probably be named in the corredct sequential order. Usage:
+For automating the FFmpeg concatenation process for a directory of DV files (with .dv extension). Will first generate a mylist.txt of all DV files within a directory, and will then use that list to concatenate, copying the DV streams and creating a single DV file (named appropriately). NOTE: your DV clips should probably be named in the correct sequential order. Usage:
 
  * `./dv_concatenator.py -d /LiveCapture_clips/303648 -o /Users/benjaminturkus/Desktop/FileSurvey_201901` 
  * `-d` for the directory of DV clips
