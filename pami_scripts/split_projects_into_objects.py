@@ -49,6 +49,7 @@ def make_object_dirs(source_directory, file_list):
         if not os.path.exists(os.path.dirname(new_file_path)):
             os.makedirs(os.path.dirname(new_file_path))
         shutil.move(old_file_path, new_file_path)
+        print('Moving: {}'.format(cms_id))
 
     return cms_ids, unmoved
 
