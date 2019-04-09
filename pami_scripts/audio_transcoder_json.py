@@ -150,7 +150,7 @@ def get_flac_info(destination_directory):
         data['technical']['dateCreated'] = date
         data['technical']['fileFormat'] = flac_format
         data['technical']['audioCodec'] = codec
-        data['technical']['fileSize']['measure'] = size
+        data['technical']['fileSize']['measure'] = int(size)
 
         with open(media_json, "w") as jsonFile:
             json.dump(data, jsonFile, indent = 4)
