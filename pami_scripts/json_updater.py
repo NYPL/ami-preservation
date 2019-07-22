@@ -28,7 +28,7 @@ def get_info(source_directory):
     json_list = []
     for root, dirs, files in os.walk(source_directory):
         for file in files:
-            if file.endswith('.mp4'):
+            if file.endswith(('.flac', '.mp4', '.mkv', '.wav')):
                 item_path = os.path.join(root, file)
                 filename = os.path.basename(item_path)
                 file_list.append(item_path)
@@ -75,6 +75,22 @@ def get_info(source_directory):
             ]
             ).rstrip()
         size = size.decode('UTF-8')
+        duration = subprocess.check_output(
+            [
+                'mediainfo', '--Language=raw',
+                '--Full', "--Inform=General;%Duration%",
+                filename
+            ]
+            ).rstrip()
+        duration = duration.decode('UTF-8')
+        humanduration = subprocess.check_output(
+            [
+                'mediainfo', '--Language=raw',
+                '--Full', "--Inform=General;%Duration/String3%",
+                filename
+            ]
+            ).rstrip()
+        humanduration = humanduration.decode('UTF-8')
         with open(media_json, "r") as jsonFile:
             data = json.load(jsonFile)
 
@@ -84,11 +100,14 @@ def get_info(source_directory):
         data['technical']['dateCreated'] = date
         data['technical']['fileFormat'] = media_format
         data['technical']['audioCodec'] = codec
-        data['technical']['fileSize']['measure'] = size
+        data['technical']['fileSize']['measure'] = int(size)
+        data['technical']['durationMilli']['measure'] = int(duration)
+        data['technical']['durationHuman'] = humanduration
+
 
         with open(media_json, "w") as jsonFile:
             json.dump(data, jsonFile, indent = 4)
-    print("Bagging...")
+    #print("Bagging...")
     #bag = bagit.make_bag(os.getcwd(), checksums=['md5'])
 
 def main():
