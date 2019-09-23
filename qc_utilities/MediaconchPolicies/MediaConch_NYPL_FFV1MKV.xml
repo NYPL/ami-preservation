@@ -67,8 +67,4 @@
       </policy>
     </policy>
   </policy>
-  <policy type="and" name="Has reasonable duration?">
-    <rule name="Duration is greater than 10 seconds?" value="Duration" occurrence="*" operator="&gt;" scope="mmt">0mn 10s</rule>
-    <rule name="Duration is less than or equal to 10 hours" value="Duration" tracktype="General" occurrence="*" operator="&lt;=">10h 1mn</rule>
-  </policy>
 </policy>
