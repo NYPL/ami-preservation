@@ -19,4 +19,3 @@ for line in $dir_of_bags; do
 find Video/ -name "*.mkv" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL_FFV1MKV.xml {} ';' > $log_path
 
 done
-

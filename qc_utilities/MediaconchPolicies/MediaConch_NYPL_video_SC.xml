@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<policy type="and" name="MediaConch_NYPL-PAMI_videoAnalog_SC">
+  <description>Derived from http://calpreservation.org/wp-content/uploads/2014/12/CAVPP-file-specs-2014.11.20.pdf</description>
+  <rule name="Colorspace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <rule name="Audio is AAC" value="Format" tracktype="Audio" occurrence="*" operator="=">AAC</rule>
+  <rule name="Audio is 48kHz" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+  <policy type="or" name="Video Codec should be H264">
+    <rule name="Video CodecID is avc1" value="CodecID" tracktype="Video" occurrence="*" operator="=">avc1</rule>
+    <rule name="Video CodecID is H264" value="CodecID" tracktype="Video" occurrence="*" operator="=">H264</rule>
+    <rule name="Video CodecID is AVC1" value="CodecID" tracktype="Video" occurrence="*" operator="=">AVC1</rule>
+    <rule name="Audio Bit Rate is ?" value="BitRate" tracktype="Audio" occurrence="*" operator="&gt;=">192000</rule>
+  </policy>
+  <policy type="or" name="Format is MPEG-4">
+    <rule name="Format is MPEG-4" value="Format" tracktype="General" occurrence="*" operator="=">MPEG-4</rule>
+    <rule name="Format is AVC" value="Format" tracktype="General" occurrence="*" operator="=">AVC</rule>
+    <policy type="and" name="Is this NTSC?">
+      <policy type="or" name="NTSC Height">
+        <rule name="NTSC height" value="Height" tracktype="Video" occurrence="1" operator="=">486</rule>
+        <rule name="NTSC-ish height" value="Height" tracktype="Video" occurrence="1" operator="=">480</rule>
+      </policy>
+      <rule name="NTSC FrameRate" value="FrameRate" tracktype="Video" occurrence="1" operator="=">29.970</rule>
+    </policy>
+  </policy>
+  <rule name="Audio is 2 channel" value="Channels" tracktype="Audio" occurrence="*" operator="=">2</rule>
+  <rule name="Is Progressive?" value="ScanType" tracktype="Video" occurrence="1" operator="=">Progressive</rule>
+  <policy type="and" name="Is this NTSC or PAL SD?">
+    <description>A test to see if the files use NTSC or PAL frame rates and sizes and has interlacement.</description>
+    <policy type="or" name="Is this NTSC SD or PAL SD?">
+      <policy type="and" name="Is this PAL?">
+        <rule name="PAL height" value="Height" tracktype="Video" occurrence="1" operator="=">576</rule>
+        <rule name="PAL FrameRate" value="FrameRate" tracktype="Video" occurrence="1" operator="=">25.000</rule>
+      </policy>
+      <policy type="and" name="Is this NTSC?">
+        <policy type="or" name="NTSC Height">
+          <rule name="NTSC height" value="Height" tracktype="Video" occurrence="1" operator="=">486</rule>
+          <rule name="NTSC-ish height" value="Height" tracktype="Video" occurrence="1" operator="=">480</rule>
+        </policy>
+        <rule name="NTSC FrameRate" value="FrameRate" tracktype="Video" occurrence="1" operator="=">29.970</rule>
+      </policy>
+    </policy>
+    <rule name="Is Width at 720?" value="Width" tracktype="Video" occurrence="1" operator="=">720</rule>
+  </policy>
+</policy>
