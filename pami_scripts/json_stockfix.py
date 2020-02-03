@@ -34,10 +34,13 @@ def get_info(source_directory):
     for file in json_list:
         with open(file, "r") as jsonFile:
             data = json.load(jsonFile)
-
-            productID = data['source']['physicalDescription']['stockProductID']
-            data['source']['physicalDescription']['stockProductID'] = str(productID)
-            print(type(data['source']['physicalDescription']['stockProductID']))
+            
+            try:
+                productID = data['source']['physicalDescription']['stockProductID']
+                data['source']['physicalDescription']['stockProductID'] = str(productID)
+                print(type(data['source']['physicalDescription']['stockProductID']))
+            except:
+                continue
         with open(file, "w") as jsonFile:
             json.dump(data, jsonFile, indent = 4)
 
