@@ -10,7 +10,5 @@
     </policy>
   </policy>
   <rule name="Container is FLAC?" value="Format" tracktype="General" occurrence="*" operator="=">FLAC</rule>
-  <rule name="Encoding is linear PCM?" value="Format" tracktype="Audio" occurrence="*" operator="=">PCM</rule>
-  <rule name="Audio is 'Little Endian'?" value="Format_Settings_Endianness" tracktype="Audio" occurrence="*" operator="=">Little</rule>
-  <rule name="Is Signed Integer?" value="Format_Settings_Sign" tracktype="Audio" occurrence="*" operator="=">Signed</rule>
+  <rule name="Encoding is FLAC?" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
 </policy>
