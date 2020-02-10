@@ -16,6 +16,6 @@ log_path="$log_dir/mediaconch_audioAnalog_$dateCreated.csv"
 i=0
 
 for line in $dir_of_bags; do
-find Audio/ -name "*.wav" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL-FLAC_Analog.xml {} ';' > $log_path
+find Audio/ -name "*.flac" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL-FLAC_Analog.xml {} ';' > $log_path
 
 done
