@@ -1,9 +1,11 @@
-# ami-preservation
-NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting to provide long-term preservation and access for our audiovisual collections. 
+# Audio and Moving Image Preservation Documentation Portal
+## Welcome to the ami-preservation Wiki!
+The Audio and Moving Image Preservation Unit is part of the Digital Collections Services department of The New York Public Library's Digital Research Division. This wiki provides internal documentation for this unit's programmatic workflows, including command-line instructions for various tools and step-by-step instructions for carrying out PAMI's in-house and contract-based media digitization activities.
 
-This repository contains the resources, tools, internal handbooks that support digitization, quality assurance, and quality control processes within the PAMI workflow. Use the following links to navigate to various tools stored in the repo:
-
-## [PAMI Digitization Scripts](https://github.com/NYPL/ami-preservation/tree/master/pami_scripts)
-## [PAMI QC Scripts](https://github.com/NYPL/ami-preservation/tree/master/qc_scripts)
-
-**Please continue to the [wiki](https://github.com/NYPL/ami-handbooks/wiki) to access PAMI handbooks.**
+* [Project Administration](project-admin)
+* [Shipping and Logistics](shipping)
+* [In-House Digitization](ami-labs)
+* [Contract Digitization](contract-digitization)
+* [Quality Control](quality-control)
+* [Film Assessment](film-assessment)
+* [PAMI Tools & Resources](resources)
