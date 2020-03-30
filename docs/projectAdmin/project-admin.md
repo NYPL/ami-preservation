@@ -1,3 +1,8 @@
+---
+title: Project Administration
+layout: default
+---
+
 # Project Structure
 * **Projects:** Within PAMI, a project describes reformatting activity on a batch of media, initiated by either on-going the AMI Initiative or Public Orders (patron or donor requests).
 * **Work Orders:** Work Orders are a subdivision of a project, but a project may consist of one or many Work Order (many in-house Projects consist of only one Work Order, but most Contract / Vendor projects consist of multiple Work Orders due to the high-volume of media).

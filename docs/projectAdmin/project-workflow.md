@@ -1,3 +1,7 @@
+---
+title: Project Workflow
+layout: default
+---
 # Project Implementation
 ## Creation of Vendor Project Worksheet:
 * Creates a copy of the Vendor Project Worksheet Template:
