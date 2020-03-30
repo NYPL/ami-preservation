@@ -1,4 +1,9 @@
-# 2018 Mellon Proposal - Film Timeline
+---
+title: Film Assessment
+layout: default
+---
+
+# Film Assessment
 
 Proposed schedule: film assessment and rehousing (note that this does not include assessment): **to be completed in 2.5 years starting July 2018 (18,789 items per AVP report)**
 
