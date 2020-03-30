@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
-<policy type="and" name="MediaConch_NYPL-FLAC_Analog">
+<policy type="and" name="MediaConch_NYPL-FLAC_Digital">
   <policy type="and" name="Audio: Proper resolution?">
     <description>This policy defines audio-resolution values that are proper for FLAC.</description>
     <policy type="or" name="Valid samplerate?">
-      <rule name="Audio is 96 kHz?" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">96000</rule>
+      <rule name="Audio is 48 kHz?" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+      <rule name="Audio is 44.1 kHz?" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">44100</rule>
     </policy>
     <policy type="or" name="Valid bit depth?">
-      <rule name="Audio is 24 bit?" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
+      <rule name="Audio is 16 bit?" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">16</rule>
     </policy>
   </policy>
   <rule name="Container is FLAC?" value="Format" tracktype="General" occurrence="*" operator="=">FLAC</rule>
