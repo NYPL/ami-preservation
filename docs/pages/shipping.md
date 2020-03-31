@@ -1,6 +1,7 @@
 ---
 title: Shipping
 layout: default
+nav_order: 8
 ---
 
 # AMI Shipping

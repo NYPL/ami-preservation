@@ -1,6 +1,7 @@
 ---
 title: PAMI Labs
 layout: default
+nav_order: 4
 ---
 
 # Audio

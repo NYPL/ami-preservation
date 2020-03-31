@@ -1,6 +1,7 @@
 ---
 title: Command Line Resources
 layout: default
+nav_order: 9
 ---
 # Resources
 
