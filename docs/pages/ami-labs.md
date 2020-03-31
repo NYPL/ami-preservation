@@ -2,12 +2,21 @@
 title: PAMI Labs
 layout: default
 ---
+Resources:
+
+[PAMI Digitization Scripts](https://github.com/NYPL/ami-preservation#pami-digitization-scripts
+)
+[PAMI QC Scripts](https://github.com/NYPL/ami-preservation#pami-qc-scripts
+)
+
 
 # Audio
 
 TBD
 
 # Video
+
+TBD
 
 ## DVD Workflow
 
