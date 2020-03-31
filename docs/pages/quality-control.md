@@ -1,3 +1,7 @@
+---
+title: Quality Control
+layout: default
+---
 ## Shipment Intake & QC Cheat-Sheet
 
 ### Enter all drives and associated invoice IDs ("shipments" / "work orders") received into the [Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1973090513). Complete all fields (some are formulas - highlighted gray if so).

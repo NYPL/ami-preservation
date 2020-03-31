@@ -1,3 +1,7 @@
+---
+title: Command Line Resources
+layout: default
+---
 # Resources
 
 ## Packages and Software

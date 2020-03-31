@@ -1,3 +1,8 @@
+---
+title: PAMI Labs
+layout: default
+---
+
 # Audio
 # Video
 

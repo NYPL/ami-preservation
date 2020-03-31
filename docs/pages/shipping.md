@@ -1,3 +1,8 @@
+---
+title: Shipping
+layout: default
+---
+
 # AMI Shipping
 
 ## Pre-Shipping Administrative Duties
