@@ -3,8 +3,8 @@
   "0": {
     "title": "Contract Digitization",
     "content": "See Project Administration .",
-    "url": "http://localhost:4000/contractDigitization/contract-digitization.html",
-    "relUrl": "/contractDigitization/contract-digitization.html"
+    "url": "http://localhost:4000/contract-digitization.html",
+    "relUrl": "/contract-digitization.html"
   }
   ,"1": {
     "title": "Film Assessment",
