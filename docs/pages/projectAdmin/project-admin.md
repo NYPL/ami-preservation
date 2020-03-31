@@ -1,6 +1,7 @@
 ---
 title: Project Administration
 layout: default
+nav_order: 2
 ---
 
 # Project Structure
