@@ -2,11 +2,18 @@
 title: PAMI Labs
 layout: default
 ---
-Resources:
+Quick Resources:
 
-[PAMI Digitization Scripts](https://github.com/NYPL/ami-preservation#pami-digitization-scripts
+[PAMI Digitization Scripts](https://github.com/NYPL/ami-preservation/tree/master/pami_scripts
 )
+
 [PAMI QC Scripts](https://github.com/NYPL/ami-preservation#pami-qc-scripts
+)
+
+[Packages and Software](https://github.com/NYPL/ami-preservation/wiki/resources#packages-and-software
+)
+
+[Scripts and Repos](https://github.com/NYPL/ami-preservation/wiki/resources#scripts-and-repos
 )
 
 
