@@ -1,6 +1,7 @@
 ---
 title: Quality Control
 layout: default
+nav_order: 6
 ---
 ## Shipment Intake & QC Cheat-Sheet
 

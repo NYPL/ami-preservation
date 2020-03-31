@@ -1,6 +1,7 @@
 ---
 title: Project Workflow
 layout: default
+nav_order: 3
 ---
 # Project Implementation
 ## Creation of Vendor Project Worksheet:
