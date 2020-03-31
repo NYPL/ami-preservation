@@ -52,7 +52,7 @@ function initSearch() {
       var data = JSON.parse(request.responseText);
       
       
-      lunr.tokenizer.separator = /[\s\-/]+/
+      lunr.tokenizer.separator = /[\s/]+/
       
       
       var index = lunr(function () {
