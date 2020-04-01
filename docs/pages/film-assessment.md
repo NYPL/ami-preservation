@@ -81,7 +81,7 @@ Scale
    * Boxes of film that are inventoried and ready to inspect are brought to room 306 from the 2nd floor vault each week, or as needed to maintain constant workflow.
    * Assessment staff migrate only the number of boxes they can assess within a reasonable amount of time (1-2 days), to limit the number of items that are in transit (i.e. not identified in a specific building location in CMS).
    * Inspected films are placed on designated shelves in 306 or returned to the area in 210 that is designated for assessed film (this location may be updated on a monthly bases as vault as per vault space needs).
-   
+
 ## Inventory & Inspection Procedures
 
 ### Inspection Supplies
