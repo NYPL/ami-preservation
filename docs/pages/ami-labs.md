@@ -3,9 +3,28 @@ title: PAMI Labs
 layout: default
 nav_order: 4
 ---
+Quick Resources:
+
+[PAMI Digitization Scripts](https://github.com/NYPL/ami-preservation/tree/master/pami_scripts
+)
+
+[PAMI QC Scripts](https://github.com/NYPL/ami-preservation#pami-qc-scripts
+)
+
+[Packages and Software](https://github.com/NYPL/ami-preservation/wiki/resources#packages-and-software
+)
+
+[Scripts and Repos](https://github.com/NYPL/ami-preservation/wiki/resources#scripts-and-repos
+)
+
 
 # Audio
+
+TBD
+
 # Video
+
+TBD
 
 ## DVD Workflow
 
