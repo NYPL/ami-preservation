@@ -4,6 +4,14 @@ layout: default
 nav_order: 7
 ---
 
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+---
+
 # Film Assessment
 
 Proposed schedule: film assessment and rehousing (note that this does not include assessment): **to be completed in 2.5 years starting July 2018 (18,789 items per AVP report)**
