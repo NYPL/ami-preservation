@@ -5,6 +5,12 @@ nav_order: 9
 ---
 # Resources
 
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
 ## Packages and Software
 
 **NOTE: Be aware of where on your computer you are installing scripts. If you are not familiar with command line tools and usage, please ask for help before installing anything.**
@@ -232,7 +238,7 @@ nav_order: 9
     - Text editor (Atom, Text Edit, Notepad all equally fine)
     - VLC
 
- 
+
 - Content inspection can be completed either on ICC or on the drive.  
    - **On ICC:** _make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags._  
       - Locate the directory that contains batch to QC in the 3_Ready_To_QC folder, if assigned by MPA.
@@ -259,7 +265,7 @@ See: https://joshuatj.com/2015/05/13/how-to-format-your-hard-drive-hdd-for-mac-o
             - No 5 second overlap between heads and tails of Parts or Regions  
             - Reversed content that was not transferred as a separate region
             - Tip: _For a quick check of the entire drive for objects with Regions, grep the directory for “p01” or “r01”_
-        
+
         - Things to consider when working with video files:
              - Service Copy plays and does not contain transcoding errors / is not corrupt.
 
@@ -375,19 +381,19 @@ Use the Definitions below to review and mark-off the items listed in the QC log.
 **Batch version:**
 
   ```
-  for file in *.mkv ; do ffmpeg -i "$file" -map 0:a -map 0:v -c:v libx264 -movflags faststart -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -vf yadif -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 "${file%.*}_sc.mp4" ; done 
+  for file in *.mkv ; do ffmpeg -i "$file" -map 0:a -map 0:v -c:v libx264 -movflags faststart -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -vf yadif -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 "${file%.*}_sc.mp4" ; done
   ```
 
 **Batch version w/ pan left to center:**
 
   ```
-for file in *mkv ; do ffmpeg -i "$file" -c:v libx264 -movflags faststart -filter_complex '[0:v]yadif[outv];[0:a]pan=stereo|c0=c0|c1=c0[outa]' -map '[outv]' -map '[outa]' -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 "${file%.*}_sc.mp4" ; done 
+for file in *mkv ; do ffmpeg -i "$file" -c:v libx264 -movflags faststart -filter_complex '[0:v]yadif[outv];[0:a]pan=stereo|c0=c0|c1=c0[outa]' -map '[outv]' -map '[outa]' -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 "${file%.*}_sc.mp4" ; done
   ```
 
 **Batch version w/ pan right to center:**
 
   ```
-for file in *mkv ; do ffmpeg -i "$file" -c:v libx264 -movflags faststart -filter_complex '[0:v]yadif[outv];[0:a]pan=stereo|c0=c1|c1=c1[outa]' -map '[outv]' -map '[outa]' -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 "${file%.*}_sc.mp4" ; done 
+for file in *mkv ; do ffmpeg -i "$file" -c:v libx264 -movflags faststart -filter_complex '[0:v]yadif[outv];[0:a]pan=stereo|c0=c1|c1=c1[outa]' -map '[outv]' -map '[outa]' -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 "${file%.*}_sc.mp4" ; done
   ```
 
 
@@ -496,9 +502,9 @@ The most important step during QC.
 
 The Grep tool can be used for many things, including:
    * Parsing the ‘Logs’ folder on ICC to find the drive that contains a certain Bag
-   * Performing mass fixes on specific recurring errors 
+   * Performing mass fixes on specific recurring errors
    * Identifying all files with a known error, to make a list of things to fix / rework
-   
+
    `grep -i -H -R "someString" Volumes/HardDrive/*/*/data/*/*.json`
 
    OR
