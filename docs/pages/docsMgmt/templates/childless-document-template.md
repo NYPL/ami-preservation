@@ -19,5 +19,4 @@ grand_parent: Documentation Policy and Content Management
 ## Heading
 Write words here!
 * Bulleted list
-  * Sub-bullets
-  ```command line text example```
+  * Sub-bullets with ```command line text```

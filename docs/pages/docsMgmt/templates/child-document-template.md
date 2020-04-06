@@ -8,6 +8,15 @@ grand_parent: Templates
 
 
 # Child Document Template
-Content
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+## Content
+Words go here!
 * Bulleted list
-  * sub-bullets
+  * sub-bullets with ```command line text```
