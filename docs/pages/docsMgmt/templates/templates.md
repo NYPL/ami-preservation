@@ -15,4 +15,6 @@ The templates included provide starter pages for short, single-page documents (c
 Below are some notes on formatting, YAML / Jekyll front matter, and other important things to consider when creating a new page.
 
 ### nav_order
-* Nav_order depends on whether the page is a parent, child, or grand child, and must be updated in order to display properly. For example, this page has a navigation order that corresponds to the main pages on this site, and this page does not have a parent. Because this page has children, the nav_order for those children begins at ```1```, and the nav_order for any grand children would also begin again at ```1```.
+* ```nav_order``` depends on whether the page is a parent, child, or grand child, and must be updated in order to display properly. 
+* For example, this page has a navigation order that corresponds to the main pages on this site, and this page does not have a parent. Because this page has children, the nav_order for those children begins at ```1```, and the nav_order for any grand children would also begin again at ```1```.
+* Grand children will not appear in the navigation sidebar (i.e. [Child Document](child-document-template) is actually the grandchild of [Documentation Policy](docs-mgmt), so it doesn't appear below Parent Document in the sidebar).
