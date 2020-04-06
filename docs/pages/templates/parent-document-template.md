@@ -1,7 +1,7 @@
 ---
 title: Parent Document
 layout: default
-nav_order: **INCLUDE ORDER NUMBER HERE**
+nav_order: 16
 parent: Templates
 has_children: true
 permalink: /docs/file-name-without-extension
