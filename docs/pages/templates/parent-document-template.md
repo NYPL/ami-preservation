@@ -7,7 +7,7 @@ has_children: true
 ---
 
 
-# Page Title
+# Parent Document Template
 {: .no_toc }
 
 ## Heading

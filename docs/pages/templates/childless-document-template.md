@@ -1,12 +1,12 @@
 ---
-title: Child Document
+title: Childless Document
 layout: default
 nav_order: 1
 parent: Templates
 ---
 
 
-# Page Title
+# Childless Document Template
 {: .no_toc }
 
 ## Table of contents
