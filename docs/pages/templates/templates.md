@@ -7,17 +7,5 @@ permalink: /docs/templates/index
 ---
 
 
-# Page Title
+# Templates
 {: .no_toc }
-
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
-
-## Heading
-Write words here!
-* Bulleted list
-  * Sub-bullets
-  ```command line text example```

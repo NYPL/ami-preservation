@@ -98,7 +98,7 @@
   }
   ,"16": {
     "title": "Templates",
-    "content": "Page Title . . Heading | Heading . Write words here! . Bulleted list Sub-bullets command line text example | . | .",
+    "content": "Templates .",
     "url": "http://localhost:4000/docs/templates/index",
     "relUrl": "/docs/templates/index"
   }
