@@ -19,8 +19,8 @@
     "relUrl": "/pages/ami-specifications.html"
   }
   ,"3": {
-    "title": "Child Document",
-    "content": "Page Title . Content . bulleted content sub-bullets | . | . PAMI Documentation Portal . PAMI Digitization Scripts . PAMI QC Scripts .",
+    "title": "Childless Document",
+    "content": "Child Document Template . Content . Bulleted list sub-bullets | . | .",
     "url": "http://localhost:4000/pages/templates/child-document-template.html",
     "relUrl": "/pages/templates/child-document-template.html"
   }
