@@ -19,7 +19,7 @@
     "relUrl": "/pages/ami-specifications.html"
   }
   ,"3": {
-    "title": "Childless Document",
+    "title": "Child Document",
     "content": "Child Document Template . Content . Bulleted list sub-bullets | . | .",
     "url": "http://localhost:4000/pages/docsMgmt/templates/child-document-template.html",
     "relUrl": "/pages/docsMgmt/templates/child-document-template.html"

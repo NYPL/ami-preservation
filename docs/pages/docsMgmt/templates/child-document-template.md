@@ -1,5 +1,5 @@
 ---
-title: Childless Document
+title: Child Document
 layout: default
 nav_order: 1
 parent: Parent Document
