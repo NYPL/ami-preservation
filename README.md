@@ -5,6 +5,8 @@ NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting 
 ## [PAMI QC Scripts](https://github.com/NYPL/ami-preservation/tree/master/qc_scripts)
 ## [PAMI Documentation Site](https://nypl.github.io/ami-preservation/)
 ### Documentation Site Installation and Development
+Administrators must set up their site development environment before attempting to make changes to any documents, so they can test funcitonality on the live site before releasing it to the public. Below are the installation instructions.
+
 #### Installaton
 
 * See this site for ruby / gem / bundler troubleshooting:
