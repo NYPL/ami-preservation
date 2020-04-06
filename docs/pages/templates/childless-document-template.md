@@ -3,7 +3,6 @@ title: Child Document
 layout: default
 nav_order: 1
 parent: Templates
-permalink: /docs/file-name-without-extension
 ---
 
 

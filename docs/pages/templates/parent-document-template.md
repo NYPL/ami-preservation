@@ -1,10 +1,9 @@
 ---
 title: Parent Document
 layout: default
-nav_order: 16
+nav_order: 2
 parent: Templates
 has_children: true
-permalink: /docs/file-name-without-extension
 ---
 
 

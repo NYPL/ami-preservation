@@ -4,7 +4,6 @@ layout: default
 nav_order: 1
 parent: Parent Document
 grand_parent: Templates
-permalink: /docs/file-name-without-extension
 ---
 
 
