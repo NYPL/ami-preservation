@@ -3,6 +3,7 @@ title: Parent Document
 layout: default
 nav_order: 2
 parent: Templates
+grand_parent: Documentation Policy and Content Management
 has_children: true
 ---
 

@@ -1,7 +1,8 @@
 ---
 title: Documentation Policy and Content Management
 layout: default
-nav_order: 15
+has_children: true
+nav_order: 14
 ---
 
 # Documentation Policy and Content Management

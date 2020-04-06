@@ -3,6 +3,7 @@ title: Childless Document
 layout: default
 nav_order: 1
 parent: Templates
+grand_parent: Documentation Policy and Content Management
 ---
 
 
