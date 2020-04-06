@@ -1,9 +1,9 @@
 ---
-title: Templates
+title: Child Document
 layout: default
 nav_order: 15
-permalink: /docs/templates/index
-has_child: true
+parent: Templates
+permalink: /docs/file-name-without-extension
 ---
 
 

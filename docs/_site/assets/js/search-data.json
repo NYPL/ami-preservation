@@ -19,16 +19,16 @@
     "relUrl": "/pages/ami-specifications.html"
   }
   ,"3": {
-    "title": "Page Title",
+    "title": "Child Document",
     "content": "Page Title . Content . bulleted content sub-bullets | . | . PAMI Documentation Portal . PAMI Digitization Scripts . PAMI QC Scripts .",
-    "url": "http://localhost:4000/templates/child-document-template.html",
-    "relUrl": "/templates/child-document-template.html"
+    "url": "http://localhost:4000/docs/file-name-without-extension",
+    "relUrl": "/docs/file-name-without-extension"
   }
   ,"4": {
-    "title": "Page Title",
+    "title": "Child Document",
     "content": "Page Title . . Heading | Heading . Write words here! . Bulleted list Sub-bullets command line text example | . | .",
-    "url": "http://localhost:4000/templates/childless-document-template.html",
-    "relUrl": "/templates/childless-document-template.html"
+    "url": "http://localhost:4000/docs/file-name-without-extension",
+    "relUrl": "/docs/file-name-without-extension"
   }
   ,"5": {
     "title": "Contract Digitization",
@@ -63,8 +63,8 @@
   ,"10": {
     "title": "Page Title",
     "content": "Page Title . Heading . Write words here! . Bulleted list Sub-bullets command line text example | . | .",
-    "url": "http://localhost:4000/templates/parent-document-template.html",
-    "relUrl": "/templates/parent-document-template.html"
+    "url": "http://localhost:4000/pages/templates/parent-document-template.html",
+    "relUrl": "/pages/templates/parent-document-template.html"
   }
   ,"11": {
     "title": "Project Administration",
