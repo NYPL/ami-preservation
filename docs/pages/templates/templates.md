@@ -8,4 +8,4 @@ permalink: /docs/templates/index
 
 
 # Templates
-{: .no_toc }
+The templates included provide starter pages for short, single-page documents (childless pages) and longer, multi-page documents (pages with children and grand children). For example, this page is the parent of [Parent Document] and [Childless Document] and the grand parent of [Child Document]

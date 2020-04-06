@@ -98,7 +98,7 @@
   }
   ,"16": {
     "title": "Templates",
-    "content": "Templates .",
+    "content": "Templates . The templates included provide starter pages for short, single-page documents (childless pages) and longer, multi-page documents (pages with children and grand children). For example, this page is the parent of [Parent Document] and [Childless Document] and the grand parent of [Child Document] .",
     "url": "http://localhost:4000/docs/templates/index",
     "relUrl": "/docs/templates/index"
   }
