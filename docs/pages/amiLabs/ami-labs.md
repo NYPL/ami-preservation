@@ -2,7 +2,7 @@
 title: PAMI Labs
 layout: default
 nav_order: 4
-has_child: true
+has_children: true
 ---
 Quick Resources:
 
