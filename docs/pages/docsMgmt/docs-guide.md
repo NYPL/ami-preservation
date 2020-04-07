@@ -32,5 +32,7 @@ GitHub is a web-based hosting service that enables version-control of content, m
 * All files must be named with dashes separating words: ```my-example.md```
 
 ## Adding and Editing Content
-TBD
+
+### Tone and Tense
+* All documents must be written in 
 
