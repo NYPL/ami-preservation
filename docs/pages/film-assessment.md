@@ -14,9 +14,9 @@ nav_order: 7
 
 ---
 
-# Film Assessment
+## Film Assessment Schedule
 
-Proposed schedule: film assessment and rehousing (note that this does not include assessment): **to be completed in 2.5 years starting July 2018 (18,789 items per AVP report)**
+Film assessment and rehousing (note that this does not include assessment): **to be completed in 2.5 years starting July 2018 (18,789 items per AVP report)**
 
 
 | **Grant Period** | **Activities** | **Staff Responsible** |
