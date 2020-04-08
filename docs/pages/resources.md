@@ -4,6 +4,7 @@ layout: default
 nav_order: 9
 ---
 # Resources
+{: .no_toc }
 
 ## Table of contents
 {: .no_toc .text-delta }

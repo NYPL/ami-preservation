@@ -4,6 +4,14 @@ layout: default
 nav_order: 3
 ---
 # Project Implementation
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
 ## Creation of Vendor Project Worksheet:
 * Creates a copy of the Vendor Project Worksheet Template:
   * [20##_###_keyword_###_metadataInventory_DATE - TEMPLATE](https://docs.google.com/spreadsheets/d/1IaWGYeKfHa6YcWiHXGkfQ1wMFL8oqu6SmpeKbPMjZV4/edit?usp=sharing)

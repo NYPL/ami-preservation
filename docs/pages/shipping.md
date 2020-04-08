@@ -5,6 +5,13 @@ nav_order: 8
 ---
 
 # AMI Shipping
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
 
 ## Pre-Shipping Administrative Duties
 * PAMI Manager creates an estimate of the number of items the budget will cover.
