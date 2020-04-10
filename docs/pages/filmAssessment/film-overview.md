@@ -1,9 +1,10 @@
 ---
-title: Film Assessment
+title: Film Overview
 layout: default
-nav_order: 7
+nav_order: 1
+parent: Film Assessment
 ---
-# Film Assessment
+# Film Overview
 {: .no_toc }
 
 ## Table of contents
@@ -13,10 +14,11 @@ nav_order: 7
 {:toc}
 
 ---
+## Overview and Timeline
 
-## Film Assessment Schedule
-
-Film assessment and rehousing (note that this does not include assessment): **to be completed in 2.5 years starting July 2018 (18,789 items per AVP report)**
+* Start date: July 2018 
+* Target end date: June 2021
+* Target item count: 18,789 items (as per 2012 AVPS survey)
 
 
 | **Grant Period** | **Activities** | **Staff Responsible** |
