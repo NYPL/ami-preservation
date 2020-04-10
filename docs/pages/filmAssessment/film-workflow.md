@@ -206,4 +206,3 @@ Inventoried Items
 
 ## Workstation Layout & Specifications
 * 4 stations
-*
