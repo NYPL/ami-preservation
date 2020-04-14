@@ -133,7 +133,7 @@ parent: Film Assessment
   * Using the footage counter to measure your leader, apply 10ft of leader to head and tail of each film.
   * In marker, hand-write the items’ CMS ID number on the head and tail leader of each film. Example: **CMS# 123456		HEAD**
 
-### Ephemera:
+### Ephemera
 * Paper ephemera (i.e. lab notes, photographs, pamphlets, hand-written notes, and narrative / descriptive documents that are inside or adhered to original housings) must be either removed or photocopied and retained in a separate **file folder**.
   * Fragile original documentation may be protected with poly-sleeves
   * Non-original documentation (i.e. photocopies of annotations written on housings or adhesive notes that
