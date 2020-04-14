@@ -14,9 +14,9 @@ parent: Film Assessment
 {:toc}
 
 ---
-## Overview and Timeline
+## Timeline
 
-* Start date: July 2018 
+* Start date: July 2018
 * Target end date: June 2021
 * Target item count: 18,789 items (as per 2012 AVPS survey)
 
@@ -37,7 +37,25 @@ parent: Film Assessment
 |July - December 2019 (Quarter 6, Quarter 7)| Film Assessment and rehousing underway (~3,750 items) | MPC, Havemeyer-King, SFP |
 |January - June 2020 (Quarter 8, Quarter 9) | Magnetic/Optical formats Finalize and ship vendor batches (~8,461 items) Receive digitized assets, perform quality control, stage for repository ingest Schedule return of original media | Hunter, Holte, MPC, Havemeyer-King
 
-# CMS Film Assessment Layout
+## Methodology
+With the end goal being digitization by an external vendor, the scale of this project requires a streamlined workflow that prioritizes identification and documentation over conservation treatment. For this reason, the scope of treatment is limited to what can be completed within a reasonable amount of time for each object.
+
+### Selection
+Assessment selection varies depending on curatorial priorities.
+
+### SFP Processing
+SFP staff label, sort, and inventory items before assessment:
+* Items are rehoused to new cans (if possible).
+* Uncatalogued items are inventoried and cans are labeled with unique identifiers (CMS numbers).
+* Items are moved to archival record boxes (if previously unboxed).
+  * Cans that contain multiple reels are separated on a case-by-case bases (e.g. trims and out-takes are left as-is, but paired positive and negative rolls are split into individual cans).
+* Archival boxes of film are staged for item-level assessment.
+  * Severely decaying items are flagged and placed in a separate designated staging area.
+
+### Condition Assessment
+* Media Preservation Assistants
+
+
 
 ## Film metadata comparison worksheet
 
