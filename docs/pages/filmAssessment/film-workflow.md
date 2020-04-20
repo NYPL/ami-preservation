@@ -163,3 +163,7 @@ parent: Film Assessment
    * SFP Manager will enter ephemera into a data system maintained by SFP.
    * When SFP Manager is done entering the ephemera into the data system, they will leave the empty box in their
      office, where it may be retrieved when the next box of ephemera is brought in.
+
+## Nitrate Film
+If an item is suspected or identified to be nitrate film, please follow the internal guidelines provided by NYPL's Collection Management team:
+* [Deteriorated Nitrate Protocol 2018 (Internal)](https://drive.google.com/open?id=1RPC0-HwTdH3yaU9totwXDEWuqF37zH83Nora_p7WVjs)
