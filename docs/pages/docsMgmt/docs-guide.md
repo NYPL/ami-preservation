@@ -32,7 +32,8 @@ GitHub is a web-based hosting service that enables version-control of content, m
 * All files must be named with dashes separating words: ```my-example.md```
 
 ## Adding and Editing Content
-
-### Tone and Tense
-* All documents must be written in 
-
+### Pushing changes to the site
+* Only authorized administrators may push changes to the site. 
+* To generate new content:
+  * Commit changes to the master branch via GitHub
+  * run ```bundle exec jekyll serve``` to generate new site files in user/ami-preservation/docs/_site
