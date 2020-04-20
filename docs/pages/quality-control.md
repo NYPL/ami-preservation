@@ -15,44 +15,42 @@ nav_order: 6
 
 ## Shipment Intake & QC Cheat-Sheet
 
-### Enter all drives and associated invoice IDs ("shipments" / "work orders") received into the [Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1973090513). Complete all fields (some are formulas - highlighted gray if so).
+* Enter all drives and associated invoice IDs ("shipments" / "work orders") received into the [Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1973090513). Complete all fields (some are formulas - highlighted gray if so).
 
-### Copy the "work order ID" that is automatically generated in the Vendor Project Tracking sheet (column A).
+* Copy the "work order ID" that is automatically generated in the Vendor Project Tracking sheet (column A).
 
-### Create an ICC/Logs directory named with the work order ID
+* Create an ICC/Logs directory named with the work order ID
 
-### Create a Trello Card on the [Vendor QC Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
+* Create a Trello Card on the [Vendor QC Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
 
-### Create a QC log in the Team Drive QC Folder for each hard drive:
-* make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/17VKQiZGwC2JpTYHjHBcdwMBNU29S1_Op6WhP-oUjaxg/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
+* Create a QC log in the Team Drive QC Folder for each hard drive:
+  * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/17VKQiZGwC2JpTYHjHBcdwMBNU29S1_Op6WhP-oUjaxg/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
 
-### Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
+* Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-### **Mount drive read-only.**
+* **Mount drive read-only.**
 
-### Validate JSON: (refer to [ami-metadata](https://github.com/NYPL/ami-metadata) for schema details)
+* Validate JSON: (refer to [ami-metadata](https://github.com/NYPL/ami-metadata) for schema details)
 _**note: if you encounter failures during JSON validation, add failed Bag/s to QC list and mark as failed and note the reason in detail.**_
 ```
 ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
-### Run MediaConch:
+* Run MediaConch:
 the ami-preservation repo contains a directory, [qc_utilities](https://github.com/NYPL/ami-preservation/tree/master/qc_utilities). Within this are various scripts and tools, including the mediaconch scripts listed below which will generate 'pass/fail' logs in your home directory when run against a directory of media files.
 ```
 cd /Volumes/DRIVE-ID/
 ```
 *then...*
-#### For VIDEO...
-```
+  * For VIDEO: ```
 /path/to/qc_utilities/mediaconch_videoFFv1.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
 ```
 
-#### For AUDIO...
-```
+  * For AUDIO: ```
 /path/to/qc_utilities/mediaconch_audioAnalog.sh
 ```
 
-### Validate Bags Overnight: (Ensure that your computer does not sleep. Darken your display manually before leaving.)
+* Validate Bags Overnight: (Ensure that your computer does not sleep. Darken your display manually before leaving.)
 ```
 cd path/to/dir/of/bags
 ```
@@ -61,27 +59,27 @@ cd path/to/dir/of/bags
 ```
 path/to/validate_bags.sh
 ```
-### Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
+* Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
-### AUDIO ONLY: Check a selection of FLAC for embedded metadata
-* Copy 5 .flac files delivered to Desktop and decode these new copies back to wav. 
+* AUDIO ONLY: Check a selection of FLAC for embedded metadata
+  * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav. 
 ```
 flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 ```
-* Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
+  * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
 
-### Perform Manual QC ...
-* Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
-* Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
+* Perform Manual QC ...
+  * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
+  * Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
 
-## After manual QC, **if all bags are valid**...Then:
+* After manual QC, **if all bags are valid**...Then:
 
-### Move JSON to ICC (must be connected to ICC):
-```
+  * Move JSON to ICC (must be connected to ICC): 
+  ```
 find /Volumes/DRIVE-ID/ -name '*.json' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/VendorJSON ';'
 ```
 
-### Move IMAGES to ICC, if received (must be connected to ICC)
+  * Move IMAGES to ICC, if received (must be connected to ICC)
 
 ```
 find /Volumes/DRIVE-ID/ -name '*.JPG' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/AssetImages ';'
@@ -91,23 +89,23 @@ find /Volumes/DRIVE-ID/ -name '*.JPG' -exec cp {} /Volumes/video_repository/Work
 find /Volumes/DRIVE-ID/ -name '*.jpg' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/Asset_Images ';'
 ```
 
-### Pull MediaInfo & output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC
+* Pull MediaInfo & output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC
 
 ```
 python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
 ```
 
-### Wrap Up...
-* Move the Trello Card to the proper list (passed / failed etc.)
-* IF APPROVED:
-  * email vendor to confirm QC approval of designated shipment & invoice number; CC Rebecca to approve invoice 
-  * Database: update database for approved shipments
+* Wrap Up...
+  * Move the Trello Card to the proper list (passed / failed etc.)
+  * IF APPROVED:
+    * email vendor to confirm QC approval of designated shipment & invoice number; CC Rebecca to approve invoice 
+    * Database: update database for approved shipments
 
-* IF NOT APPROVED
-  * Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames.
+  * IF NOT APPROVED
+    * Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames.
 &
-  * Move Trello card to "Flags & Failures To Review" list in Trello. 
-  * MPC: Follow up with vendor about errors and resolve before approving shipments with errors and moving Trello card to the 'Passed QC' list.
+    * Move Trello card to "Flags & Failures To Review" list in Trello. 
+    * MPC: Follow up with vendor about errors and resolve before approving shipments with errors and moving Trello card to the 'Passed QC' list.
 
 
 # Quality Control Overview
