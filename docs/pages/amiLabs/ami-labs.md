@@ -1,5 +1,5 @@
 ---
-title: PAMI Labs
+title: AMI Labs
 layout: default
 nav_order: 4
 has_children: true
@@ -9,86 +9,89 @@ Quick Resources:
 [PAMI Digitization Scripts](https://github.com/NYPL/ami-preservation/tree/master/pami_scripts
 )
 
-[PAMI QC Scripts](https://github.com/NYPL/ami-preservation#pami-qc-scripts
-)
+# AMI Labs
+NYPL's in-house media preservation unit&#151;a team of six engineers working in four digitization suites&#151;reformats thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Preservation of Audio and Moving Image (PAMI). Today, the AMI Labs are part of Digital Collections Services within the Digital Research Division.
 
-[Packages and Software](https://github.com/NYPL/ami-preservation/wiki/resources#packages-and-software
-)
+The following pages detail workflows, policies, and procedures for audio/video digitization, optical media migration, and born-digital processing, with a particular focus on the various stages of media preservation:
+   * Pre-digitization conservation treatments
+   * Set-up and monitoring during transfer
+   * Post-digitization editing, spot-checking, and packaging
+   * Quality control
+   * Safe and secure file transfer
 
-[Scripts and Repos](https://github.com/NYPL/ami-preservation/wiki/resources#scripts-and-repos
-)
+Members of the AMI Labs include:
+  * Rhony Dostaly, Media Preservation Engineer, Video (<francisdougherty@nypl.org>)
+  * Fran Dougherty, Media Preservation Engineer, Video (<rhonydostaly@nypl.org>)
+  * Jeff Willens, Media Preservation Engineer, Audio (<jeffwillens@nypl.org>)
+  * Seth Winner, Media Preservation Engineer, Audio (<sethwinner@nypl.org>)
+  * Andrew Theodorou, Media Preservation Engineer, Audio (<andrewtheodorou@nypl.org>)
+  * Ben Turkus, Assistant Manager, Audio and Moving Image Preservation (<benjaminturkus@nypl.org>)
 
+## Supported Formats
 
-# Audio
+The AMI Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
+
+### Audio
+  * Cylinder, Dictabelt
+  * Grooved Disc (transcription discs, aka "lacquer" or "acetate"; 78 rpm discs, aka "shellac", long-play (LP) vinyl discs)
+  * Wire
+  * Audiocassette (compact cassette, microcassette, minicassette)
+  * Quarter-inch open-reel (various speeds and configurations)
+  * Digital Audio Tape (DAT)
+  * Alesis Digital Audio Tape (ADAT)
+  * Compact Disc (CD)
+  * MiniDisc
+
+### Video
+  * Half-inch open-reel (CV, EIAJ-1, EIAJ-2)
+  * U-matic (NTSC/PAL: LB, HB, SP)
+  * VHS (NTSC/PAL/SECAM, S-VHS, VHS-C)
+  * Betamax
+  * Betacam (Oxide, SP, SX, Digital Betacam, IMX)
+  * MII
+  * Video8 and Hi8
+  * DV (MiniDV, DVCAM, HDV, DVCPRO)
+  * LaserDisc
+  * DVD
+
+## Equipment
+
+### Audio
+  * Audiocassette: Tascam 122MKII, Tascam 122MKIII
+  * Quarter-inch open-reel: Studer A810; Otari MTR-10, Otari MX-5050 (B, BQ, BIII, BIII-2), Revox B77 MKII
+  * Grooved Disc: Technics SP-15 and SME 3012-R Tonearm
+  * Phonostage: Timestep T-01EQ, OWL1, KAB Souvenir EQS MK12
+  * Microcassette: JBR Forensic Microcassette Playback Unit, Sony M-2008
+  * Cylinder, Dictabelt: Archeophone
+  * CD: Tascam CD-305, Tascam CD-401 MKII
+  * MiniDisc: Sony MDS-E12
+  * DAT: Sony PCM-R500, Sony PCM-R700, Panasonic SV-3700, Panasonic SV-3800
+  * Wire: Webster-Chicago 80-1
+  * Digital Audio Processor: Sony PCM-501ES
+  * Studio Monitor: Genelec 8050A
+  * Noise Reduction: Dolby A Type Model 361, Dolby B Type Module AN180; DBX Type 2 Model 224
+  * Digital Patch Bay: Z Systems z-8.8
+  * A-D Converter: Mytek 8x192, Prism ADA-8XR
+  * Digital Interface: Roland Quadcapture
+  * Microscope: Leica DMS 1000
+  * Disc Cleaner: Keith Monks
+  * Voltage Regulator/Power Conditioner: Furman P-1800 AR, Furman PL-PLUSII
+  * Battery Back-up: APC BR1000G
+  * Test Tone Generator: Gold Line TS1RMX
+  * Oscilloscope: Leader LBO-508A, Leader LBO-511
+  * Spectrum Analyzer: Klark Teknik DN60
+  * Air Compressor: Rolair JC10A, DeVilbliss F412-2
+  * Fume Extractor: Air Impurities Removal Systems Extract-All
+  * Lab Oven: Thermo 6550
+
+### Video
 
 TBD
 
-# Video
+## Repair Technicians and Equipment Vendors
 
 TBD
 
-# Optical
+## Capture Specifications
 
-## DVD Workflow
-
-### Step 1: Make an ISO
-
-Insert your DVD and unmount:
-  * Open terminal, run `diskutil list`
-  * Locate the disk identifier of your DVD (typically something like `disk1`)
-  * Run `diskutil umount [DISK ID]`
-
-Use ddrescue to create an ISO (`brew install ddrescue`) if needed:
-  *  `ddrescue -b 2048 -r4 -v /dev/[DISK ID] [output ISO path] [output log
-path]`
-
-### Step 2: Make a single MP4 that represents all of the content on your ISO (a multi-step process, but safe and trustworthy for multi-title DVDs)
-  * Open MakeMKV, and open your ISO
-  * Select your output directory, and click `Make MKV`
-  * Move all resulting MKVs into a single directory
-  * Run dvd_concat.py on your directory `./dvd_concat.py -s [YOUR DIRECTORY] -d [output path for DVD]`
-  * Rename MP4 according to NYPL convention, and delete all MKVs
-
-# Post Digitization
-
-## Metadata
-
-### Import MediaInfo Metadata into Filemaker
-
-Open the FilemakerPro 15 database:
-
-  * Click the `Layout` dropdown menu at the top left and select `tbl_techinfo`
-
-  * From the taskbar at top of the screen, go to **File > Import Records > File...**
-  
-  * A window will open, find the file path of the extractedMediaInfo.csv that you just created and click **Open**
-
-  * The `Import File Mapping` menu will appear. To properly import select:
-
-    * `Don't Import First Record...`
-
-    * `Arrange by` dropdown > `Matching Names`
-
-  * Click  **Import**
-
-  * The `New Import Options` menu opens, then select `perform auto-enter…`
-
-  * Click  **Import**.
-
-A menu will appear that says the records are imported, click **Okay**. This will give you the data set of all the files that you just imported. (Note: you will still be in the `tbl_techinfo` layout.)
-
-  * In the first column to the left titled `inhouse_bag_batch_id`, copy and paste the _workorderID_ into the first empty field.
-
-  * While the cursor is still in that field, click `Command +` (Mac) or `Control +` (Windows) which autofills the ID into the remaining fields in that column for all the records that were just imported.
-
-  * The window `Replace Field Contents` appears, click **Replace**.
-
-Notes: The _workorderID_ you add to the `inhouse_bag_batch_id` column in the `tbl_techinfo` layout must match the _workorderID_ in the `Master::production data entry` layout (to find this layout, go to top left `Layout` dropdown menu).
-
-  * For example: the `asset.referenceFilename` column that contains the _workorderID_ in the `tbl_techinfo` layout must be identical to `asset.referenceFilename` column in the `Master::production data entry` layout.
-
-  * Make sure to include the `_pm` and remove the `_ffv1` from the filename!
-
-In the `Master::production data entry` layout, the appropriate file extension (i.e., the `asset.fileExt` column) must be preselected for the fields to populate appropriately.
-
-  * To confirm everything entered correctly and sycned, sceroll right to ensure that all of the columns with `technical` information (i.e., `technical.durationHuman`, etc.) see if the correct fields are populated
+TBD

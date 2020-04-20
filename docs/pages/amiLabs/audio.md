@@ -1,8 +1,8 @@
 ---
-title: Child Document
+title: Audio
 layout: default
 nav_order: 1
-parent: PAMI Labs
+parent: AMI Labs
 ---
 
 

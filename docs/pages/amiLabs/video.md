@@ -1,8 +1,8 @@
 ---
-title: Child Document
+title: Video
 layout: default
 nav_order: 2
-parent: PAMI Labs
+parent: AMI Labs
 ---
 
 

@@ -1,9 +1,8 @@
 ---
-title: Child Document
+title: Optical
 layout: default
-nav_order: 1
-parent: Parent Document
-grand_parent: Templates
+nav_order: 3
+parent: AMI Labs
 ---
 
 
