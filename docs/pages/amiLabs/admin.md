@@ -1,7 +1,7 @@
 ---
-title: Audio
+title: Admin
 layout: default
-nav_order: 2
+nav_order: 1
 parent: AMI Labs
 ---
 
