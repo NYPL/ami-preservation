@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<policy type="and" name="MediaConch_NYPL_FFV1MKV" license="CC-BY-SA-4.0+">
+  <rule name="Is it Matroska?" value="Format" tracktype="General" occurrence="*" operator="=">Matroska</rule>
+  <rule name="Matroska version 4 or greater?" value="Format_Version" tracktype="General" occurrence="*" operator="&gt;=">4</rule>
+  <rule name="Unique ID is present?" value="UniqueID" tracktype="General" occurrence="*" operator="exists"/>
+  <rule name="SegmentUID is present?" value="Segment/Info/SegmentUID/" occurrence="*" operator="exists" scope="mmt"/>
+  <rule name="SeekHead is present?" value="Segment/SeekHead/" occurrence="*" operator="exists" scope="mmt"/>
+  <rule name="Is the video FFV1?" value="Format" tracktype="Video" occurrence="*" operator="exists">FFV1</rule>
+  <rule name="FFV1 is version 3.4 or later?" value="Format_Version" tracktype="Video" occurrence="*" operator="&gt;=">3.4</rule>
+  <policy type="and" name="FFV1 uses slice crcs?">
+    <rule name="Slice crcs present?" value="extra/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule>
+    <policy type="or" name="16 or 24 slices?">
+      <rule name="24 slices?" value="extra/MaxSlicesCount" tracktype="Video" occurrence="*" operator="=">24</rule>
+      <rule name="16 slices?" value="extra/MaxSlicesCount" tracktype="Video" occurrence="*" operator="=">16</rule>
+    </policy>
+  </policy>
+  <rule name="Display Aspect Ratio is 4/3?" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+  <policy type="or" name="Pixel Aspect Ratio is D1?">
+    <rule name="NTSC D1?" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
+    <rule name="PAL D1?" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.067</rule>
+    <rule name="FFV1 is encoded in GOP size of 1?" value="Format_Settings_GOP" tracktype="Video" occurrence="*" operator="=">N=1</rule>
+  </policy>
+  <policy type="or" name="NTSC or PAL Frame Size?">
+    <policy type="and" name="PAL?">
+      <rule name="PAL Height" value="Height" tracktype="Video" occurrence="1" operator="=">576</rule>
+      <rule name="PAL Width" value="Width" tracktype="Video" occurrence="1" operator="=">720</rule>
+    </policy>
+    <policy type="and" name="NTSC?">
+      <policy type="or" name="NTSC Height">
+        <rule name="NTSC height (SD)" value="Height" tracktype="Video" occurrence="1" operator="=">486</rule>
+        <rule name="NTSC height (DV)" value="Height" tracktype="Video" occurrence="1" operator="=">480</rule>
+      </policy>
+      <rule name="NTSC Width" value="Width" tracktype="Video" occurrence="1" operator="=">720</rule>
+    </policy>
+  </policy>
+  <rule name="Chroma Subsampling is 4:2:2?" value="ChromaSubsampling" tracktype="Video" occurrence="*" operator="=">4:2:2</rule>
+  <rule name="ColorSpace is YUV?" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <rule name="Video Compression is Lossless?" value="Compression_Mode" tracktype="Video" occurrence="*" operator="=">Lossless</rule>
+  <rule name="Audio is FLAC?" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+  <rule name="Audio Sampling Rate is 48000 Hz?" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+  <rule name="Video Bit Depth is 10?" value="BitDepth" tracktype="Video" occurrence="*" operator="=">10</rule>
+  <policy type="and" name="Video Scan Type clarified?">
+    <rule name="Video is interlaced?" value="Segment/Tracks/TrackEntry/Video/FlagInterlaced/Data" occurrence="*" operator="=" scope="mmt">1</rule>
+    <policy type="or" name="FieldOrder is clarified?">
+      <rule name="Top field displayed first?" value="Segment/Tracks/TrackEntry/Video/FieldOrder/Data" occurrence="*" operator="=" scope="mmt">9</rule>
+      <rule name="Bottom field displayed first?" value="Segment/Tracks/TrackEntry/Video/FieldOrder/Data" occurrence="*" operator="=" scope="mmt">14</rule>
+    </policy>
+    <rule name="Audio Bit Depth is 24?" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
+  </policy>
+  <policy type="or" name="Video Sample Range clarified?">
+    <rule name="Range data is stored?" value="Segment/Tracks/TrackEntry/Video/Colour/Range/" occurrence="*" scope="mmt"/>
+    <rule name="Range data is not Unspecified?" value="Segment/Tracks/TrackEntry/Video/Colour/Range/Data" occurrence="*" operator="!=" scope="mmt">o2</rule>
+  </policy>
+  <policy type="or" name="Video Colour Primaries clarified?">
+    <rule name="BT.601 NTSC?" value="Segment/Tracks/TrackEntry/Video/Colour/Primaries/Data" occurrence="*" operator="=" scope="mmt">6</rule>
+    <rule name="BT.601 PAL?" value="Segment/Tracks/TrackEntry/Video/Colour/Primaries/Data" occurrence="*" operator="=" scope="mmt">5</rule>
+  </policy>
+  <rule name="Video Transfer Characteristics BT.709?" value="Segment/Tracks/TrackEntry/Video/Colour/TransferCharacteristics/Data" occurrence="*" operator="=" scope="mmt">1</rule>
+  <policy type="or" name="Video MatrixCoefficients clarified?">
+    <rule name="BT.601 (NTSC)?" value="Segment/Tracks/TrackEntry/Video/Colour/MatrixCoefficients/Data" occurrence="*" operator="=" scope="mmt">6</rule>
+    <rule name="BT.470 BG (PAL)?" value="Segment/Tracks/TrackEntry/Video/Colour/MatrixCoefficients/Data" occurrence="*" operator="=" scope="mmt">5</rule>
+    <policy type="and" name="NTSC or PAL Frame Rate?">
+      <rule name="Frame Rate is Constant?" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=">CFR</rule>
+      <policy type="or" name="NTSC or PAL?">
+        <rule name="PAL FrameRate" value="FrameRate" tracktype="Video" occurrence="1" operator="=">25.000</rule>
+        <rule name="NTSC FrameRate" value="FrameRate" tracktype="Video" occurrence="1" operator="=">29.970</rule>
+      </policy>
+    </policy>
+  </policy>
+</policy>

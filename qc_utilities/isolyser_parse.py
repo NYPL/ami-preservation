@@ -28,4 +28,4 @@ if smallerthanexpected:
     for item in smallerthanexpected:
         print('  {}'.format(item))
 else:
-    print('Youyr ISOs are A-Okay!')
+    print('Your ISOs are A-Okay!')
