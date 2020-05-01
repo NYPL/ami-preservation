@@ -10,8 +10,14 @@ Quick Resources:
 
 [AMI Labs Trello](https://trello.com/b/cbbd5QgE/nypl-ami-labs){:target="\_blank"}
 
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
 # AMI Labs
-NYPL's in-house media preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Preservation of Audio and Moving Image (PAMI). Today, the AMI Labs are part of Digital Collections Services, within the  Digital Research Division.
+NYPL's in-house media preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Preservation of Audio and Moving Image (PAMI). Today, the AMI Labs are part of Digital Collections Services, within the Digital Research Division.
 
 The following pages detail workflows, policies, and procedures for audio/video digitization, optical media migration, and born-digital processing, broken into the following categories:
    * Pre-digitization conservation treatments
@@ -23,13 +29,12 @@ The following pages detail workflows, policies, and procedures for audio/video d
 Members of the AMI Labs include:
   * Rhony Dostaly, Media Preservation Engineer, Video (<francisdougherty@nypl.org>)
   * Fran Dougherty, Media Preservation Engineer, Video (<rhonydostaly@nypl.org>)
-  * Jeff Willens, Media Preservation Engineer, Audio (<jeffwillens@nypl.org>)
+  * Jeff Willens, Media Preservation Engineer, Audio (<jeffreywillens@nypl.org>)
   * Seth Winner, Media Preservation Engineer, Audio (<sethwinner@nypl.org>)
   * Andrew Theodorou, Media Preservation Engineer, Audio (<andrewtheodorou@nypl.org>)
   * Ben Turkus, Assistant Manager, Audio and Moving Image Preservation (<benjaminturkus@nypl.org>)
 
 ## Supported Formats & Equipment
-
 The AMI Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
 
 ### Audio
@@ -37,8 +42,8 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 | **Format/Equipment** | **Manufacturer/Model** |
 |   -----          |     -----      |  
 |   Cylinder, Dictabelt      |  Archeophone |
-|   Grooved Disc (transcription discs, aka "lacquer" or "acetate"; 78 rpm discs, aka "shellac", long-play (LP) vinyl discs)      |  Technics SP-15 and SME 3012-R Tonearm |
-|   Phonostage      |  Timestep T-01EQ, OWL1, KAB Souvenir EQS MK12 |
+|   Grooved Disc (transcription discs, aka "lacquer" or "acetate," and other instantaneous formats; 78 rpm discs, aka "shellac", long-play (LP) vinyl discs)      |  Technics SP-15 and SME 3012-R Tonearm |
+|   Phono Stage      |  Timestep T-01EQ, KAB Souvenir EQS MK12 |
 |   Wire      |  Webster-Chicago 80-1 |
 |   Audiocassette (compact cassette)     |  Tascam 122MKII, Tascam 122MKIII |
 |   Microcassette      |  JBR Forensic Microcassette Playback Unit, Sony M-2008 |
@@ -46,13 +51,14 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 |   Digital Audio Tape (DAT)      |  Sony PCM-R500, Sony PCM-R700, Panasonic SV-3700, Panasonic SV-3800 |
 |   Compact Disc (CD)      |  Plextor PX-880U, Tascam CD-305, Tascam CD-401 MKII |
 |   MiniDisc     |  Sony MDS-E12 |
-|   Digital Audio Processor      |  Sony PCM-501ES |
+|   Alesis Digital Audio Tape (ADAT)     |  tbd |
+|   Digital Audio Processor (F1)      |  Sony PCM-501ES |
 |   Noise Reduction      |  Dolby A Type Model 361, Dolby B Type Module AN180; DBX Type 2 Model 224 |
 |   Digital Patch Bay      |  Z Systems z-8.8 |
 |   A-D Converter      |  Mytek 8x192, Prism ADA-8XR |
 |   Digital Interface     |  Roland Quadcapture |
 |   Computer     |  Apple iMac Mid-2017 3.8 GHz Intel Core i5 Quad-Core, 16GB DDR4 RAM, 1TB SSD |
-|   Microscope      |  Leica DMS 1000 |
+|   HD Digital Microscope      |  Leica DMS 1000 |
 |   Disc Cleaner      |  Keith Monks |
 |   Voltage Regulator/Power Conditioner      |  Furman P-1800 AR, Furman PL-PLUSII |
 |   Battery Back-up      |  APC BR1000G |
@@ -62,7 +68,7 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 |   Spectrum Analyzer      |  Klark Teknik DN60 |
 |   Air Compressor      |  Rolair JC10A, DeVilbliss F412-2 |
 |   Fume Extractor      |  Air Impurities Removal Systems Extract-All |
-|   Lab Oven      |  Thermo 6550 |
+|   Lab Oven      |  Thermo Scientific 6550 |
 
 ### Video
 
@@ -96,15 +102,34 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 |   Cleaner: U-matic      |  RTI VT-3100 RM |
 |   Cleaner: VHS      |  RTI 4905 |
 |   Cleaner: Betacam      |  RTI 4100ME |
+|   Lab Oven      |  Thermo Scientific PR205045M |
+
 
 ## Repair Technicians and Equipment Vendors
 
-TBD
+* ATR Magentics
+  * Bette Spitz, 717-718-8008, <info@atrtape.com>
+* JRF Magnetic Sciences
+  * John and Cookie French, 973-579-5773, <jrf@jrfmagnetics.com> / <cookie@jrfmagnetics.com>
+* The Production People
+  * Nick and Norma Liatsis, 845-201-8063, <nick@ppivideo.com> / <norma@ppivideo.com>
+* Shuster Sound
+  * "Midnight Bob" Shuster, 631-258-5441, <bob12am@aol.com>
+* Zin VTR Works
+  * Ken Zin, 650-465-0441, <kenrzin@gmail.com>
 
 ## Capture Specifications
 
-TBD
+The default position of the AMI Labs is to favor lossless encodings and open formats/standards for all media files generated. For audio, this means [FLAC](https://xiph.org/flac/){:target="\_blank"}; for video, [FFV1/MKV](https://datatracker.ietf.org/wg/cellar/documents/){:target="\_blank"}. Detailed specifications can be found in the [Digital Asset Specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html) portion of this repository.
 
 ## Software
 
-TBD
+Whenever possible, workflows have been designed around the use of free/open source software. From capture to quality control, free and open source tools are, frequently, the best tools for the job, meeting the particular needs of media digitization while offering a high degree of customizability. One sticking point impeding a full embrace of FOSS is the lack of non-linear editing systems capable of accommodating the lossless encodings (FLAC, FFV1) adopted by the AMI Labs.
+
+| **Purpose** | **Software** | **Free/Open Source** |
+|   -----          |     -----      |     -----      |
+|   Audio Digitization      |  [Wavelab](https://new.steinberg.net/wavelab/) | ❌|
+|   Video Digitization      |  [vrecord](https://github.com/amiaopensource/vrecord) | ✅|
+|   Transcoding      |  [FFmpeg](https://www.ffmpeg.org/), [FLAC Utility](https://xiph.org/flac/download.html) | ✅|
+|   Metadata Conformance      |  [MediaConch](https://mediaarea.net/MediaConch) | ✅|
+|   Quality Control     |  [QCTools](https://www.bavc.org/preserve-media/preservation-tools/qctools) | ✅|

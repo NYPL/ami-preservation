@@ -6,7 +6,7 @@ parent: AMI Labs
 ---
 
 
-# Child Document Template
+# Audio Digitization
 {: .no_toc }
 
 ## Table of contents
