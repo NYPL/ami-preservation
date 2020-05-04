@@ -149,15 +149,15 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   | --- | --- | ---- |
   | Film Group 1 | Motion Picture Film, silent | 8mm, Super 8mm, Double 8mm, 16mm, 35mm
   | Film Group 2 | Motion Picture Film, sound | 8 mm, Super 8mm, 16m, 35mm
-  | Film Group 3 | Audio Film | <ul><li>16mm full-coat magnetic audio</li><li>16mm optical track</li><li>35mm full-coat magnetic audio</li><li>35mm optical track</li></ul></li>
-  | Film Group 4 | Filmstrip | <ul><li>16mm filmstrip</li><li>35mm filmstrip</li></ul></li>
+  | Film Group 3 | Audio Film | 16mm full-coat magnetic audio, 16mm optical track, 35mm full-coat magnetic audio, 35mm optical track
+  | Film Group 4 | Filmstrip | 16mm filmstrip, 35mm filmstrip
 
 
   |Group| Type | Formats |
   | --- | --- | ---- |
-  | Video Group 1 | Video Cassette Analog | <ul><li>Betacam Oxide</li><li>Betacam SP</li><li>Betamax</li><li>Hi8</li><li>MII</li><li>S-VHS</li><li>S-VHS-C</li><li>U-matic</li><li>U-matic SP</li><li>VHS</li><li>VHS-C</li><li>Video8</li></ul> | Video Cassette Digital | <ul><li>D-1</li><li>D-2</li><li>D-3</li><li>D-5</li><li>D-9</li><li>Digital Betacam</li><li>HDCAM</li><li>HDCAM SR</li><li>HDCAM SX</li><li>MPEG IMX</li></ul></li> | Video Reel Analog | <ul><li>Two-inch quad open-reel (LoBand, HiBand and SuperHiBand)</li><li>One-inch open-reel, Type A</li><li>One-inch open-reel, Type C</li><li>One-inch open-reel, EV</li><li>One-inch open reel video, IVC</li><li>One-inch open-reel, other/non-standard</li><li>Half-inch open-reel, Sony CV</li><li>Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2)</li><li>Half-inch open-reel, other/non-standard</li></ul></li>
-  | Video Group 2 | Video Cassette DV | <ul><li>Digital8</li><li>DVCam</li><li>MiniDV</li><li>HDV</li><li>DVCPRO</li><li>DVCPRO 50</li><li>DVCPRO HD</li></ul></li>
-  | Video Group 3 | Video Optical Disc | <ul><li>DVD, pressed</li><li>DVD±R</li><li>DVD±RW</li><li>Blu-Ray</li><li>Laser Disc</li><li>VCD</li></ul></li>
+  | Video Group 1 | Video Cassette Analog | Betacam Oxide, Betacam SP, Betamax, Hi8, MII, S-VHS, S-VHS-C, U-matic, U-matic SP, VHS, VHS-C, Video8 | Video Cassette Digital | D-1, D-2, D-3, D-5, D-9, Digital Betacam, HDCAM, HDCAM SR, HDCAM SX, MPEG IMX | Video Reel Analog | Two-inch quad open-reel (LoBand, HiBand and SuperHiBand), One-inch open-reel, Type A, One-inch open-reel, Type C, One-inch open-reel, EV, One-inch open reel video, IVC, One-inch open-reel, other/non-standard, Half-inch open-reel, Sony CV, Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2), Half-inch open-reel, other/non-standard
+  | Video Group 2 | Video Cassette DV | Digital8, DVCam, MiniDV, HDV, DVCPRO, DVCPRO 50, DVCPRO HD
+  | Video Group 3 | Video Optical Disc | DVD, pressed, DVD±R, DVD±RW, Blu-Ray, Laser Disc, VCD
 
 
   |Group | Type | Formats |
