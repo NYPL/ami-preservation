@@ -1,7 +1,8 @@
 ---
-title: Project Workflow
+title: Vendor Workflow
 layout: default
-nav_order: 3
+parent: Contract Digitization
+nav_order: 2
 ---
 # Project Implementation
 {: .no_toc }
