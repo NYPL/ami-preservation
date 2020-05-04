@@ -147,8 +147,8 @@ All tasks must comply with NYPL specifications, which are maintained in publical
 
   |Group| Type | Formats |
   | --- | --- | ---- |
-  | Film Group 1 | Motion Picture Film, silent | <ul>8mm</li><li>Super 8mm</li><li>Double 8mm</li><li>16mm</li><li>35mm</li></ul>
-  | Film Group 2 | Motion Picture Film, sound | <ul><li>8 mm</li><li>Super 8mm</li><li>16mm</li><li>35mm</li>
+  | Film Group 1 | Motion Picture Film, silent | 8mm, Super 8mm, Double 8mm, 16mm, 35mm
+  | Film Group 2 | Motion Picture Film, sound | 8 mm, Super 8mm, 16m, 35mm
   | Film Group 3 | Audio Film | <ul><li>16mm full-coat magnetic audio</li><li>16mm optical track</li><li>35mm full-coat magnetic audio</li><li>35mm optical track</li></ul></li>
   | Film Group 4 | Filmstrip | <ul><li>16mm filmstrip</li><li>35mm filmstrip</li></ul></li>
 
