@@ -18,7 +18,8 @@ parent: AMI Labs
 ## CDs
 
 ## DVDs
-### Create an ISO
+
+### Creating an ISO
 
 Insert your DVD and unmount:
   * Open terminal, run `diskutil list`
@@ -28,7 +29,7 @@ Insert your DVD and unmount:
 Use ddrescue to create an ISO (`brew install ddrescue` if needed):
   *  `ddrescue -b 2048 -r4 -v /dev/[DISK ID] [output ISO path] [output log path]`
 
-### Generate a single MP4 that represents all of the content on the ISO
+### Generating a single MP4 to represent all of the content on an ISO
   * Open [MakeMKV](https://www.makemkv.com/){:target="\_blank"}, and open your ISO
   *  Select your output directory, and click `Make MKV`
   * Move all resulting MKVs into a single directory

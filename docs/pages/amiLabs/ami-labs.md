@@ -120,11 +120,11 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 
 ## Capture Specifications
 
-The default position of the AMI Labs is to favor lossless encodings and open formats/standards for all media files generated. For audio, this means [FLAC](https://xiph.org/flac/){:target="\_blank"}; for video, [FFV1/MKV](https://datatracker.ietf.org/wg/cellar/documents/){:target="\_blank"}. Detailed specifications can be found in the [Digital Asset Specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html) portion of this repository.
+The default position of the AMI Labs is to favor lossless encodings and open formats/standards for all media files. For audio, this means [FLAC](https://xiph.org/flac/){:target="\_blank"}; for video, [FFV1/MKV](https://datatracker.ietf.org/wg/cellar/documents/){:target="\_blank"}. Detailed specifications can be found in the [Digital Asset Specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html) portion of this repository.
 
 ## Software
 
-Whenever possible, workflows have been designed around the use of free/open source software. From capture to quality control, free and open source tools are, frequently, the best tools for the job, meeting the particular needs of media digitization while offering a high degree of customizability. One sticking point impeding a full embrace of FOSS is the lack of non-linear editing systems capable of accommodating the lossless encodings (FLAC, FFV1) adopted by the AMI Labs.
+Whenever possible, workflows have been designed around the use of free/open source software. From capture to quality control, free and open source tools are, frequently, the best tools for the job, meeting the specific needs of media digitization while offering a high degree of customizability. One sticking point impeding a full embrace of FOSS is the lack of non-linear editing systems capable of accommodating the lossless encodings (FLAC, FFV1) adopted by the AMI Labs.
 
 | **Purpose** | **Software** | **Free/Open Source** |
 |   -----          |     -----      |     -----      |
