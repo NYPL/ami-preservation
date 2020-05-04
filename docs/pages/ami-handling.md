@@ -162,23 +162,23 @@ All tasks must comply with NYPL specifications, which are maintained in publical
 
   |Group | Type | Formats |
   | --- | --- | ---- |
-  | Audio Group 1 (Analog Magnetic) | Audio Reels Analog | <ul><li>Half-inch open-reel audio</li><li>One-inch open-reel audio</li><li>Quarter-inch open-reel audio</li><li>Two-inch open-reel audio</li></ul>
-  | Audio Group 1 (Analog Magnetic) | Audio Cassettes Analog | <ul><li>8-track</li><li>Compact Cassette</li><li>Microcassette</li><li>Minicassette</li><li>Fidelipac Cartridge</li><li>RCA Tape Cartridge</li><li>NAB Cartridge</li><li>Elcaset (L-Cassette)</li>
-  | Audio Group 1 (Analog Magnetic) | Audio Wire | <ul><li>Magnetic Wire (Webster Chicago)</li>
+  | Audio Group 1 (Analog Magnetic) | Audio Reels Analog | Half-inch open-reel audio, One-inch open-reel audio, Quarter-inch open-reel audio, Two-inch open-reel audio
+  | Audio Group 1 (Analog Magnetic) | Audio Cassettes Analog | 8-track, Compact Cassette, Microcassette, Minicassette, Fidelipac Cartridge, RCA Tape Cartridge, NAB Cartridge, Elcaset (L-Cassette)
+  | Audio Group 1 (Analog Magnetic) | Audio Wire | Magnetic Wire (Webster Chicago)
 
 
   |Group | Type | Formats |
   | --- | --- | --- |
-  | Audio Group 2 (Digital Magnetic) | Audio Cassettes Digital | <ul><li>ADAT</li><li>DAT</li><li>DA-88</li><li>Digital Compact Cassette</li><li>U-matic/PCM</li><li>Betamax/PCM</li><li>VHS/PCM</li><li>Hi8/PCM</li><ul>
-  | Audio Group 2 (Digital Magnetic) | Audio Reels Digital | <ul><li>ProDigi</li><li>DASH</li></ul><ul><li>NAGRA-D</li>
-  | Audio Group 3 | Audio Optical Disc | <ul><li>Audio CD-DA</li><li>Audio CD±R</li><li>Audio CD±RW</li><li>Audio CD, pressed</li><li>DVD-Audio</li><li>Minidisc</li><ul>
-  | Audio Group 4 | Audio Grooved Disc | <ul><li>Aluminum-based lacquer coated discs</li><li>Glass-based lacquer coated discs</li><li>Paper-based lacquer coated discs</li><li>Microgroove discs (LP, Vinyl)</li><li>Replicated coarse groove disc (Shellac)</li><li>Gray Audograph discs</li><li>Edison Diamond Disc</li><li>Edison Voicewriter/li><li>Flexible disc/li><li>Gelatin disc/li><li>Metal disc/li><li>Metal master disc/li><ul>
-  | Audio Group 5 | Audio Grooved Cylinder | <ul><li>Brown wax</li><li>Molded and Black Amberol</li><li>Blue Amberol / US Everlasting Indestructible</li><li>Dictabelt</li><ul>
+  | Audio Group 2 (Digital Magnetic) | Audio Cassettes Digital | ADAT, DAT, DA-88, Digital Compact Cassette, U-matic/PCM, Betamax/PCM, VHS/PCM, Hi8/PCM
+  | Audio Group 2 (Digital Magnetic) | Audio Reels Digital | ProDigi, DASH, NAGRA-D
+  | Audio Group 3 | Audio Optical Disc | Audio CD-DA, Audio CD±R, Audio CD±RW, Audio CD, pressed, DVD-Audio, Minidisc
+  | Audio Group 4 | Audio Grooved Disc | Aluminum-based lacquer coated discs, Glass-based lacquer coated discs, Paper-based lacquer coated discs, Microgroove discs (LP, Vinyl), Replicated coarse groove disc (Shellac), Gray Audograph discs, Edison Diamond Disc, Edison Voicewriter/Flexible disc, Gelatin disc, Metal disc, Metal master disc
+  | Audio Group 5 | Audio Grooved Cylinder | Brown wax, Molded and Black Amberol, Blue Amberol / US Everlasting Indestructible, Dictabelt
 
 
   |Group | Type | Formats |
   | ----- | ----- | ------ |
-  | Data Group 1 | Data optical disc | <ul><li>CD±R</li><li>CD±RW</li><li>DVD±RW</li><ul>
+  | Data Group 1 | Data optical disc | CD±R, CD±RW, DVD±RW
 
 
 <a name="digital-asset-deliverables"></a>
