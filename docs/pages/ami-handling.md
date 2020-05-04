@@ -377,11 +377,11 @@ NYPL will provide the vendor with a filename “root” for each collection obje
 
 | **Component** | **Use** | **Note** |
 | ---- | ----- | ---- |
-| Volume: v## | <ul><li>A Volume is one video or audio object in a set of objects, when that set has been assigned a single primary identifier (i.e. NYPL Primary ID)</li> | Audio and video |
-| Face: f## | <ul><li>A Face is a stream or track, or a group of streams or tracks which play synchronously, within an audio object. Every audio object has at least one Face.</li><li>Some optical video formats are double-sided (rare)</li> | Audio and video |
-| Region: r## | <ul><li>A Region is a subdivision of a Face.</li><li>Regions are most often defined by a required change in playback characteristics of an object's Face (speed, EQ, track configuration, color encoding system etc.).</li> | Audio and video |
-| Stream: s## | <ul><li>The Stream element is used to describe multi-track and multi-channel audio objects only.</li><li>Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object.</li> | Audio only |
-| Part: p## | <ul><li>The part element is used when digitization of a single face of an audio or video object requires interruption because the size of the resulting file would exceed technical limits if captured all at once.</li><li>The part element may also be used when a single tape contains sections of content that are each given different unique identifiers (rare; each section would be a distinct Part).</li> | Audio and video |
+| Volume: v## | A Volume is one video or audio object in a set of objects, when that set has been assigned a single primary identifier (i.e. NYPL Primary ID) | Audio and video |
+| Face: f## | A Face is a stream or track, or a group of streams or tracks which play synchronously, within an audio object. Every audio object has at least one Face. Some optical video formats are double-sided (rare) | Audio and video |
+| Region: r## | A Region is a subdivision of a Face. Regions are most often defined by a required change in playback characteristics of an object's Face (speed, EQ, track configuration, color encoding system etc.). | Audio and video |
+| Stream: s## | The Stream element is used to describe multi-track and multi-channel audio objects only.Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object. | Audio only |
+| Part: p## | The part element is used when digitization of a single face of an audio or video object requires interruption because the size of the resulting file would exceed technical limits if captured all at once. The part element may also be used when a single tape contains sections of content that are each given different unique identifiers (rare; each section would be a distinct Part). | Audio and video |
 
 <a name="file-role"></a>
 ### File role
