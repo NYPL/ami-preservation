@@ -13,20 +13,21 @@ nav_order: 3
 {:toc}
 
 ## Creation of Vendor Project Worksheet:
-* Creates a copy of the Vendor Project Worksheet Template:
+* MPC creates a copy of the Vendor Project Worksheet Template:
   * [20##_###_keyword_###_metadataInventory_DATE - TEMPLATE](https://docs.google.com/spreadsheets/d/1IaWGYeKfHa6YcWiHXGkfQ1wMFL8oqu6SmpeKbPMjZV4/edit?usp=sharing)
 * Import the contents of the CMS batch export into the 'metadataInventory' tab of the project worksheet, ensuring that the data is entered into the correct columns.
 
-## Metadata Inventory Data Cleanup:
+## CMS Export (Metadata Inventory) Cleanup:
 CMS exports often contain characters and values which are incompatible with JSON metadata. After copying the CMS export into the template, **these values and characters must be manually removed / updated before the spreadsheet (the "...metadataInventory.xlsx" sheet) is sent to vendors for database import.**
 
 ### Search entire inventory sheet for the described content and make edits as instructed:
-* **Face**: mainly applies to audio; delete contents for other media types (optical video that has faces will just need to be fixed by vendors; this will be rare)
-* **Diameter**: delete any ```0``` values (```0``` is not a valid diameter)
-* **Stock length (minutes)**: delete all column contents (values are inconsistent - some say “10min” “10” “10 minutes” “10:00:00” etc. and would mess up the vendor’s import)
+* Remove the default ```source.subobject.faceNumber``` from all non-audio items
+* Remove the contents of ```source.physicalDescription.stockLength.measure``` from all rows
 * **Metadata version**: add current version (per May 2017 = 2.0.0)
-* **Media Type**: Use the Filter function to identify and narrow down format types, and update values to match required JSON schema values for 'source.object.type':(Example: ```video cassette``` becomes ```video cassette analog``` or ```video cassette digital``` depending on what format the video is). Use Filter to double-check once your are done that all values in that column adhere to the schema.
-### Find & Replace...:
+* Update ```source.object.format``` to reflect correct JSON terminology, for example: ```video cassette``` will need to be changed to ```video cassette analog``` or ```video cassette digital```, etc.
+* Add current version of ```asset.schemaVersion``` to all rows (per May 2020 = 2.0.0)
+
+### Find & Replace:
 * Select "search using regular expressions"
   * Select "this sheet" (for the sheet you're working on),
   * Review the specific ranges mentioned below and find/replace as described:
