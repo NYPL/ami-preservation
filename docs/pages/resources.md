@@ -192,7 +192,7 @@ nav_order: 9
    | Video | PM | `cd /Volume/DRIVEID/` `find ./ -name "*.mkv" -exec mediaconch -p path/to/video_PM_policy.xml "{}" \; > /path/to/ICC/DRIVEID_Medicaconch_PMs.csv` |
    | Video | SC | `cd /Volume/DRIVEID/` `find ./ -name "*.mp4" -exec mediaconch -p path/to/video_SC_policy.xml "{}" \; > path/to/ICC/DRIVEID_Medicaconch_SCs.csv` |
    | Audio | PM | `cd /Volume/DRIVEID/` `find ./ -name "*_pm.wav" -exec mediaconch -p path/to/audio_PM_policy.xml "{}" \; > path/to/ICC/DRIVEID_Medicaconch_PMs.csv` |
-   | Audio | EM |  `cd /Volume/DRIVEID/` `find ./ -name "*_em.wav" -exec mediaconch -p path/to/audio_EM_policy.xml "{}" \; > path/to/ICC/DRIVEID_Medicaconch_EMs.csv` </ul> </li> |
+   | Audio | EM |  `cd /Volume/DRIVEID/` `find ./ -name "*_em.wav" -exec mediaconch -p path/to/audio_EM_policy.xml "{}" \; > path/to/ICC/DRIVEID_Medicaconch_EMs.csv` |
 
 - **Option B:** Use MediaConch GUI to check a selection of Preservation Master files, or a single file, against the NYPL PAMI Preservation Master policy.Under “Check Files”:
     - Select the NYPL Policy from the drop down list for the appropriate media type you are inspecting (analog / digital, audio / video)
