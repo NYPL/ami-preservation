@@ -62,7 +62,7 @@ path/to/validate_bags.sh
 * Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
 * AUDIO ONLY: Check a selection of FLAC for embedded metadata
-  * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav. 
+  * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
 ```
 flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 ```
@@ -74,7 +74,7 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 
 * After manual QC, **if all bags are valid**...Then:
 
-  * Move JSON to ICC (must be connected to ICC): 
+  * Move JSON to ICC (must be connected to ICC):
   ```
 find /Volumes/DRIVE-ID/ -name '*.json' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/VendorJSON ';'
 ```
@@ -98,13 +98,13 @@ python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRI
 * Wrap Up...
   * Move the Trello Card to the proper list (passed / failed etc.)
   * IF APPROVED:
-    * email vendor to confirm QC approval of designated shipment & invoice number; CC Rebecca to approve invoice 
+    * email vendor to confirm QC approval of designated shipment & invoice number; CC Rebecca to approve invoice
     * Database: update database for approved shipments
 
   * IF NOT APPROVED
     * Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames.
 &
-    * Move Trello card to "Flags & Failures To Review" list in Trello. 
+    * Move Trello card to "Flags & Failures To Review" list in Trello.
     * MPC: Follow up with vendor about errors and resolve before approving shipments with errors and moving Trello card to the 'Passed QC' list.
 
 
@@ -130,8 +130,10 @@ For Vendor deliverables, QC is performed directly on hard-drives (with the excep
 
 
 ### JSON Validation
-
-Run the following [command(s)](https://github.com/NYPL/ami-preservation/wiki/Resources#json-validation) in Terminal to check if JSON is valid against the appropriate schema.
+Run the following in Terminal to check if JSON is valid against the appropriate schema:
+```
+ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
+```
 
 ### Media specification validation (MediaConch)
 Use either [MediaConch CLI](https://github.com/NYPL/ami-preservation/wiki/Resources#mediaconch) or [MediaConch GUI](https://github.com/NYPL/ami-preservation/wiki/Resources#mediaconch) to make sure files meet NYPL specifications.
