@@ -147,38 +147,38 @@ All tasks must comply with NYPL specifications, which are maintained in publical
 
   |Group| Type | Formats |
   | --- | --- | ---- |
-  | Film Group 1 | Motion Picture Film, silent | <ul><li>8mm</li><li>Super 8mm</li><li>Double 8mm</li><li>16mm</li><li>35mm</li></ul>
-  | Film Group 2 | Motion Picture Film, sound | <ul><li>8 mm</li><li>Super 8mm</li><li>16mm</li><li>35mm</li>
-  | Film Group 3 | Audio Film | <ul><li>16mm full-coat magnetic audio</li><li>16mm optical track</li><li>35mm full-coat magnetic audio</li><li>35mm optical track</li></ul></li>
-  | Film Group 4 | Filmstrip | <ul><li>16mm filmstrip</li><li>35mm filmstrip</li></ul></li>
+  | Film Group 1 | Motion Picture Film, silent | 8mm, Super 8mm, Double 8mm, 16mm, 35mm
+  | Film Group 2 | Motion Picture Film, sound | 8 mm, Super 8mm, 16m, 35mm
+  | Film Group 3 | Audio Film | 16mm full-coat magnetic audio, 16mm optical track, 35mm full-coat magnetic audio, 35mm optical track
+  | Film Group 4 | Filmstrip | 16mm filmstrip, 35mm filmstrip
 
 
   |Group| Type | Formats |
   | --- | --- | ---- |
-  | Video Group 1 | Video Cassette Analog | <ul><li>Betacam Oxide</li><li>Betacam SP</li><li>Betamax</li><li>Hi8</li><li>MII</li><li>S-VHS</li><li>S-VHS-C</li><li>U-matic</li><li>U-matic SP</li><li>VHS</li><li>VHS-C</li><li>Video8</li></ul> | Video Cassette Digital | <ul><li>D-1</li><li>D-2</li><li>D-3</li><li>D-5</li><li>D-9</li><li>Digital Betacam</li><li>HDCAM</li><li>HDCAM SR</li><li>HDCAM SX</li><li>MPEG IMX</li></ul></li> | Video Reel Analog | <ul><li>Two-inch quad open-reel (LoBand, HiBand and SuperHiBand)</li><li>One-inch open-reel, Type A</li><li>One-inch open-reel, Type C</li><li>One-inch open-reel, EV</li><li>One-inch open reel video, IVC</li><li>One-inch open-reel, other/non-standard</li><li>Half-inch open-reel, Sony CV</li><li>Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2)</li><li>Half-inch open-reel, other/non-standard</li></ul></li>
-  | Video Group 2 | Video Cassette DV | <ul><li>Digital8</li><li>DVCam</li><li>MiniDV</li><li>HDV</li><li>DVCPRO</li><li>DVCPRO 50</li><li>DVCPRO HD</li></ul></li>
-  | Video Group 3 | Video Optical Disc | <ul><li>DVD, pressed</li><li>DVD±R</li><li>DVD±RW</li><li>Blu-Ray</li><li>Laser Disc</li><li>VCD</li></ul></li>
+  | Video Group 1 | Video Cassette Analog | Betacam Oxide, Betacam SP, Betamax, Hi8, MII, S-VHS, S-VHS-C, U-matic, U-matic SP, VHS, VHS-C, Video8 | Video Cassette Digital | D-1, D-2, D-3, D-5, D-9, Digital Betacam, HDCAM, HDCAM SR, HDCAM SX, MPEG IMX | Video Reel Analog | Two-inch quad open-reel (LoBand, HiBand and SuperHiBand), One-inch open-reel, Type A, One-inch open-reel, Type C, One-inch open-reel, EV, One-inch open reel video, IVC, One-inch open-reel, other/non-standard, Half-inch open-reel, Sony CV, Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2), Half-inch open-reel, other/non-standard
+  | Video Group 2 | Video Cassette DV | Digital8, DVCam, MiniDV, HDV, DVCPRO, DVCPRO 50, DVCPRO HD
+  | Video Group 3 | Video Optical Disc | DVD, pressed, DVD±R, DVD±RW, Blu-Ray, Laser Disc, VCD
 
 
   |Group | Type | Formats |
   | --- | --- | ---- |
-  | Audio Group 1 (Analog Magnetic) | Audio Reels Analog | <ul><li>Half-inch open-reel audio</li><li>One-inch open-reel audio</li><li>Quarter-inch open-reel audio</li><li>Two-inch open-reel audio</li></ul>
-  | Audio Group 1 (Analog Magnetic) | Audio Cassettes Analog | <ul><li>8-track</li><li>Compact Cassette</li><li>Microcassette</li><li>Minicassette</li><li>Fidelipac Cartridge</li><li>RCA Tape Cartridge</li><li>NAB Cartridge</li><li>Elcaset (L-Cassette)</li>
-  | Audio Group 1 (Analog Magnetic) | Audio Wire | <ul><li>Magnetic Wire (Webster Chicago)</li>
+  | Audio Group 1 (Analog Magnetic) | Audio Reels Analog | Half-inch open-reel audio, One-inch open-reel audio, Quarter-inch open-reel audio, Two-inch open-reel audio
+  | Audio Group 1 (Analog Magnetic) | Audio Cassettes Analog | 8-track, Compact Cassette, Microcassette, Minicassette, Fidelipac Cartridge, RCA Tape Cartridge, NAB Cartridge, Elcaset (L-Cassette)
+  | Audio Group 1 (Analog Magnetic) | Audio Wire | Magnetic Wire (Webster Chicago)
 
 
   |Group | Type | Formats |
   | --- | --- | --- |
-  | Audio Group 2 (Digital Magnetic) | Audio Cassettes Digital | <ul><li>ADAT</li><li>DAT</li><li>DA-88</li><li>Digital Compact Cassette</li><li>U-matic/PCM</li><li>Betamax/PCM</li><li>VHS/PCM</li><li>Hi8/PCM</li><ul>
-  | Audio Group 2 (Digital Magnetic) | Audio Reels Digital | <ul><li>ProDigi</li><li>DASH</li></ul><ul><li>NAGRA-D</li>
-  | Audio Group 3 | Audio Optical Disc | <ul><li>Audio CD-DA</li><li>Audio CD±R</li><li>Audio CD±RW</li><li>Audio CD, pressed</li><li>DVD-Audio</li><li>Minidisc</li><ul>
-  | Audio Group 4 | Audio Grooved Disc | <ul><li>Aluminum-based lacquer coated discs</li><li>Glass-based lacquer coated discs</li><li>Paper-based lacquer coated discs</li><li>Microgroove discs (LP, Vinyl)</li><li>Replicated coarse groove disc (Shellac)</li><li>Gray Audograph discs</li><li>Edison Diamond Disc</li><li>Edison Voicewriter/li><li>Flexible disc/li><li>Gelatin disc/li><li>Metal disc/li><li>Metal master disc/li><ul>
-  | Audio Group 5 | Audio Grooved Cylinder | <ul><li>Brown wax</li><li>Molded and Black Amberol</li><li>Blue Amberol / US Everlasting Indestructible</li><li>Dictabelt</li><ul>
+  | Audio Group 2 (Digital Magnetic) | Audio Cassettes Digital | ADAT, DAT, DA-88, Digital Compact Cassette, U-matic/PCM, Betamax/PCM, VHS/PCM, Hi8/PCM
+  | Audio Group 2 (Digital Magnetic) | Audio Reels Digital | ProDigi, DASH, NAGRA-D
+  | Audio Group 3 | Audio Optical Disc | Audio CD-DA, Audio CD±R, Audio CD±RW, Audio CD, pressed, DVD-Audio, Minidisc
+  | Audio Group 4 | Audio Grooved Disc | Aluminum-based lacquer coated discs, Glass-based lacquer coated discs, Paper-based lacquer coated discs, Microgroove discs (LP, Vinyl), Replicated coarse groove disc (Shellac), Gray Audograph discs, Edison Diamond Disc, Edison Voicewriter/Flexible disc, Gelatin disc, Metal disc, Metal master disc
+  | Audio Group 5 | Audio Grooved Cylinder | Brown wax, Molded and Black Amberol, Blue Amberol / US Everlasting Indestructible, Dictabelt
 
 
   |Group | Type | Formats |
   | ----- | ----- | ------ |
-  | Data Group 1 | Data optical disc | <ul><li>CD±R</li><li>CD±RW</li><li>DVD±RW</li><ul>
+  | Data Group 1 | Data optical disc | CD±R, CD±RW, DVD±RW
 
 
 <a name="digital-asset-deliverables"></a>
@@ -377,11 +377,11 @@ NYPL will provide the vendor with a filename “root” for each collection obje
 
 | **Component** | **Use** | **Note** |
 | ---- | ----- | ---- |
-| Volume: v## | <ul><li>A Volume is one video or audio object in a set of objects, when that set has been assigned a single primary identifier (i.e. NYPL Primary ID)</li> | Audio and video |
-| Face: f## | <ul><li>A Face is a stream or track, or a group of streams or tracks which play synchronously, within an audio object. Every audio object has at least one Face.</li><li>Some optical video formats are double-sided (rare)</li> | Audio and video |
-| Region: r## | <ul><li>A Region is a subdivision of a Face.</li><li>Regions are most often defined by a required change in playback characteristics of an object's Face (speed, EQ, track configuration, color encoding system etc.).</li> | Audio and video |
-| Stream: s## | <ul><li>The Stream element is used to describe multi-track and multi-channel audio objects only.</li><li>Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object.</li> | Audio only |
-| Part: p## | <ul><li>The part element is used when digitization of a single face of an audio or video object requires interruption because the size of the resulting file would exceed technical limits if captured all at once.</li><li>The part element may also be used when a single tape contains sections of content that are each given different unique identifiers (rare; each section would be a distinct Part).</li> | Audio and video |
+| Volume: v## | A Volume is one video or audio object in a set of objects, when that set has been assigned a single primary identifier (i.e. NYPL Primary ID) | Audio and video |
+| Face: f## | A Face is a stream or track, or a group of streams or tracks which play synchronously, within an audio object. Every audio object has at least one Face. Some optical video formats are double-sided (rare) | Audio and video |
+| Region: r## | A Region is a subdivision of a Face. Regions are most often defined by a required change in playback characteristics of an object's Face (speed, EQ, track configuration, color encoding system etc.). | Audio and video |
+| Stream: s## | The Stream element is used to describe multi-track and multi-channel audio objects only.Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object. | Audio only |
+| Part: p## | The part element is used when digitization of a single face of an audio or video object requires interruption because the size of the resulting file would exceed technical limits if captured all at once. The part element may also be used when a single tape contains sections of content that are each given different unique identifiers (rare; each section would be a distinct Part). | Audio and video |
 
 <a name="file-role"></a>
 ### File role
