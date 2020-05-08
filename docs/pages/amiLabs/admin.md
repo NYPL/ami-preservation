@@ -23,7 +23,7 @@ AMI Labs digitization projects originate from a few different sources and, depen
 
 ### Inventorying Items in CMS
 The Collection Management System (CMS) of the Preservation and Collections Processing Department is a complex, multi-part database that serves many functions within NYPL's Research Libraries. AMI-related tasks (inventorying, batching, etc.) are, in this sense, one piece of a much larger puzzle, and the following instructions should be understood as simplified by design. Note: CMS is a Filemaker Pro database maintained by Library IT, and the necessary software and either on-site or VPN access are required to work within.
-* Before inventorying any items in CMS, first identify the appropriate CMS collection for said items. This can be a challenging determination; if in doubt, contact Melanie Yolles (Assistant Director, Special Collections Processing, <melanieyolles@nypl.org>) for guidance. The most commonly used CMS Collections for AMI on-demand requests include: (1) Cataloged Dance Original Media, (2) Theatre on Film and Tape Archive (TOFT) AMI, (3) LT Open Reel RHA Collection, and (4) LTC RHA audio cassettes.
+* Before inventorying any items in CMS, an important first step is to identify the appropriate CMS collection. This can be a challenging determination; if in doubt, contact Melanie Yolles (Assistant Director, Special Collections Processing, <melanieyolles@nypl.org>) for guidance. The most commonly used CMS Collections for AMI on-demand requests include: (1) Cataloged Dance Original Media, (2) Theatre on Film and Tape Archive (TOFT) AMI, (3) LT Open Reel RHA Collection, and (4) LTC RHA audio cassettes.
 * In the main menu of CMS, under the Collection Info header, click ```search/edit``` to search for the CMS collection (either by name or CMS Collection ID).
 *  After locating a collection, select ```items``` and look in the upper right corner for ```items.all```. Click ```items.all``` and change to ```media originals```; this will pull up a table view of all previously inventoried AMI items within a collection.
 * To add a new item to CMS, scroll to the bottom of this table view and click the ```+``` sign in the bottom left corner; this will auto-populate starter information that includes the next unique CMS ID assigned to your particular username.
@@ -43,7 +43,7 @@ The Collection Management System (CMS) of the Preservation and Collections Proce
 
 ### Creating AMI Database Work Orders
 As AMI Labs digitization projects can vary in size, the concept of the "work order" is used to maintain consistency, allow for controlled tracking through the digitization/ingest pipeline, and provide a structured method for reporting/statistical analysis. Within the Labs, work orders are created in the AMI Database, and used in the following ways:
-  * For larger, routine digitization projects sent via PCP, work orders will be created at the box level (though still applied at the item level), with "keywords" that correspond to PCP labeling practices (typically a three-letter code that refers to the Research Division, followed by an arbitrary three-digit code).
+  * For larger, routine digitization projects sent via PCP, work orders will be created at the box level (though still applied at the item level), with "keywords" that correspond to PCP labeling practices (typically a three-letter code referring to the Research Division, followed by an arbitrary three-digit code).
   * For on-demand projects (exhibitions/programs, public orders, VIP), a work order will be created and applied to single items or small groups of items, with a "keyword" that is descriptive in nature.
 
 Work Orders should conform to the following structure:
@@ -75,17 +75,17 @@ After creating a work order ID, update the following project tracking fields als
 * Status (in process, on hold, quality control, ready for file transfer)
 
 ### CMS Export (Metadata Inventory) Cleanup
-Before importing CMS spreadsheets into the AMI Database, a number of adjustments will need to be made to ensure compatibility/compliance with the [ami-metadata](https://github.com/NYPL/ami-metadata){:target="\_blank"} JSON schema. This cleanup process includes:
-* Copy the header row from a JSON-compliant template file and replace the CMS default, confirming accuracy of column information and making adjustments as needed
-* Change ```asset.fileRole``` (previously ```Filename (Reference)```) to ```pm``` for all rows
-* Update ```source.object.format``` to reflect correct JSON terminology, for example: ```video cassette``` will need to be changed to ```video cassette analog``` or ```video cassette digital```, etc.
-* Remove the default ```source.subobject.faceNumber``` from all non-audio items
-* Remove the contents of ```source.physicalDescription.stockLength.measure``` from all rows
-* Add current version of ```asset.schemaVersion``` to all rows (per May 2020 = 2.0.0)
-* Add newly created Work Order IDs to ```workOrderID``` column; for larger batches, ensure box-level work order keywords match the CMS default ```projectManagement.archivalBoxNumber``` for each item
+Before importing CMS spreadsheets into the AMI Database, a number of adjustments will need to be made to ensure compatibility/compliance with the [ami-metadata](https://github.com/NYPL/ami-metadata){:target="\_blank"} JSON schema. This process includes:
+* Copying the header row from a JSON-compliant template file and replacing the CMS export default, confirming accuracy of column information and making adjustments as needed
+* Changing ```asset.fileRole``` (previously ```Filename (Reference)```) to ```pm``` for all rows
+* Updating ```source.object.format``` to reflect correct JSON terminology, for example: ```video cassette``` will need to be changed to ```video cassette analog``` or ```video cassette digital```, etc.
+* Removing the default ```source.subobject.faceNumber``` from all non-audio items
+* Removing the contents of ```source.physicalDescription.stockLength.measure``` from all rows
+* Adding the current version of ```asset.schemaVersion``` to all rows (per May 2020 = 2.0.0)
+* Adding newly created Work Order IDs to the ```workOrderID``` column; for larger batches, ensure box-level work order keywords match the CMS default ```projectManagement.archivalBoxNumber``` for each item
 
 ### Importing CMS Export into AMI Database
-Refined CMS export spreadsheets will need to be imported into two different tables of the AMI Database: ```Objects``` and ```MASTER:: production data entry```. The following steps will need to be followed for both imports:
+Refined CMS export spreadsheets will need to be imported into two different tables of the AMI Database: ```Objects``` and ```MASTER:: production data entry```. The following steps need to be followed for both import processes:
 * Select the appropriate table from the ```Layout``` drop-down menu
 * Go to ```File // Import Records // Import File...``` and select the spreadsheet export
 * In the ```Import Field Mapping``` menu, ensure that source fields match target fields, in part by changing ```Arrange by``` to ```matching names```. Confirm the status of all field mapping arrows, in particular for Work Order IDs.
@@ -95,6 +95,37 @@ Refined CMS export spreadsheets will need to be imported into two different tabl
 * Repeat the process for the second table, and confirm the total number of records added is consistent across tables
 
 ## Project Tracking
+
+### Step-by-Step Walkthrough of a Project
+
+| **Activity** | **Staff Responsible** |
+|   -----          |     -----      |
+|   Delivery of media to the AMI Labs      |  PCP/Curators; Asst. Manager AMI Labs |
+|   Box-level check-in (if arriving via PCP)     |  Asst. Manager AMI Labs |
+|   Inventory of items in CMS (if on-demand)    |  Asst. Manager AMI Labs |
+|   Creation of AMI Batch in CMS      |  PCP or Asst. Manager AMI Labs |
+|   Creation of AMI Works Orders      |  Asst. Manager AMI Labs |
+|   CMS Export Clean-up/Import into AMI Database      |  Asst. Manager AMI Labs |
+|   Creation of Trello Cards and QC Spreadsheets      |  Asst. Manager AMI Labs |
+|   Item-level check-in      |  AMI Labs Staff |
+|   Pre-transfer conservation treatments      |  AMI Labs Staff |
+|   Digitization/Creation of Preservation Master files      |  AMI Labs Staff |
+|   Generation of Derivative files (Edit Masters, Service Copies)      |  AMI Labs Staff |
+|   Finalization of all database records      |  AMI Labs Staff |
+|   JSON creation and validation      |  AMI Labs Staff |
+|   Packaging of files, confirmation of adherence to directory structure, removal of hidden files, bagging      |  AMI Labs Staff |
+|   Trello Card status updates      |  AMI Labs Staff |
+|   Quality Control      |  AMI Labs Staff (round robin style) |
+|   File Transfer to Ingest Staging     |  AMI Labs Staff, Asst. Manager AMI Labs |
+|   Repacking of items and placement of box on Outgoing Rack in Stacks      |  AMI Labs Staff |
+|   AMI Database Work Order Update      |  Asst. Manager AMI Labs |
+
+
+
+
+
+
+
 
 ### Trello Cards
 
