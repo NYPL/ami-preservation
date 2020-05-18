@@ -124,7 +124,7 @@ The default position of the AMI Labs is to favor lossless encodings and open for
 
 ## Software
 
-Whenever possible, workflows have been designed around the use of free/open source software. From capture to quality control, free and open source tools are, frequently, the best tools for the job, meeting the specific needs of media digitization while offering a high degree of customizability. One sticking point impeding a full embrace of FOSS is the lack of non-linear editing systems capable of accommodating the lossless encodings (FLAC, FFV1) adopted by the AMI Labs.
+Whenever possible, workflows have been designed around the use of free/open source software. From capture to quality control, free and open source tools are frequently the best tools for the job, meeting the specific needs of media digitization while offering a high degree of customizability. One sticking point impeding a full embrace of FOSS is the lack of non-linear editing systems capable of accommodating the lossless encodings (FLAC, FFV1) adopted by the AMI Labs.
 
 | **Purpose** | **Software** | **Free/Open Source** |
 |   -----          |     -----      |     -----      |
@@ -132,4 +132,5 @@ Whenever possible, workflows have been designed around the use of free/open sour
 |   Video Digitization      |  [vrecord](https://github.com/amiaopensource/vrecord) | ✅|
 |   Transcoding      |  [FFmpeg](https://www.ffmpeg.org/), [FLAC Utility](https://xiph.org/flac/download.html) | ✅|
 |   Metadata Conformance      |  [MediaConch](https://mediaarea.net/MediaConch) | ✅|
+|   Metadata Extraction      |  [MediaInfo](https://mediaarea.net/MediaInfo), [pymediainfo](https://pypi.org/project/pymediainfo/) | ✅|
 |   Quality Control     |  [QCTools](https://www.bavc.org/preserve-media/preservation-tools/qctools) | ✅|
