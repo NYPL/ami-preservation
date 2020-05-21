@@ -1,7 +1,8 @@
 ---
-title: Quality Control
+title: Quality Control Workflow
 layout: default
-nav_order: 6
+nav_order: 1
+parent: Quality Control
 ---
 
 # Quality Control
