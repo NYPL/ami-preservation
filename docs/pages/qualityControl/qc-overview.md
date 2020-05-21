@@ -5,20 +5,13 @@ nav_order: 6
 has_children: true
 ---
 
-# Quality Control
+# Quality Control Overview
 {: .no_toc }
-
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
 
 ## Quality Control Overview
 Our quality control (QC) workflow leverages both automated and manual processes to ensure that digital assets meet our specifications. We perform automated QC on 100% of our deliverables, and manual QC on approximately 10-15%.
 
 Our workflow incorporates the following open source tools:
-
 
 * Ajv: an open source JSON schema validator
 * BagIt: an open source tool for verifying file fixity and adherence to the BagIt specification
