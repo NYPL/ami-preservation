@@ -7,7 +7,6 @@ nav_order: 11
 # Metadata
 {: .no_toc }
 
-## Metadata Overview
 A metadata spreadsheet ("CMS export") is created for each digitization batch, which is then delivered to either PAMI, for in-house digitization, or to a vendor for outsourced digitization. This spreadsheet includes only the fields provided by CMS prior to digitization, and is imported by the digitizer. Following digitization, this existing metadata is combined with new technical and digitization process information and each record is exported as individual JSON files that accompany each digital audio or video file produced. 
 
 ## [JSON / ami-metadata](https://github.com/NYPL/ami-metadata)
