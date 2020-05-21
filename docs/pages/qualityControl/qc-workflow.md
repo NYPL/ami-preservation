@@ -5,8 +5,9 @@ nav_order: 1
 parent: Quality Control
 ---
 
-# Quality Control
+# Quality Control Workflow
 {: .no_toc }
+Internal workflow for carrying out QC on digital assets.
 
 ## Table of contents
 {: .no_toc .text-delta }
