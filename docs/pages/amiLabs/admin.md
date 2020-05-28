@@ -120,35 +120,59 @@ Refined CMS export spreadsheets will need to be imported into two different tabl
 |   Repacking of physical items and placement of box on Outgoing Shipment Racks      |  AMI Labs Staff |
 |   CMS/AMI Database Work Order Update      |  Asst. Manager AMI Labs |
 
-### Trello Cards and Workflow
+### Trello Cards and Production/QC Workflow
 
-AMI Labs projects are assigned to media preservation engineers and tracked through digitization/ingest pipeline with the [AMI Labs](https://trello.com/b/cbbd5QgE/nypl-ami-labs) Trello Board.
+AMI Labs projects are assigned to media preservation engineers and tracked through digitization/ingest pipeline with the [AMI Labs](https://trello.com/b/cbbd5QgE/nypl-ami-labs){:target="\_blank"} Trello Board.
 
-* At the start of each project, all Work Order IDs will be given a Trello card (copied from standardized Audio/Video templates) and assigned to either the Audio or Video Batch Queue Lists.
-* At this point, QC spreadsheets will also be created and attached to each Trello card (under ```Add to Card```, click ```Attachment```, navigate to ```Attach a Link```, and add the appropriate Google Sheets URL).
-* As media preservation engineers are assigned/self-assign Work Orders, they will (1) be added as "Members" to the card, and (2) the card itself will be dragged from the Audio and Video Batch Queue Lists to the respective engineer list. From this point on, engineers are responsible for updating the Trello card on a rolling basis, and checking off the following tasks from the Production Checklist as they are completed:
-  * Pre-transfer treatments (log in database)
+* At the start of each project, all Work Order IDs will be given a Trello card (copied from standardized Audio/Video templates) and assigned to either the **Audio or Video Batch Queue** Lists.
+* During this initiation phase, QC spreadsheets will also be created and attached to each Trello card (under ```Add to Card```, click ```Attachment```, navigate to ```Attach a Link```, and add the appropriate Google Sheets URL).
+* As media preservation engineers are assigned/self-assign Work Orders, they will (1) be added as "Members" to the card, and (2) the card itself will be dragged from the **Audio and Video Batch Queue** Lists to the respective engineer list. From this point on, engineers will be responsible for updating the Trello card on a rolling basis and checking off the following tasks from the Production Checklist as they are completed:
+
+  * Pre-transfer treatments
   * Transfer/Preservation Master production
   * Edit Master/Service Copy production
   * Spot check files
   * Finalize all database entries
   * Create JSON and validate
   * Confirm files adhere to directory structure
-* After production activities have been completed, the digitization engineer will then move the card to the QC Queue list. Quality control responsibilities for the Work Order will be assigned to a fellow engineer (who will also be added a a "Member" to the card), and the card will be moved to the QC: In Progress list. The QC engineer will have primary responsibility for updating the Trello card as the following quality control checklist tasks are completed:
+
+* After production activities have been completed, the engineer will then move the card to the **QC Queue** list. Quality control responsibilities for the Work Order will be assigned to a fellow engineer (who will also be added a "Member" to the card), and the card will be moved to the **QC: In Progress** list. The QC engineer will have primary responsibility for updating the Trello card as the following quality control checklist tasks are completed:
+
   * Review JSON for inconsistencies/errors
   * Manual QC (log all errors/observations in Google Sheet)
-  * Communicate errors to digitization engineer).
-* If the QC engineer flags any items for rework/review, the card will be moved from the QC: In Progress list to the QC: Flags for Review list. If no items are flagged, the card will be moved to the Passed QC List.
-* Project wrap up activities will return to the original digitization engineer, who will be responsible for completing and checking off the following tasks:
-  * Bag project
-  * Move files to pre-ingest staging (if audio, transfer to Isilon/ICC "4_RTG_Audio"; if video, hand-off HDD containing media files to Assistant Manager)
-  * Pack up physical media and move to Outgoing Shipment racks.
+  * Communicate errors to digitization engineer)
 
-### Assigning Projects
+* If the QC engineer flags any items for rework/review, the card will be moved from the **QC: In Progress** list to the **QC: Flags for Review** list. If no items are flagged, the card will be moved to the **Passed QC** List.
 
 ### QC Spreadsheets
 
+For tracking and accountability purposes, QC Spreadsheets will be created for each Work Order ID during the project initiation phase of the AMI Labs digitization workflow. These spreadsheets are stored (alongside a QC Log Template) on the [AMI Preservation Team Drive](https://drive.google.com/drive/u/1/folders/1fF2i_9S1y_AQ3m6nWr4jSMYW4tKas1lV){:target="\_blank"} and gathered by fiscal year. QC Spreadsheet set-up includes the following:
+* Make a copy of the QC Log Template
+* Rename the file to WorkOrderID_qclog
+* Copy all CMS IDs included within the Work Order into the ```list``` sheet of the QC Spreadsheet, making sure to paste audio and video CMS IDs into the appropriate ```Replace with AUDIO csv only``` and ```Replace with VIDEO csv only``` columns (these columns include formulas that will generate a random sampling of CMS IDs according to the AMI Labs convention of qc-ing a smaller percentage of audio files vs. video files)
+* Copy the random sampling of CMS IDs and paste into the ```bibliographic.primaryID``` column of the ```QCLog``` sheet
+* Fill out the ```workOrder``` and ```source.object.type``` columns
+* Attach the Google Sheets URL to the Trello card
+
 ### Project Close-Out and "Did Not Captures"
 
+As projects enter the close-out phase of the AMI Labs digitization workflow, wrap up activities will be divided between the media preservation/digitization engineer and the assistant manager of the AMI Labs. The engineer will be responsible for completing and checking off the following tasks in Trello:
+* Remove hidden files and bag project
+* Move files to pre-ingest staging (if audio, transfer to Isilon/ICC "4_RTG_Audio"; if video, hand-off HDD containing media files to Assistant Manager)
+* Complete all Trello checklists and move card to either **RTG on HDD (json)** or **RTG on ICC (json)*** lists
+* Pack up physical media and move box to Outgoing Shipment racks
 
-  * sub-bullets with ```command line text```
+After "receiving" the packaged media files, whether on HDD or Isilon, the Assistant Manager will perform a set of project management tasks to close out the Work Order:
+
+* Update the Work Order table of the AMI Database, specifically the ```fileLocation```, ```status```, and ```dateCompleted``` fields
+* If boxes of media are ready for return to LSC, update the Shipping Register and email AU/SFP Staff
+* If items within Work Order were deemed "DNC" (Did Not Capture), create a Filemaker DNC spreadsheet to email AU/SFP staff as part of the return shipping process
+  * The DNC spreadsheet should include the following fields:
+      * bibliographic.barcode
+      * bibliographic.title	
+      * bibliographic.divisionCode
+      * source.object.type
+      * source.object.format
+      * captureIssueCategory
+      * captureIssueNote
+      * digitizer.operator.lastName																	
