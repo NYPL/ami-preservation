@@ -14,22 +14,25 @@ nav_order: 2
 {:toc}
 
 ## Staff
-
-#### Rebecca Holte, Manager of Audio and Moving Image Preservation
+#### Rhony Dostaly, Media Preservation Engineer - Moving Image
 {: .no_toc }
-Manages overall AMI preservation program, recommends and develops preservation priorities, technology solutions, and workflows. Develops and manages donor and grant funds, vendor contracts, and mass digitization projects. Provides support for acquisitions and emergency response.
-
-#### Benjamin Turkus, Assistant Manager of Audio and Moving Image Preservation
-{: .no_toc }
-Provides oversight for all in-house media preservation lab operations, and manages Media Preservation Engineers. Develops workflows, documents processes, and pursues open source solutions.
+Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections.
 
 #### Fran Dougherty, Media Preservation Engineer - Moving Image
 {: .no_toc }
 Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections. Processes include: media stabilization/cleaning/repair, signal extraction, and creation of high quality digital files.
 
-#### Rhony Dostaly, Media Preservation Engineer - Moving Image
+#### Ryan Marino, Media Preservation Assistant
 {: .no_toc }
-Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections.
+Assists with the coordination, evaluation, and implementation of specifications and workflows for digital asset quality control and film assessment.
+
+#### Genevieve Havemeyer-King, Media Preservation Coordinator
+{: .no_toc }
+Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment; trains and supervises Media Preservation Assistants.
+
+#### Rebecca Holte, Manager of Audio and Moving Image Preservation
+{: .no_toc }
+Manages overall AMI preservation program, recommends and develops preservation priorities, technology solutions, and workflows. Develops and manages donor and grant funds, vendor contracts, and mass digitization projects. Provides support for acquisitions and emergency response.
 
 #### Jeff Willens, Media Preservation Engineer - Audio
 {: .no_toc }
@@ -43,14 +46,9 @@ Carries out the preservation assessment, treatment, and reformatting of audio re
 {: .no_toc }
 Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
 
-#### Genevieve Havemeyer-King, Media Preservation Coordinator
+#### Benjamin Turkus, Assistant Manager of Audio and Moving Image Preservation
 {: .no_toc }
-Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment; trains and supervises Media Preservation Assistants.
-
-#### Ryan Marino, Media Preservation Assistant
-{: .no_toc }
-Assists with the coordination, evaluation, and implementation of specifications and workflows for digital asset quality control and film assessment.
-
+Provides oversight for all in-house media preservation lab operations, and manages Media Preservation Engineers. Develops workflows, documents processes, and pursues open source solutions.
 
 ## Project Structure
 ### Projects
