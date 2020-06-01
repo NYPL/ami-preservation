@@ -8,7 +8,6 @@ has_children: true
 # Quality Control Overview
 {: .no_toc }
 
-## Quality Control Overview
 Our quality control (QC) workflow leverages both automated and manual processes to ensure that digital assets meet our specifications. We perform automated QC on 100% of our deliverables, and manual QC on approximately 10-15%.
 
 Our workflow incorporates the following open source tools:
@@ -21,5 +20,3 @@ Our workflow incorporates the following open source tools:
 * Mpv: an open source cross-platform media player
 * QCTools: a software tool that helps users analyze and understand their digitized video files through use of audiovisual analytics and filtering
 * RAWCooked: an open source tool for lossless compression / encoding / decoding of DPX image sequences
-
-
