@@ -169,7 +169,7 @@ After "receiving" the packaged media files, whether on HDD or Isilon, the Assist
 * If items within Work Order were deemed "DNC" (Did Not Capture), create a Filemaker DNC spreadsheet to email AU/SFP staff as part of the return shipping process
   * The DNC spreadsheet should include the following fields:
       * bibliographic.barcode
-      * bibliographic.title	
+      * bibliographic.title
       * bibliographic.divisionCode
       * source.object.type
       * source.object.format

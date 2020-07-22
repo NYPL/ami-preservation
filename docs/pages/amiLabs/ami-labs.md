@@ -26,18 +26,11 @@ The following pages detail workflows, policies, and procedures for audio/video d
    * Quality control
    * Safe and secure file transfer
 
-Members of the AMI Labs include:
-  * Rhony Dostaly, Media Preservation Engineer, Video (<francisdougherty@nypl.org>)
-  * Fran Dougherty, Media Preservation Engineer, Video (<rhonydostaly@nypl.org>)
-  * Jeff Willens, Media Preservation Engineer, Audio (<jeffreywillens@nypl.org>)
-  * Seth Winner, Media Preservation Engineer, Audio (<sethwinner@nypl.org>)
-  * Andrew Theodorou, Media Preservation Engineer, Audio (<andrewtheodorou@nypl.org>)
-  * Ben Turkus, Assistant Manager, Audio and Moving Image Preservation (<benjaminturkus@nypl.org>)
-
 ## Supported Formats & Equipment
 The AMI Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
 
 ### Audio
+{: .no_toc }
 
 | **Format/Equipment** | **Manufacturer/Model** |
 |   -----          |     -----      |  
@@ -71,6 +64,7 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 |   Lab Oven      |  Thermo Scientific 6550 |
 
 ### Video
+{: .no_toc }
 
 | **Format/Equipment** | **Manufacturer/Model** |
 |   -----          |     -----      |  
