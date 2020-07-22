@@ -111,7 +111,6 @@ python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRI
 
 
 # Quality Control Overview
-
 Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections.
 
 Our QC workflow is currently comprised of the following processes:
@@ -124,12 +123,10 @@ Our QC workflow is currently comprised of the following processes:
 Our QC workflows vary slightly between Vendor and In-House deliverables, so the following handbook is divided to reflect that. The following sections will provide step-by-step instructions for carrying out our QC processes.
 
 ## Vendor Deliverables
-
-For Vendor deliverables, QC is performed directly on hard-drives (with the exception of audio deliverables that can be migrated to our server and made accessible to the audio engineers).
+For Vendor deliverables, QC is primarily performed directly on hard-drives.
 
 ### Mounting Drives Read-Only
    The most important step during QC is to mount your drive(s) [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only).
-
 
 ### JSON Validation
 Run the following in Terminal to check if JSON is valid against the appropriate schema:
@@ -144,7 +141,6 @@ Use either [MediaConch CLI](https://github.com/NYPL/ami-preservation/wiki/Resour
 Use Terminal to generate a QC list for each drive you are QCing by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#generating-a-qc-list).
 
 ### Content Inspection
-
 Content inspection can be completed either on ICC or on the drive by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#content-inspection).  
 
 #### Locate & Open QC log
@@ -155,16 +151,13 @@ Content inspection can be completed either on ICC or on the drive by following t
   * Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes.
 
 #### Spot Checking Content & JSON
-
- Use a text-editor (Atom / Notepad / Text Edit etc.) to [open and inspect](https://github.com/NYPL/ami-preservation/wiki/Resources#spot-checking-content--json) JSON files.
+Use a text-editor (Atom / Notepad / Text Edit etc.) to [open and inspect](https://github.com/NYPL/ami-preservation/wiki/Resources#spot-checking-content--json) JSON files.
 
 #### Logging QC Failures & Flags
-
 Use [this](https://github.com/NYPL/ami-preservation/wiki/Resources#logging-qc-failures--flags) list of definitions to review and mark-off the items listed in the QC log.
 
 #### Media Ingest Preparation
 Follow these [steps](https://github.com/NYPL/ami-preservation/wiki/Resources#media-ingest-preparation) to prepare media for ingest.
 
 ## Tools
-
 See [PAMI Tools List ](https://docs.google.com/a/nypl.org/document/d/12RUhtvKYv66v8yKCKtEvqAIIXSGPqs6HqaXaQNB6aoU/edit?usp=sharing)for descriptions, usage, and installation instructions
