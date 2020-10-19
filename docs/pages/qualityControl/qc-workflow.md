@@ -9,6 +9,8 @@ parent: Quality Control
 {: .no_toc }
 Internal workflow for carrying out QC on digital assets.
 
+| **Format/Equipment** | **Manufacturer/Model** |
+
 ## Table of contents
 {: .no_toc .text-delta }
 
