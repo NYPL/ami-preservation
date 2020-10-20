@@ -19,7 +19,7 @@ Internal workflow for carrying out QC on digital assets.
 |   Perform manual QC of digital audio and moving image assets and metadata files | AMI Labs QC |  
 |   Once manual QC is complete Trello cards are updated | AMI Labs QC |
 |   Update database work order from *Quality Control* to *Ready for Ingest* and enter completion date)  | AMI Labs Asst. Manager  |   
-|   Update completed Trello cards to Ready for Migration    | AMI Labs QC |
+|   Update completed Trello cards to *Ready for Migration*    | AMI Labs QC |
 |   Move completed packages to staging area for ingest   | Media Preservation Coordinator  |
 |   Create and submit Mediainfo report for completed work order to PAMI Manager | Media Preservation Coordinator  |
 |   Repack physical media for outgoing pickup | AMI labs  |
