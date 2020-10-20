@@ -17,7 +17,7 @@ Internal workflow for carrying out QC on digital assets.
 |   Create Quality Control Spreadsheet   | AMI Labs QC |
 |   Validate and spot check JSON, bag structure, and file conformance  | AMI Labs QC |
 |   Perform manual QC of digital audio and moving image assets and metadata files | AMI Labs QC |  
-|   Once manual QC is complete, update Trello cards | AMI Labs QC |
+|   Once manual QC is complete Trello cards are updated | AMI Labs QC |
 |   Update database work order from *Quality Control* to *Ready for Ingest* and enter completion date)  | AMI Labs Asst. Manager  |   
 |   Update completed Trello cards to Ready for Migration    | AMI Labs QC |
 |   Move completed packages to staging area for ingest   | Media Preservation Coordinator  |
