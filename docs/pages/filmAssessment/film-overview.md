@@ -25,4 +25,4 @@ Assessment selection varies depending on condition and curatorial priorities.
 
 ## Reporting
 Progress on film assessment is reported each month for the Digital Collections dashboard.
-* (Film reporting template)[https://docs.google.com/spreadsheets/d/1emdbd0mfcCHl-6vDCsS8yZQ5VAwHYu3NtJ0iROa_syM/edit?usp=sharing]
+* [Film reporting template](https://docs.google.com/spreadsheets/d/1emdbd0mfcCHl-6vDCsS8yZQ5VAwHYu3NtJ0iROa_syM/edit?usp=sharing)

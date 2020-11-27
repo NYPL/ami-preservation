@@ -117,13 +117,7 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   * Scope: Box-level inventory of physical media objects in shipment.
   * Format: PDF
   * Instructions: Sender, shipper, and recipient should sign and date the document. Completed document will be scanned to PDF and copied to NYPL and Vendor project coordinators.
-<a name="discrepancy-report"></a>
-### Discrepancy report
-  * Produced by: Vendor
-  * Scope: list of objects for which there are discrepancies between inventory and actual objects:
-      * a) there are objects listed in inventory that were not received by vendor as expected; or
-      * b) there are objects received by the vendor that were not listed in the inventory and/or for which accurate metadata was not yet provided by NYPL.
-  * Template for Discrepancy Report: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_discrepancies_yyyymmdd.xlsx )
+
 <a name="hard-drive-manifest"></a>
 ### Hard Drive Manifest
   * Produced by: Vendor
@@ -132,6 +126,13 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   * Instructions: the hard drive manifest should be stored in the root directory of the hard drive (do not combine hard drives)
   * Template for "HD Manifest": (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_DRIVEID_hdmanifest_yyyymmdd.xlsx
 )
+<a name="discrepancy-report"></a>
+### Discrepancy report
+  * Produced by: Vendor
+  * Scope: list of objects for which there are discrepancies between inventory and actual objects:
+      * a) there are objects listed in inventory that were not received by vendor as expected; or
+      * b) there are objects received by the vendor that were not listed in the inventory and/or for which accurate metadata was not yet provided by NYPL.
+
 <a name="did-not-capture-report"></a>
 ### Did Not Capture Report
   * Produced by: Vendor

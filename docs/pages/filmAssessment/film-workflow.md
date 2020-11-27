@@ -19,8 +19,8 @@ parent: Film Assessment
 * Select a box of film from staging area for assessment.
 * In CMS, navigate to film layout and use ```Ctrl+F``` to search the ```id``` field for your item's CMS ID.
 * Add 10 feet of leader to the film. Match perforations as possible.
-* Write CMS ID on the leader like so):```CMS# 123456```
-  * * If you can determine HEAD vs TAIL, include ```HEAD``` or ```TAIL``` after the CMS ID.
+* Write CMS ID on the leader like so:```CMS# 123456```
+  * If you can determine HEAD vs TAIL, include ```HEAD``` or ```TAIL``` after the CMS ID.
 * If film is safe to inspect with a footage counter, use it while winding through film.
 * Enter inspection data to the layout while doing inspection.
   * **Complete ALL fields that are applicable. Ask for help with any unfamiliar fields or information. Do not guess. Correct any incorrect data entered by other staff (titles, format, etc).**
@@ -32,6 +32,7 @@ parent: Film Assessment
   * If Record Carton, add a yellow dot sticker to the bottom left corner of the front of the box;
   * If film canister, add yellow dot sticker to left of
    container barcode.
+
 ### End of Day Review
 * Conduct a search for all items inspected by you on the date you are working - do a final check to make sure no data is missing:
   * ```Ctrl+F``` to enter Find mode
