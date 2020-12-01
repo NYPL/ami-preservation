@@ -83,6 +83,7 @@ def move_tag_files(source_directory, tags):
 
             # update the tag manifest,
             # messy but takes advantage of bagit setup
+            # rewrites tag manifest for every file move, not ideal, but not the worst
             cur_dir = os.getcwd()
             os.chdir(object_bag)
             bagit._make_tagmanifest_file("md5", object_bag)
@@ -103,8 +104,8 @@ def main():
     source_directory = arguments.source
     file_list = get_files(source_directory)
     cms_objects, unmoved, tags = make_object_dirs(source_directory, file_list)
-    move_tag_files(source_directory, tags)
     make_object_bags(source_directory, cms_objects)
+    move_tag_files(source_directory, tags)
     clean_up(source_directory)
     print('Did not move this stuff: {}'.format(', '.join(unmoved)))
 
