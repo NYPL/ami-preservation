@@ -78,7 +78,7 @@ def move_tag_files(source_directory, tags):
 
         else:
             tag_dir = os.path.join(object_bag, 'tags')
-            os.makedirs(tag_dir)
+            os.makedirs(tag_dir, exist_ok=True)
             shutil.move(tag_file, tag_dir)
 
             # update the tag manifest,
