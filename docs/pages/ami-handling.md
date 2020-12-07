@@ -274,10 +274,11 @@ Image files should follow the same pattern as the media files, and be placed in 
 * assetfront
 * assetback
 * assetside
+  * The following may be used if more than one side will be captured: assetrightside, assetleftside, assettop, assetbottom
 * boxfront
 * boxback
 * boxside
-* reelfront
+  * The following may be used if more than one box side will be captured: boxrightside, boxleftside, boxtop, boxbottom
 * ephemera
 
 **Example:**
