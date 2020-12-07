@@ -280,8 +280,6 @@ Image files should follow the same pattern as the media files, and be placed in 
 * reelfront
 * ephemera
 
-Image file name convention:  (division)_(primaryID)_(v#)_(suffix).jpg
-
 **Example:**
   * PrimaryID
     * Data  
