@@ -269,20 +269,30 @@ The following BEXT metadata must be captured in the original Broadcast Wave file
 All magnetic and optical media and enclosures must be photographed in order to capture significant bibliographic annotations or other content. Film will not be photographed.
 
 <a name="image-file-naming-convention"></a>
-### Image file naming convention
-Image files should follow the same pattern as the media files, and be placed in the Images directory, at the same hierarchical level as the PreservationMasters and EditMasters directory: division_PrimaryID_v#f#  (front/back/top/bottom/left/right/etc).jpg
+### Image file naming convention and controlled vocabulary
+Image files should follow the same pattern as the media files, and be placed in the Images directory, at the same hierarchical level as the PreservationMasters and EditMasters directory, but the following controlled vocabulary must be appended as the final suffix in each image file name:
+* assetfront
+* assetback
+* assetside
+* boxfront
+* boxback
+* boxside
+* reelfront
+* ephemera
 
+Image file name convention:  (division)_(primaryID)_(v#)_(suffix).jpg
+
+**Example:**
   * PrimaryID
     * Data  
       * PreservationMasters
       * EditMasters
       * Images
-        * division_PrimaryID_v01f01.jpg
-        * division_PrimaryID_v01f02.jpg
-        * division_PrimaryID_v01_front.jpg
-        * division_PrimaryID_v01_back.jpg
-        * division_PrimaryID_v01_side1.jpg
-        * division_PrimaryID_v01_side2.jpg
+        * div_PrimaryID_v01f01.jpg
+        * div_PrimaryID_v01f02.jpg
+        * div_PrimaryID_v01_assetfront.jpg
+        * div_PrimaryID_v01_assetback.jpg
+        * div_PrimaryID_v01_assetside.jpg
 
 **_Image Specifications for photographs of media objects:_**
 
