@@ -22,7 +22,7 @@ This document outlines vendor requirements for administration, shipping and medi
 - [Original Media Shipping Document](#original-media-shipping-document)
   - [Discrepancy report](#discrepancy-report)
   - [Hard Drive Manifest](#hard-drive-manifest)
-  - [Capture Issues](#capture-issues)
+  - [Capture Issues](#capture-issues-report)
 - [Media Formats](#media-formats)
 - [Digital Asset Deliverables](#digital-asset-deliverables)
 - [Metadata](#metadata)
@@ -132,7 +132,7 @@ All tasks must comply with NYPL specifications, which are maintained in publical
       * a) there are objects listed in inventory that were not received by vendor as expected; or
       * b) there are objects received by the vendor that were not listed in the inventory and/or for which accurate metadata was not yet provided by NYPL.
 
-<a name="did-not-capture-report"></a>
+<a name="capture-issues-report"></a>
 ### Capture Issues Report
   * Produced by: Vendor
   * Scope: list of physical objects that were unable to be fully transferred
