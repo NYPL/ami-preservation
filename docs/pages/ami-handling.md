@@ -137,7 +137,7 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   * Produced by: Vendor
   * Scope: list of physical objects that were unable to be fully transferred
   * Expected: via email at conclusion of project
-  * [Template for "Capture Issues" report]:(https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=1009731562)
+  * [Template for "Capture Issues" report: ](https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=1009731562)
 
 <a name="media-formats"></a>
 ## Media Formats
@@ -441,7 +441,7 @@ If any physical problems are detected, either during inspection or playback, con
 NYPL recognizes that some media may pose challenges to capture or may not be able to be captured due to extremely poor condition or other circumstances.
   * If media exhibit audiovisual artifacts inherent to their source formats or conditions that impact the quality of transfer, but do not prevent a full capture, such artifacts must be described in the metadata signal notes.
   * If an object is not captured, the object must be listed in the required capture issues report, described in the documentation section of this RFP:
-  * Capture issues reports must adhere to the [provided template]:(https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
+  * Capture issues reports must adhere to the [provided template: ](https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
   * **Capture Issue Category**: Issues that result in an an object not being captured must be described in the report using the following categories, with additional notes provided as needed. **If additional categories are required, NYPL must approve before they are used**:
     * playback issue
     * condition issue
