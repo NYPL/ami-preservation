@@ -439,18 +439,18 @@ If any physical problems are detected, either during inspection or playback, con
 <a name="capture-issues"></a>
 ### Capture Issues
 NYPL recognizes that some media may pose challenges to capture or may not be able to be captured due to extremely poor condition or other circumstances.
-* If media exhibit audiovisual artifacts inherent to their source formats or conditions that impact the quality of transfer, but do not prevent a full capture, such artifacts must be described in the metadata signal notes.
-* If an object is not captured, the object must be listed in the required capture issues report, described in the documentation section of this RFP:
-* Capture issues reports must adhere to the [provided template]:(https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
-* **Capture Issue Category**: Issues that result in an an object not being captured must be described in the report using the following categories, with additional notes provided as needed. **If additional categories are required, NYPL must approve before they are used**:
-  * playback issue
-  * condition issue
-  * duplicate
-  * blank media
-  * unsupported AMI format
-  * unopened commercial media
+  * If media exhibit audiovisual artifacts inherent to their source formats or conditions that impact the quality of transfer, but do not prevent a full capture, such artifacts must be described in the metadata signal notes.
+  * If an object is not captured, the object must be listed in the required capture issues report, described in the documentation section of this RFP:
+  * Capture issues reports must adhere to the [provided template]:(https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
+  * **Capture Issue Category**: Issues that result in an an object not being captured must be described in the report using the following categories, with additional notes provided as needed. **If additional categories are required, NYPL must approve before they are used**:
+    * playback issue
+    * condition issue
+    * duplicate
+    * blank media
+    * unsupported AMI format
+    * unopened commercial media
 
-* **Capture Issue Notes**: Notes must be added to provide supplemental information about the category issue selected. For example, if the category is “unsupported AMI format”, the notes must describe the format that is not supported and why; if the category is “condition issue”, the notes must indicate what treatments were attempted and failed to facilitate capture.
+  * **Capture Issue Notes**: Notes must be added to provide supplemental information about the category issue selected. For example, if the category is “unsupported AMI format”, the notes must describe the format that is not supported and why; if the category is “condition issue”, the notes must indicate what treatments were attempted and failed to facilitate capture.
 
 <a name="vendor-quality-assurance-and-control"></a>
 ### Vendor Quality Assurance and Control
