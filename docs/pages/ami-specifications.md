@@ -28,7 +28,7 @@ This document outlines the technical specifications and requirements for digitiz
     - [Additional video specifications](#additional-video-specifications)
   - [Audio media](#audio-media)
     - [_Capture tools_](#capture-tools)
-    - [DATA MEDIA](#data-media)
+  - [Data Media](#data-media)
 
 <!-- /MarkdownTOC -->
 

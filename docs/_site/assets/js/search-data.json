@@ -175,7 +175,7 @@
   },"29": {
     "doc": "Digital Asset Specifications",
     "title": "Table Of Contents",
-    "content": ". | Specifications for Digital Assets . | Film Media . | Film Groups 1 and 2: Motion picture film, silent / sound | Film Group 3: Audio film | Film Group 4: Filmstrips | . | Video media . | Guidelines: Preservation master files, all groups | Video preservation master sidecar files | QCTools Reports | Silent audio channels | Timecode | Additional video specifications | . | Audio media . | Capture tools | DATA MEDIA | . | . | . ",
+    "content": ". | Specifications for Digital Assets . | Film Media . | Film Groups 1 and 2: Motion picture film, silent / sound | Film Group 3: Audio film | Film Group 4: Filmstrips | . | Video media . | Guidelines: Preservation master files, all groups | Video preservation master sidecar files | QCTools Reports | Silent audio channels | Timecode | Additional video specifications | . | Audio media . | Capture tools | . | DATA MEDIA | . | . ",
     "url": "http://localhost:4000/pages/ami-specifications.html#table-of-contents",
     "relUrl": "/pages/ami-specifications.html#table-of-contents"
   },"30": {
