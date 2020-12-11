@@ -473,8 +473,8 @@ In congress with capturing a Broadcast Wave file prior to transcoding to .flac, 
   * Ensuring that "mono" is true mono
 
 <a name="data-media"></a>
-### DATA MEDIA
-#### Deliverables
+## Data Media
+### _Deliverables_
 For each collection object, the following shall be produced:
   * One or more preservation master file(s)
   * One metadata file per media file
