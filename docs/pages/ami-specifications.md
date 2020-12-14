@@ -115,10 +115,11 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | Video codec | H264 | H264 | H264 |
 | File wrapper | MPEG-4 (.mp4) | MPEG-4 (.mp4) | MPEG-4 (.mp4) |
 | Color space | 4:2:0 | 4:2:0 | 4:2:0 |
-| Frame size** | 720 x 486 | 720 x 486 | 720 x 486 |
+| Frame size** | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
 | Frame rate | (Same as preservation master) | (Same as preservation master)  | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
+| Video bit rate | 8 Mbps | 8 Mbps | 8 Mbps |
 | Audio codec* | AAC | AAC | AAC |
 | Audio bit rate* | 320 kbs | 320 kbs | 320 kbs |
 | Audio sampling rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
@@ -126,7 +127,7 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | Image corrections| Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic |
 
 \* Where audio is applicable.
-** Subject to change. TBD.
+** With letterboxing / pillarboxing included where applicable.
 
 <a name="film-group-3-audio-film"></a>
 ### Film Group 3: Audio film
