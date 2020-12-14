@@ -111,7 +111,7 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | --- | ---| --- | --- |
 | Bit depth | 8 bit | 8 bit | 8 bit |
 | Resolution** | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
-| Display aspect ratio** | 16:9 pillarboxed as needed | 16:9 pillarboxed as needed | 16:9 pillarboxed as needed |
+| Display aspect ratio** | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed |
 | Video codec | H264 | H264 | H264 |
 | File wrapper | MPEG-4 (.mp4) | MPEG-4 (.mp4) | MPEG-4 (.mp4) |
 | Color space | 4:2:0 | 4:2:0 | 4:2:0 |
