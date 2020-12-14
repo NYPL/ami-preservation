@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<policy type="and" name="MediaConch_NYPL_filmMZ">
+  <rule name="General/VideoCount is 1" value="VideoCount" tracktype="General" occurrence="*" operator="=">1</rule>
+  <rule name="General/FileExtension is mov" value="FileExtension" tracktype="General" occurrence="*" operator="=">mov</rule>
+  <rule name="Video/CodecID is apch" value="CodecID" tracktype="Video" occurrence="*" operator="=">apch</rule>
+  <rule name="Video/Width is 1920" value="Width" tracktype="Video" occurrence="*" operator="=">1920</rule>
+  <rule name="Video/Height is 1080" value="Height" tracktype="Video" occurrence="*" operator="=">1080</rule>
+  <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <rule name="Video/ChromaSubsampling is 4:2:2" value="ChromaSubsampling" tracktype="Video" occurrence="*" operator="=">4:2:2</rule>
+  <rule name="Video/ScanType is Interlaced" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
+</policy>

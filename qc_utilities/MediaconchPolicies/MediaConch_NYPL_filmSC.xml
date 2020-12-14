@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<policy type="and" name="MediaConch_NYPL_filmSC">
+  <rule name="Colorspace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <policy type="or" name="Video Codec should be H264">
+    <rule name="Video CodecID is avc1" value="CodecID" tracktype="Video" occurrence="*" operator="=">avc1</rule>
+    <rule name="Video CodecID is H264" value="CodecID" tracktype="Video" occurrence="*" operator="=">H264</rule>
+    <rule name="Video CodecID is AVC1" value="CodecID" tracktype="Video" occurrence="*" operator="=">AVC1</rule>
+    <rule name="Audio Bit Rate is ?" value="BitRate" tracktype="Audio" occurrence="*" operator="&gt;=">192000</rule>
+  </policy>
+  <policy type="or" name="Format is MPEG-4">
+    <rule name="Format is MPEG-4" value="Format" tracktype="General" occurrence="*" operator="=">MPEG-4</rule>
+    <rule name="Format is AVC" value="Format" tracktype="General" occurrence="*" operator="=">AVC</rule>
+    <policy type="and" name="Is this NTSC?">
+      <policy type="or" name="NTSC Height">
+        <rule name="NTSC height" value="Height" tracktype="Video" occurrence="1" operator="=">486</rule>
+        <rule name="NTSC-ish height" value="Height" tracktype="Video" occurrence="1" operator="=">480</rule>
+      </policy>
+      <rule name="NTSC FrameRate" value="FrameRate" tracktype="Video" occurrence="1" operator="=">29.970</rule>
+    </policy>
+  </policy>
+  <rule name="Is Progressive?" value="ScanType" tracktype="Video" occurrence="1" operator="=">Progressive</rule>
+  <rule name="Video/Width is 1920" value="Width" tracktype="Video" occurrence="*" operator="=">1920</rule>
+  <rule name="Video/Height is 1080" value="Height" tracktype="Video" occurrence="*" operator="=">1080</rule>
+  <policy type="or" name="Audio is 2 channels or n/a">
+    <rule name="Audio does not exist" value="Channels" tracktype="Audio" occurrence="*" operator="must not exist"/>
+    <rule name="Audio is 2 channel" value="Channels" tracktype="Audio" occurrence="*" operator="=">2</rule>
+  </policy>
+</policy>
