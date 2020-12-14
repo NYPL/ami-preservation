@@ -110,8 +110,8 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | --- | ---| --- | --- |
 | Bit depth | 8 bit | 8 bit | 8 bit |
-| Resolution** | 720 x 480 | 720 x 480 | 720 x 480 |
-| Display aspect ratio** | 4:3 letterboxed as needed | 4:3 letterboxed as needed | 4:3 letterboxed as needed |
+| Resolution** | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
+| Display aspect ratio** | 16:9 pillarboxed as needed | 16:9 pillarboxed as needed | 16:9 pillarboxed as needed |
 | Video codec | H264 | H264 | H264 |
 | File wrapper | MPEG-4 (.mp4) | MPEG-4 (.mp4) | MPEG-4 (.mp4) |
 | Color space | 4:2:0 | 4:2:0 | 4:2:0 |
@@ -127,7 +127,6 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | Image corrections| Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic |
 
 \* Where audio is applicable.
-** With letterboxing / pillarboxing included where applicable.
 
 <a name="film-group-3-audio-film"></a>
 ### Film Group 3: Audio film
