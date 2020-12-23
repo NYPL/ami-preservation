@@ -16,6 +16,6 @@ log_path="$log_dir/mediaconch_videoPM_$dateCreated.csv"
 i=0
 
 for line in $dir_of_bags; do
-find Video/ -name "*.mkv" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL_FFV1MKV.xml {} ';' > $log_path
+find $PWD/*/ -name "*.mkv" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL_FFV1MKV.xml {} ';' > $log_path
 
 done
