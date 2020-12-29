@@ -55,7 +55,7 @@
   },"9": {
     "doc": "AMI Handling",
     "title": "Original Media Shipping Document",
-    "content": "| . | . | Produced by: Sender | Scope: Box-level inventory of physical media objects in shipment. | Format: PDF | Instructions: Sender, shipper, and recipient should sign and date the document. Completed document will be scanned to PDF and copied to NYPL and Vendor project coordinators. Discrepancy report . | Produced by: Vendor | Scope: list of objects for which there are discrepancies between inventory and actual objects: . | a) there are objects listed in inventory that were not received by vendor as expected; or | b) there are objects received by the vendor that were not listed in the inventory and/or for which accurate metadata was not yet provided by NYPL. | . | Template for Discrepancy Report: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_discrepancies_yyyymmdd.xlsx ) Hard Drive Manifest . | Produced by: Vendor | Scope: assets contained on hard drive | Expected: with each hard drive shipped | Instructions: the hard drive manifest should be stored in the root directory of the hard drive (do not combine hard drives) | Template for “HD Manifest”: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_DRIVEID_hdmanifest_yyyymmdd.xlsx ) Did Not Capture Report . | Produced by: Vendor | Scope: list of physical objects that were unable to be fully transferred | Expected: via email at conclusion of project | Template for “Did Not Capture” report: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_didnotcapture_yyyymmdd.xlsx ) | . ",
+    "content": "| . | . | Produced by: Sender | Scope: Box-level inventory of physical media objects in shipment. | Format: PDF | Instructions: Sender, shipper, and recipient should sign and date the document. Completed document will be scanned to PDF and copied to NYPL and Vendor project coordinators. | . Hard Drive Manifest . | Produced by: Vendor | Scope: assets contained on hard drive | Expected: with each hard drive shipped | Instructions: the hard drive manifest should be stored in the root directory of the hard drive (do not combine hard drives) | Template for “HD Manifest”: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_DRIVEID_hdmanifest_yyyymmdd.xlsx ) Discrepancy report . | Produced by: Vendor | Scope: list of objects for which there are discrepancies between inventory and actual objects: . | a) there are objects listed in inventory that were not received by vendor as expected; or | b) there are objects received by the vendor that were not listed in the inventory and/or for which accurate metadata was not yet provided by NYPL. | . | . Did Not Capture Report . | Produced by: Vendor | Scope: list of physical objects that were unable to be fully transferred | Expected: via email at conclusion of project | Template for “Did Not Capture” report: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_didnotcapture_yyyymmdd.xlsx ) | . ",
     "url": "http://localhost:4000/pages/ami-handling.html#original-media-shipping-document",
     "relUrl": "/pages/ami-handling.html#original-media-shipping-document"
   },"10": {
@@ -383,558 +383,594 @@
     "url": "http://localhost:4000/pages/filmAssessment/film-overview.html#reporting",
     "relUrl": "/pages/filmAssessment/film-overview.html#reporting"
   },"64": {
+    "doc": "Film Reference",
+    "title": "Film Glossary",
+    "content": " ",
+    "url": "http://localhost:4000/pages/filmAssessment/film-reference.html#film-glossary",
+    "relUrl": "/pages/filmAssessment/film-reference.html#film-glossary"
+  },"65": {
+    "doc": "Film Reference",
+    "title": "Table of contents",
+    "content": ". | Film Formats | Element Type | Film Inspection | . ",
+    "url": "http://localhost:4000/pages/filmAssessment/film-reference.html#table-of-contents",
+    "relUrl": "/pages/filmAssessment/film-reference.html#table-of-contents"
+  },"66": {
+    "doc": "Film Reference",
+    "title": "Film Formats",
+    "content": ". | 16mm: A smaller medium resolution film gauge typically used for industrial, educational, experimental, home, and other forms of non-commercial filmmaking. | 35mm: The standard film gauge in studio and commercial feature filmmaking. | Regular 8mm: Small gauge film format typically used for home movies and experimental films. Differs from Super 8mm in two ways: larger perforations and smaller image. | Super 8mm: Small gauge film format typically used for home movies and experimental films. Differs from Regular 8mm in two ways: slightly larger image and small perforations. | . ",
+    "url": "http://localhost:4000/pages/filmAssessment/film-reference.html#film-formats",
+    "relUrl": "/pages/filmAssessment/film-reference.html#film-formats"
+  },"67": {
+    "doc": "Film Reference",
+    "title": "Element Type",
+    "content": ". | A/B/C Roll Originals: Edited originals with alternating shots between the rolls. Individual rolls use leader between each shot. The rolls are printed together to make a master reel. | Answer Print: The first synced print made from negative picture and audio elements. Answer prints must be approved before moving to the release print. Unless the first answer print comes out perfectly, there will be slight variations with each new answer print - which could be related to color correcting, syncing of sound, or other audio-visual discrepancies. | Camera Original: Unedited camera rolls. | Color Reversal Intermediate (CRI): A black and orange-based color duplicating stock with a positive image. | Cut Original: Original negative or reversal footage edited to comprise a completed work. Also known as edited original. | Dupe Negative: A black and white negative made from an original or master used to make prints. | Fine Grain Master: A black and white duplicating stock with a positive image. | Internegative: An orange-based color negative stock. Internegatives are secondary negatives typically made from original elements. | Interpositive: An orange-based duplicating stock with a positive image. | Magnetic Track: A sound master/original element. Can either be a full coat track where a magnetic coating covers the entire film or magnetic stripes with small gaps of clear film between them. | Negative: Duplicating film stock that is used to make positive prints and elements. This includes camera originals, internegatives, and duplicate negatives. | Optical Track Negative: An original or master sound element on negative stock. Only contains an optical soundtrack. | Optical Track Positive: An original or master sound element on positive stock. Only contains an optical soundtrack. | Out-takes: Original footage that is excluded from a finished film. Can consist of entire camera rolls, sections of camera rolls, or built up reels of segments that have been removed from original camera footage. | Positive: A film polarity that is made from a negative. Can be identified by two markers: a normal looking image and the edges of the film are clear. | Release Print: Prints made for distribution or screening after Answer Prints have been approved. | Reversal: Common film polarity for Regular 8mm, Super 8mm, and 16mm. Most easily identified by being black on the edges rather than clear. Reversal stocks contain positive images after being developed but can also be used as a duplicating stock. Reversal originals can be used to make internegatives or dupe negatives. | Trims: Short snips of film taken off originals, prints, etc. | Work Print: A positive print (on silent stock) that is used in the editing process and not considered a complete element. Shots are normally spliced together with tape. | . ",
+    "url": "http://localhost:4000/pages/filmAssessment/film-reference.html#element-type",
+    "relUrl": "/pages/filmAssessment/film-reference.html#element-type"
+  },"68": {
+    "doc": "Film Reference",
+    "title": "Film Inspection",
+    "content": ". | Acetate: A film base made of cellulose acetate. Also known as safety film because it does not contain the same flammable properties of nitrate film. Acetate was introduced ca 1909. Chemical properties of acetate film can cause decay unique to this film base such as acetate decay/vinegar syndrome. | Acetate Decay: A form of chemical decay that makes film brittle and shrunken. Can be detected with A/D strips or if the film is emitting a vinegar-esque smell. Acetate decay can contaminate other acetate-based films if a bad film is stored closely to good films over time. | Base: A smooth, flat surface underneath the emulsion and binder of the film. The base appears as shiny whereas the emulsion has a duller look. | Blow-up: When a smaller gauge is duplicated onto a larger gauge. Ex: Super 8mm reversal original to 16mm color internegative. | Color Fade: Certain stocks lose color over time. Fading on positive stock can turn pink or magenta, while reversal fading looks bluish or purplish. | Date Code: A code on film stock indicating when the film stock was manufactured. Common on Kodak stock. | Emulsion: A gelatin-based material on top of the film strip where the image is printed. Can be identified by knowing the wind or by inspection. When shining a light you will be able to see a texture to the image. Damage to the emulsion can result in image loss. | Emulsion Orientation/Wind: Describes the orientation of the film reel. For single perforation film stock, if winding from head to tail with emulsion out, perforations on the bottom means it is B-Wind. Perforations on top mean it is A-Wind/emulsion in. For double perforation stock, the image will be reversed for B-Wind/emulsion out. A good way to test is to look for any text or credits in the frame. The text will be flipped on the emulsion side but read normal/left to right on the base side. Processed camera rolls are always B-Wind. The wind will change with each generation change. Ex: A-Wind unprocessed stock 🡪 B-Wind negative camera roll 🡪 A-Wind positive print | Magnetic Soundtrack (stripe): A thin strip of magnetic tape which contains a film’s soundtrack. Found most commonly on Super 8mm film, but can also be the soundtrack for 16mm film. | Nitrate: Nitrocellulose film base that was introduced in the late 1890s and was most commonly produced during the silent era. Nitrate is highly flammable and went out of use by 1951. Identification of nitrate film is easy to identify, as “Nitrate” is printed on the edge of the film near the date codes. | Optical Soundtracks: The most common form of sound on 16mm and 35mm prints. Optical soundtracks are printed into the film at one of the edges. There are two types of optical soundtracks . | a.) Variable Area | b.) Variable Density | . | Polyester: A film base made from polyester. Polyester is thinner and stronger than acetate. Polyester stock became the industry standard in the 1990s and is ideal for long-term storage. Acetate decay does not affect polyester-based films. Polyester stock can only be spliced together by tape or ultra-sonic splices. Cement splices do not hold for polyester-based film. | Reduction: When a film element or print is duplicated to a smaller gauge: A 35mm internegative to 16mm print. | . ",
+    "url": "http://localhost:4000/pages/filmAssessment/film-reference.html#film-inspection",
+    "relUrl": "/pages/filmAssessment/film-reference.html#film-inspection"
+  },"69": {
+    "doc": "Film Reference",
+    "title": "Film Reference",
+    "content": " ",
+    "url": "http://localhost:4000/pages/filmAssessment/film-reference.html",
+    "relUrl": "/pages/filmAssessment/film-reference.html"
+  },"70": {
     "doc": "Film Workflow",
     "title": "Film Workflow",
     "content": " ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html",
     "relUrl": "/pages/filmAssessment/film-workflow.html"
-  },"65": {
+  },"71": {
     "doc": "Film Workflow",
     "title": "Table of contents",
     "content": ". | Assessment Workflow Quick List . | End of Day Review | . | Movement &amp; Staging | Inventory &amp; Inspection Guidelines . | Inspection Supplies | Inspection Time | Condition information | . | Assessment and CMS Details . | CMS Entry for Non-inventoried items | CMS Entry for Inventoried Items | Labeling Procedures . | CMS Containers (Record Cartons or Film Canisters) | Small Cans / Boxed Cans | Film leader | . | Ephemera | . | Nitrate Film | . ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html#table-of-contents",
     "relUrl": "/pages/filmAssessment/film-workflow.html#table-of-contents"
-  },"66": {
+  },"72": {
     "doc": "Film Workflow",
     "title": "Assessment Workflow Quick List",
     "content": ". | Select a box of film from staging area for assessment. | In CMS, navigate to film layout and use Ctrl+F to search the id field for your item’s CMS ID. | Add 10 feet of leader to the film. Match perforations as possible. | Write CMS ID on the leader like so:CMS# 123456 . | If you can determine HEAD vs TAIL, include HEAD or TAIL after the CMS ID. | . | If film is safe to inspect with a footage counter, use it while winding through film. | Enter inspection data to the layout while doing inspection. | Complete ALL fields that are applicable. Ask for help with any unfamiliar fields or information. Do not guess. Correct any incorrect data entered by other staff (titles, format, etc). | . | Add leader to end of the item, label accordingly (CMS# 123456 HEAD / TAIL). | Ensure that wind is flat, rewind as needed unless film is too fragile for excessive handling. | Double check your data entry | Select the “Inspected” checkbox when finished. and move on to the next film. | When all films in a container are complete: . | If Record Carton, add a yellow dot sticker to the bottom left corner of the front of the box; | If film canister, add yellow dot sticker to left of container barcode. | . | . End of Day Review . | Conduct a search for all items inspected by you on the date you are working - do a final check to make sure no data is missing: . | Ctrl+F to enter Find mode | Select the “inspected” checkbox | Enter your username in the inspectedBy field | Hit the Return key | Review all results. | . | Bring boxes to storage area designated for completed films. | Update container location in CMS. | . ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html#assessment-workflow-quick-list",
     "relUrl": "/pages/filmAssessment/film-workflow.html#assessment-workflow-quick-list"
-  },"67": {
+  },"73": {
     "doc": "Film Workflow",
     "title": "Movement &amp; Staging",
     "content": ". | Migration from Special Formats Processing to PAMI Film Assessment Staging . | Boxes of film that are inventoried and ready to inspect are brought to room 306 from the 2nd floor vault each week, or as needed to maintain constant workflow. | Assessment staff migrate only the number of boxes they can assess within a reasonable amount of time (1-2 days), to limit the number of items that are in transit (i.e. not identified in a specific building location in CMS). | Inspected films are placed on designated shelves in 306 or returned to the area in 210 that is designated for assessed film (this location may be updated on a monthly bases as vault as per vault space needs). | . | . ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html#movement--staging",
     "relUrl": "/pages/filmAssessment/film-workflow.html#movement--staging"
-  },"68": {
+  },"74": {
     "doc": "Film Workflow",
     "title": "Inventory &amp; Inspection Guidelines",
     "content": "Inspection Supplies . | Box labels / Archival labels | Barcode labels | CMS labels (blank) &amp; printed | Barcode labels (blank, for duplicating) | . Inspection Time . | Spend no more than 30min per film, including administrative work (creating box labels, CMS records, etc). | If a film is too far gone and would require more than 30min work, rewind without hand-inspecting, enter ‘not fully inspected’ into notes field, provide a footage estimate and any other information obtained, and move on. | . Condition information . | Shrinkage measurement: . | Measure at Head, Middle, and Tail, and enter the average of the three measurements into CMS. | . | Splices: . | Condition - Splices: . | 0: no splices | 1: 1 - 5 splices | 2: 6 - 10 splices | 3: More than 10 splices | . | During inspection, test the integrity any existing splices. Repair any weak, broken, or deteriorating splices. | If you encounter excessive deteriorating splices, do not continue hand-inspection. See below. | . | Vinegar &amp; mold: . | Temporary storage on designated shelf in 306 cage unless item is severely toxic / hazardous. | Move to disaster room if moldy / infested / hazardous. | . | Camera Original material Handling . | Do not put camera original on a footage counter - use footage ruler for estimate | . | Sealed unprocessed film . | Do not open any cans that are tightly sealed closed with tape (i.e. intentionally sealed shut) - mark film as ‘unprocessed film stock’ and note that film was not fully assessed. Provide footage estimate count based on can size. | . | . ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html#inventory--inspection-guidelines",
     "relUrl": "/pages/filmAssessment/film-workflow.html#inventory--inspection-guidelines"
-  },"69": {
+  },"75": {
     "doc": "Film Workflow",
     "title": "Assessment and CMS Details",
     "content": "CMS Inventory Instructions for Film Assessment . CMS Entry for Non-inventoried items . | Open CMS, navigate to Media Originals layout | Create a new item record using your allotted CMS ID # | Rehouse ephemera as necessary | Label the film can with new CMS ID # &amp; barcode | Complete all bibliographic / standard CMS inventory fields | Switch to CMS film layout (navigate to the item record you were working on…) | Inspect film on rewind bench and complete all Film Assessment fields . | Add 10ft of leader to head &amp; tail, label leader “head” or “tail” with CMS ID #. | If leader is already present, is in good condition, and is at least 10ft long each at head and/or tail,existing leader may be used for labeling with CMS# - no additional leader is necessary. | Assess condition and make repairs as necessary | Identify film element type &amp; provide notes when standard fields are not sufficient | Wind onto core and leave film wound opposite from original orientation. | Apply a yellow “dot” sticker to the bottom left corner of an RC or to the left of the barcode on a film canister spine. | Place film can / box of film on “Completed Films” shelves in 306 cage when finished. | . | . CMS Entry for Inventoried Items . | Open CMS, navigate to Media Originals layout | Find existing item record using CMS ID or item barcode | Rehouse item and any accompanying ephemera as necessary. If rehoused, label the new film can with CMS ID &amp; barcode . | Duplicate container and CMS ID labels as necessary | . | Switch to CMS film layout (navigate to the item record you were working on…) | Inspect film on rewind bench and complete all Film Assessment fields . | Add 10ft of leader to head &amp; tail | Assess condition and make repairs as necessary | Identify film element type &amp; provide Notes when standard fields are not sufficient | . | Apply a yellow “dot” sticker to the bottom left corner of an RC or to the left of the barcode on a film canister spine. | Place film on “Completed Films” shelf in 306 cage when finished. | . Labeling Procedures . CMS Containers (Record Cartons or Film Canisters) . | Film Canisters and Boxes (boxes of any type - record carton / small box etc.) receive container labels (in addition to a barcode &amp; CMS ID label): | To create a container label: . | CMS Home &gt; “Search / Edit” | Identify the department collection ID and Search “Collection Name” and “Collection Number” | Upon completing the search, navigate to “Items” in the top menu (this will bring you to the list of containers) | . | CURRENT LABELING PRACTICE (2018): . | Note: In the context of container labeling, there are only two relevant container types: “film canister” vs. non-film-canister (i.e. RC, Audio box, etc.). In reality, there are several container types, but for these purposes, let’s pretend there are only 2, mentioned above. | non-film-canister containers are sorted sequentially, and appear in the list before all of the “film canister”s. Scroll to where the non-film-canisters end, take note of the last container number. | Then, scroll to where the film canisters end, compare the previous number to the last film canister number. If the last film canister number is greater than the last non-film-canister number, use the number that follows the film canister number; if the non-film-canister number is still greater than the last film canister number, use the number that follows the non-film-canister number. Small Cans / Boxed Cans . | . | If can fits in a box, the film can does not get a container label - the box receives a container label and the can is assigned a CMS number. | . | Duplicating existing can labels: . | Use the barcode duplicator to create a new barcode label if an item must be rehoused to a new can. Film leader . | Using the footage counter to measure your leader, apply 10ft of leader to head and tail of each film. | In marker, hand-write the items’ CMS ID number on the head and tail leader of each film. Example: CMS# 123456 HEAD | . | . Ephemera . | Paper ephemera (i.e. lab notes, photographs, pamphlets, hand-written notes, and narrative / descriptive documents that are inside or adhered to original housings) must be either removed or photocopied and retained in a separate file folder. | Fragile original documentation may be protected with poly-sleeves | Non-original documentation (i.e. photocopies of annotations written on housings or adhesive notes that cannot safely be removed from housings) does not need to be in poly-sleeves, they can go straight into the file folders. | Some Examples: | . | . | Scenario | Action | Notes | . | A commercially printed adhesive label that describes the full content of a film, placed on the inside of a can and not easily removable | Photocopy this inner label, as it may more accurately describe the content than any cataloger (who may not be familiar with or able to research the content / film). Place copy in file. | Copy does not require poly-sleeve | . | A very small handwritten note on thin, fragile paper or paper with adhesive (Post-It) | Small poly-sleeve, inside file folder |   | . | A photographic print or other glossy paper ephemera | Poly-sleeve, inside file folder |   | . | A film lab report describing camera roll numbers and key codes, and date of development | Place ephemera into archival file folder, without a poly-sleeve |   | . | Short annotation on exterior of can, such as “Sunrise - R1 of 2” | Transcribe these notes in the ‘Notes” field of CMS | Do not photocopy | . | Printed label with address of production company and title of film | Transcribe label content into “Title” and “Notes” |   | . | Create only one ephemera folder per CMS object as needed. | Label the folder in the upper-left hand corner - in pencil - with the item’s 3-letter division code (“DAN”) followed by the CMS ID. Example: DAN 123456 | If used, poly-sleeves should be labeled with the original object’s CMS number. The poly-sleeve should be labeled on the outside with archival marker. Do not write on any original ephemera (writing on photocopies is acceptable). | When inspection if the item is complete, place the file folder into a designated archival file box, in numeric order. | Each workstation is provided two gray boxes - when one is full, bring the box to SFP Manager or leave it on SFP Manager’s office table with a note (“film assessment ephemera”) and continue collecting in your free box. | SFP Manager will enter ephemera into a data system maintained by SFP. | When SFP Manager is done entering the ephemera into the data system, they will leave the empty box in their office, where it may be retrieved when the next box of ephemera is brought in. | . | . ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html#assessment-and-cms-details",
     "relUrl": "/pages/filmAssessment/film-workflow.html#assessment-and-cms-details"
-  },"70": {
+  },"76": {
     "doc": "Film Workflow",
     "title": "Nitrate Film",
     "content": "If an item is suspected or identified to be nitrate film, please follow the internal guidelines provided by NYPL’s Collection Management team: . | Deteriorated Nitrate Protocol 2018 (Internal) | . ",
     "url": "http://localhost:4000/pages/filmAssessment/film-workflow.html#nitrate-film",
     "relUrl": "/pages/filmAssessment/film-workflow.html#nitrate-film"
-  },"71": {
+  },"77": {
     "doc": "Home",
     "title": "NYPL Audio and Moving Image Preservation Documentation Portal",
     "content": "The Audio and Moving Image Preservation Unit is part of the Digital Collections Services department of The New York Public Library’s Digital Research Division. This site provides internal documentation for this unit’s programmatic workflows, including command-line instructions for various tools and step-by-step instructions for carrying out PAMI’s in-house and contract-based media digitization activities. Scripts and tools referenced in the documentation can be found within ami-preservation on GitHub. ",
     "url": "http://localhost:4000/#nypl-audio-and-moving-image-preservation-documentation-portal",
     "relUrl": "/#nypl-audio-and-moving-image-preservation-documentation-portal"
-  },"72": {
+  },"78": {
     "doc": "Home",
     "title": "Home",
     "content": " ",
     "url": "http://localhost:4000/",
     "relUrl": "/"
-  },"73": {
+  },"79": {
     "doc": "Metadata",
     "title": "Metadata",
     "content": "A metadata spreadsheet (“CMS export”) is created for each digitization batch, which is then delivered to either PAMI, for in-house digitization, or to a vendor for outsourced digitization. This spreadsheet includes only the fields provided by CMS prior to digitization, and is imported by the digitizer. Following digitization, this existing metadata is combined with new technical and digitization process information and each record is exported as individual JSON files that accompany each digital audio or video file produced. ",
     "url": "http://localhost:4000/pages/metadata.html",
     "relUrl": "/pages/metadata.html"
-  },"74": {
+  },"80": {
     "doc": "Metadata",
     "title": "JSON / ami-metadata",
     "content": ". | JSON metadata requirements are defined in NYPL’s JSON schema, ami-metadata, hosted on GitHub. | . ",
     "url": "http://localhost:4000/pages/metadata.html#json--ami-metadata",
     "relUrl": "/pages/metadata.html#json--ami-metadata"
-  },"75": {
+  },"81": {
     "doc": "Metadata",
     "title": "NYPL AMI Metadata and Controlled Vocabulary",
     "content": ". | A summary of metadata requirements and controlled vocabulary is provided in this Google Sheet. | . ",
     "url": "http://localhost:4000/pages/metadata.html#nypl-ami-metadata-and-controlled-vocabulary",
     "relUrl": "/pages/metadata.html#nypl-ami-metadata-and-controlled-vocabulary"
-  },"76": {
+  },"82": {
     "doc": "Optical",
     "title": "Optical Media Migration",
     "content": " ",
     "url": "http://localhost:4000/pages/amiLabs/optical.html#optical-media-migration",
     "relUrl": "/pages/amiLabs/optical.html#optical-media-migration"
-  },"77": {
+  },"83": {
     "doc": "Optical",
     "title": "Table of contents",
     "content": ". | CDs | DVDs . | Creating an ISO | Generating a single MP4 to represent all of the content on an ISO | . | . ",
     "url": "http://localhost:4000/pages/amiLabs/optical.html#table-of-contents",
     "relUrl": "/pages/amiLabs/optical.html#table-of-contents"
-  },"78": {
+  },"84": {
     "doc": "Optical",
     "title": "CDs",
     "content": " ",
     "url": "http://localhost:4000/pages/amiLabs/optical.html#cds",
     "relUrl": "/pages/amiLabs/optical.html#cds"
-  },"79": {
+  },"85": {
     "doc": "Optical",
     "title": "DVDs",
     "content": "Creating an ISO . Insert your DVD and unmount: . | Open terminal, run diskutil list | Locate the disk identifier of your DVD (typically something like disk1) | Run diskutil umount [DISK ID] | . Use ddrescue to create an ISO (brew install ddrescue if needed): . | ddrescue -b 2048 -r4 -v /dev/[DISK ID] [output ISO path] [output log path] | . Generating a single MP4 to represent all of the content on an ISO . | Open MakeMKV, and open your ISO | Select your output directory, and click Make MKV | Move all resulting MKVs into a single directory | Run dvd_concat.py on your directory ./dvd_concat.py -s [YOUR DIRECTORY] -d [output path for DVD] | Rename MP4 according to NYPL convention, and delete all MKVs | . ",
     "url": "http://localhost:4000/pages/amiLabs/optical.html#dvds",
     "relUrl": "/pages/amiLabs/optical.html#dvds"
-  },"80": {
+  },"86": {
     "doc": "Optical",
     "title": "Optical",
     "content": " ",
     "url": "http://localhost:4000/pages/amiLabs/optical.html",
     "relUrl": "/pages/amiLabs/optical.html"
-  },"81": {
+  },"87": {
     "doc": "PAMI Database",
     "title": "PAMI DB Content TBD",
     "content": " ",
     "url": "http://localhost:4000/pages/pami-database.html#pami-db-content-tbd",
     "relUrl": "/pages/pami-database.html#pami-db-content-tbd"
-  },"82": {
+  },"88": {
     "doc": "PAMI Database",
     "title": "PAMI Database",
     "content": " ",
     "url": "http://localhost:4000/pages/pami-database.html",
     "relUrl": "/pages/pami-database.html"
-  },"83": {
+  },"89": {
     "doc": "PAMI Overview",
     "title": "Overview of PAMI Unit",
     "content": " ",
     "url": "http://localhost:4000/pages/pami-overview.html#overview-of-pami-unit",
     "relUrl": "/pages/pami-overview.html#overview-of-pami-unit"
-  },"84": {
+  },"90": {
     "doc": "PAMI Overview",
     "title": "Table of contents",
     "content": ". | Staff | Project Structure . | Projects | Work Orders | Deliverables | . | Project tracking . | PAMI Database | Vendor Shipments | Trello | Google Drive | . | Project Close-Out . | Project Summaries | . | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#table-of-contents",
     "relUrl": "/pages/pami-overview.html#table-of-contents"
-  },"85": {
+  },"91": {
     "doc": "PAMI Overview",
     "title": "Staff",
     "content": "Rhony Dostaly, Media Preservation Engineer - Moving Image . Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections. Fran Dougherty, Media Preservation Engineer - Moving Image . Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections. Processes include: media stabilization/cleaning/repair, signal extraction, and creation of high quality digital files. Ryan Marino, Media Preservation Assistant . Assists with the coordination, evaluation, and implementation of specifications and workflows for digital asset quality control and film assessment. Genevieve Havemeyer-King, Media Preservation Coordinator . Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment; trains and supervises Media Preservation Assistants. Rebecca Holte, Manager of Audio and Moving Image Preservation . Manages overall AMI preservation program, recommends and develops preservation priorities, technology solutions, and workflows. Develops and manages donor and grant funds, vendor contracts, and mass digitization projects. Provides support for acquisitions and emergency response. Jeff Willens, Media Preservation Engineer - Audio . Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections. Seth Winner, Media Preservation Engineer - Audio . Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections. Andy Theodorou, Media Preservation Engineer - Audio . Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections. Benjamin Turkus, Assistant Manager of Audio and Moving Image Preservation . Provides oversight for all in-house media preservation lab operations, and manages Media Preservation Engineers. Develops workflows, documents processes, and pursues open source solutions. ",
     "url": "http://localhost:4000/pages/pami-overview.html#staff",
     "relUrl": "/pages/pami-overview.html#staff"
-  },"86": {
+  },"92": {
     "doc": "PAMI Overview",
     "title": "Project Structure",
     "content": "Projects . Within PAMI, a project describes reformatting activity on a batch of media, initiated by either on-going the AMI Initiative or Public Orders (patron or donor requests). Work Orders . Work Orders are a subdivision of a project, but a project may consist of one or many Work Order (many in-house Projects consist of only one Work Order, but most Contract / Vendor projects consist of multiple Work Orders due to the high-volume of media). Deliverables . Deliverable requirements for in-house vs. contract reformatting work vary slightly. | Vendor deliverable requirements are defined on the ami-specifications repo. | In-house deliverable requirements documentation is pending. | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#project-structure",
     "relUrl": "/pages/pami-overview.html#project-structure"
-  },"87": {
+  },"93": {
     "doc": "PAMI Overview",
     "title": "Project tracking",
     "content": " ",
     "url": "http://localhost:4000/pages/pami-overview.html#project-tracking",
     "relUrl": "/pages/pami-overview.html#project-tracking"
-  },"88": {
+  },"94": {
     "doc": "PAMI Overview",
     "title": "PAMI Database",
     "content": ". | The PAMI Database is used to establish project IDs, track deliverables, and generate statistics and metadata for AMI digitization projects. | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#pami-database",
     "relUrl": "/pages/pami-overview.html#pami-database"
-  },"89": {
+  },"95": {
     "doc": "PAMI Overview",
     "title": "Vendor Shipments",
     "content": ". | Upon arrival, all deliverables (hard drive or network-based shipments) are logged in the AMI Vendor Project Tracking sheet document. | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#vendor-shipments",
     "relUrl": "/pages/pami-overview.html#vendor-shipments"
-  },"90": {
+  },"96": {
     "doc": "PAMI Overview",
     "title": "Trello",
     "content": "Trello cards are used to manage digitization and quality control of in-house and vendor work orders. | Boards: . | NYPL AMI Labs | NYPL AMI Quality Control and Ingest | NYPL AMI Vendor Labs | . | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#trello",
     "relUrl": "/pages/pami-overview.html#trello"
-  },"91": {
+  },"97": {
     "doc": "PAMI Overview",
     "title": "Google Drive",
     "content": ". | AMI Google Team Drive is used for storing and sharing internal documents related to AMI work (specific folders are shared as needed with staff). | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#google-drive",
     "relUrl": "/pages/pami-overview.html#google-drive"
-  },"92": {
+  },"98": {
     "doc": "PAMI Overview",
     "title": "Project Close-Out",
     "content": " ",
     "url": "http://localhost:4000/pages/pami-overview.html#project-close-out",
     "relUrl": "/pages/pami-overview.html#project-close-out"
-  },"93": {
+  },"99": {
     "doc": "PAMI Overview",
     "title": "Project Summaries",
     "content": ". | Compiling Manifests &amp; Reports . | Capture Issues: Find &amp; delete the following characters in the vendor’s DNC reports &amp; HDmanifests . | vertical tab \\v | tab \\t | carriage return \\r | new line [similar to carriage return but they both appeared separately] \\n | . | . | DNC object management . | Separate the items by original project fund (pami work orders should at a minimum be separated by project fund). Example: Slifka, Mellon. No need to separate by unit or research center. | Manager will forward the DNC list separately, and you can review to identify what should be sent to PAMI. Manager will pull objects and box-up according to project fund. On return, media goes back into they’re original boxes. | For PAMI metadata, pull item records from the original metadata inventory from initial project and create internal db records (remembering to change the cms project code). CMS: . | CMS project code: PAMI | CMS title / description: DNC - [fund name] ….EXAMPLE: dnc - mellon CMS batch #:… next available sequential ## (can we put a placeholder in PAMI work orders until this is ready?) | . | . | . ",
     "url": "http://localhost:4000/pages/pami-overview.html#project-summaries",
     "relUrl": "/pages/pami-overview.html#project-summaries"
-  },"94": {
+  },"100": {
     "doc": "PAMI Overview",
     "title": "PAMI Overview",
     "content": " ",
     "url": "http://localhost:4000/pages/pami-overview.html",
     "relUrl": "/pages/pami-overview.html"
-  },"95": {
+  },"101": {
     "doc": "Parent Document",
     "title": "Parent Document Template",
     "content": " ",
     "url": "http://localhost:4000/pages/docsMgmt/templates/parent-document-template.html#parent-document-template",
     "relUrl": "/pages/docsMgmt/templates/parent-document-template.html#parent-document-template"
-  },"96": {
+  },"102": {
     "doc": "Parent Document",
     "title": "Table of contents",
     "content": ". | Heading | . ",
     "url": "http://localhost:4000/pages/docsMgmt/templates/parent-document-template.html#table-of-contents",
     "relUrl": "/pages/docsMgmt/templates/parent-document-template.html#table-of-contents"
-  },"97": {
+  },"103": {
     "doc": "Parent Document",
     "title": "Heading",
     "content": "Write words here! . | Bulleted list . | Sub-bullets command line text example | . | . ",
     "url": "http://localhost:4000/pages/docsMgmt/templates/parent-document-template.html#heading",
     "relUrl": "/pages/docsMgmt/templates/parent-document-template.html#heading"
-  },"98": {
+  },"104": {
     "doc": "Parent Document",
     "title": "Parent Document",
     "content": " ",
     "url": "http://localhost:4000/pages/docsMgmt/templates/parent-document-template.html",
     "relUrl": "/pages/docsMgmt/templates/parent-document-template.html"
-  },"99": {
+  },"105": {
     "doc": "Quality Control",
     "title": "Quality Control Overview",
     "content": "Our quality control (QC) workflow leverages both automated and manual processes to ensure that digital assets meet our specifications. We perform automated QC on 100% of our deliverables, and manual QC on approximately 10-15%. Our workflow incorporates the following open source tools: . | Ajv: an open source JSON schema validator | BagIt: an open source tool for verifying file fixity and adherence to the BagIt specification | Flac Utility: An open source tool for lossless compression / encoding / decoding of audio files to the Free Lossless Audio Codec | Isolyser: an open source tool used to verify size of ISO 9660 image against Volume Descriptor fields | MediaConch: an open source specification conformance checker which uses Mediainfo | Mpv: an open source cross-platform media player | QCTools: a software tool that helps users analyze and understand their digitized video files through use of audiovisual analytics and filtering | RAWCooked: an open source tool for lossless compression / encoding / decoding of DPX image sequences | . ",
     "url": "http://localhost:4000/pages/qualityControl/qc-overview.html#quality-control-overview",
     "relUrl": "/pages/qualityControl/qc-overview.html#quality-control-overview"
-  },"100": {
+  },"106": {
     "doc": "Quality Control",
     "title": "Quality Control",
     "content": " ",
     "url": "http://localhost:4000/pages/qualityControl/qc-overview.html",
     "relUrl": "/pages/qualityControl/qc-overview.html"
-  },"101": {
+  },"107": {
     "doc": "Quality Control Workflow",
     "title": "Quality Control Workflow",
     "content": "Internal workflow for carrying out QC on digital assets. ",
     "url": "http://localhost:4000/pages/qualityControl/qc-workflow.html",
     "relUrl": "/pages/qualityControl/qc-workflow.html"
-  },"102": {
+  },"108": {
     "doc": "Quality Control Workflow",
     "title": "Table of contents",
     "content": ". | Shipment Intake &amp; QC Cheat-Sheet | Quality Control Overview . | Vendor Deliverables . | Mounting Drives Read-Only | JSON Validation | Media specification validation (MediaConch) | Generating a QC list | Content Inspection . | Locate &amp; Open QC log | Spot Checking Content &amp; JSON | Logging QC Failures &amp; Flags | Media Ingest Preparation | . | . | Tools | . | . ",
     "url": "http://localhost:4000/pages/qualityControl/qc-workflow.html#table-of-contents",
     "relUrl": "/pages/qualityControl/qc-workflow.html#table-of-contents"
-  },"103": {
+  },"109": {
     "doc": "Quality Control Workflow",
     "title": "Shipment Intake &amp; QC Cheat-Sheet",
     "content": ". | Enter all drives and associated invoice IDs (“shipments” / “work orders”) received into the Vendor Project Tracking sheet. Complete all fields (some are formulas - highlighted gray if so). | Copy the “work order ID” that is automatically generated in the Vendor Project Tracking sheet (column A). | Create an ICC/Logs directory named with the work order ID . | Create a Trello Card on the Vendor QC Trello Board and paste the work order ID into the Title of the card. | Create a QC log in the Team Drive QC Folder for each hard drive: . | make a copy of the QC Log Template &amp; rename the copy using the same work order ID, (follow the QC log template naming convention). | . | Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log). | Mount drive read-only. | Validate JSON: (refer to ami-metadata for schema details) note: if you encounter failures during JSON validation, add failed Bag/s to QC list and mark as failed and note the reason in detail. ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r \"/path/to/ami-metadata/versions/2.0/schema/*.json\" -d \"/Volumes/DRIVE-ID/*/*/data/*/*.json\" . | Run MediaConch: the ami-preservation repo contains a directory, qc_utilities. Within this are various scripts and tools, including the mediaconch scripts listed below which will generate ‘pass/fail’ logs in your home directory when run against a directory of media files. cd /Volumes/DRIVE-ID/ . then… . | For VIDEO: /path/to/qc_utilities/mediaconch_videoFFv1.sh &amp;&amp; /path/to/qc_utilities/mediaconch_videoAnalogSC.sh . | For AUDIO: /path/to/qc_utilities/mediaconch_audioAnalog.sh . | . | Validate Bags Overnight: (Ensure that your computer does not sleep. Darken your display manually before leaving.) cd path/to/dir/of/bags ..then… . | . path/to/validate_bags.sh . | Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue. | AUDIO ONLY: Check a selection of FLAC for embedded metadata . | Copy 5 .flac files delivered to Desktop and decode these new copies back to wav. flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac . | Check BEXT in newly decoded .wavs using BWF MetaEdit. Discard .wavs and .flac copies after use. | . | Perform Manual QC … . | Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file) | Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible. | . | After manual QC, if all bags are valid…Then: . | Move JSON to ICC (must be connected to ICC): find /Volumes/DRIVE-ID/ -name '*.json' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/VendorJSON ';' . | Move IMAGES to ICC, if received (must be connected to ICC) | . | . find /Volumes/DRIVE-ID/ -name '*.JPG' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/AssetImages ';' . &amp; . find /Volumes/DRIVE-ID/ -name '*.jpg' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/Asset_Images ';' . | Pull MediaInfo &amp; output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC | . python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv . | Wrap Up… . | Move the Trello Card to the proper list (passed / failed etc.) | IF APPROVED: . | email vendor to confirm QC approval of designated shipment &amp; invoice number; CC Rebecca to approve invoice | Database: update database for approved shipments | . | IF NOT APPROVED . | Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames. &amp; | Move Trello card to “Flags &amp; Failures To Review” list in Trello. | MPC: Follow up with vendor about errors and resolve before approving shipments with errors and moving Trello card to the ‘Passed QC’ list. | . | . | . ",
     "url": "http://localhost:4000/pages/qualityControl/qc-workflow.html#shipment-intake--qc-cheat-sheet",
     "relUrl": "/pages/qualityControl/qc-workflow.html#shipment-intake--qc-cheat-sheet"
-  },"104": {
+  },"110": {
     "doc": "Quality Control Workflow",
     "title": "Quality Control Overview",
     "content": "Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections. Our QC workflow is currently comprised of the following processes: . | Fixity check: custom scripts that incorporate Bagit.py | JSON validation using ajv | MediaConch specification conformance check | Manual bag, content, &amp; metadata inspection | . Our QC workflows vary slightly between Vendor and In-House deliverables, so the following handbook is divided to reflect that. The following sections will provide step-by-step instructions for carrying out our QC processes. ",
     "url": "http://localhost:4000/pages/qualityControl/qc-workflow.html#quality-control-overview",
     "relUrl": "/pages/qualityControl/qc-workflow.html#quality-control-overview"
-  },"105": {
+  },"111": {
     "doc": "Quality Control Workflow",
     "title": "Vendor Deliverables",
     "content": "For Vendor deliverables, QC is primarily performed directly on hard-drives. Mounting Drives Read-Only . The most important step during QC is to mount your drive(s) Read-Only. JSON Validation . Run the following in Terminal to check if JSON is valid against the appropriate schema: . ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r \"/path/to/ami-metadata/versions/2.0/schema/*.json\" -d \"/Volumes/DRIVE-ID/*/*/data/*/*.json\" . Media specification validation (MediaConch) . Use either MediaConch CLI or MediaConch GUI to make sure files meet NYPL specifications. Generating a QC list . Use Terminal to generate a QC list for each drive you are QCing by following the steps outlined here. Content Inspection . Content inspection can be completed either on ICC or on the drive by following the steps outlined here. Locate &amp; Open QC log . Each QC log should be easily found linked in Google Drive as an attachment in the Trello Card for the batch you are inspecting. If not, check with MPA. Tip: you can search for the drive ID / work order ID in the Trello search box. | Use the list of files that appears in the Google Sheet QC log (in the QClog tab) as your list of files to check. | Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes. | . Spot Checking Content &amp; JSON . Use a text-editor (Atom / Notepad / Text Edit etc.) to open and inspect JSON files. Logging QC Failures &amp; Flags . Use this list of definitions to review and mark-off the items listed in the QC log. Media Ingest Preparation . Follow these steps to prepare media for ingest. ",
     "url": "http://localhost:4000/pages/qualityControl/qc-workflow.html#vendor-deliverables",
     "relUrl": "/pages/qualityControl/qc-workflow.html#vendor-deliverables"
-  },"106": {
+  },"112": {
     "doc": "Quality Control Workflow",
     "title": "Tools",
     "content": "See PAMI Tools List for descriptions, usage, and installation instructions . ",
     "url": "http://localhost:4000/pages/qualityControl/qc-workflow.html#tools",
     "relUrl": "/pages/qualityControl/qc-workflow.html#tools"
-  },"107": {
+  },"113": {
     "doc": "Command Line Resources",
     "title": "Resources",
     "content": " ",
     "url": "http://localhost:4000/pages/resources.html#resources",
     "relUrl": "/pages/resources.html#resources"
-  },"108": {
+  },"114": {
     "doc": "Command Line Resources",
     "title": "Table of contents",
     "content": ". | Packages and Software | Scripts and Repos . | Github Repos . | ami-metadata | ami-tools | make_bags.sh | check_mediainfo.py | repair_bag.py / Fix_baginfo.py | . | ffmpeg . | Audio | . | MediaConch . | MediaConch Command-line | MediaConch Failures Procedure | . | Generating a QC list | Content Inspection . | General Overview | Formatting Hard Drives exFAT | Spot Checking Content &amp; JSON | Logging QC Failures &amp; Flags . | Definitions | Urgent / Systematic errors | . | Media Ingest Preparation | . | . | .DS_Store Files . | Prevent creation of .DS_Store files on network shares | Remove .DS_Store files | . | Transcoding and Packaging for In-House Video Files | MPV | wget | Formatting Harddrives | Commands . | Mounting Drives Read-Only | JSON Validation | Creating New HDmanifests . | Create a new HDmanifest for an Audio directory | Create a new HDmanifest for an Video directory | . | Parsing Files and Reports . | Move JSON / JPGs | Grep JSON | Grep Validation Logs | . | . | Google Sheet formulas: . | Return content/value after ‘nth’ character in a cell | Flag items that aren’t in a specified range | Color-code duplicates in a range of columns | Creating a filtered list divided by a number (for 10%, 20% etc.) | Query for cell content | . | Working with tars . | Creating tars | Examining tars | Extracting files from tars | . | . ",
     "url": "http://localhost:4000/pages/resources.html#table-of-contents",
     "relUrl": "/pages/resources.html#table-of-contents"
-  },"109": {
+  },"115": {
     "doc": "Command Line Resources",
     "title": "Packages and Software",
     "content": "NOTE: Be aware of where on your computer you are installing scripts. If you are not familiar with command line tools and usage, please ask for help before installing anything. | Download Microsoft Office / Open Office | Applications: . | Atom | Firefox | Chrome | Homebrew | . | MediaInfo: brew install mediainfo . | Git: brew install git . | ffmpeg - install with flags listed below: brew install ffmpeg --with-sdl2 --with-freetype --with-openjpeg --with-x265 --with-rubberband --with-tesseract . | Good instructions on Reto Kramer’s website. | . | Pip: . | First, check that you have pip installed: pip --version . | If you get a version number, you can install BagIt Python (skip the pip instructions below and move on to installing bagit). If you get a message that pip isn’t installed, install pip: . | Go to https://pip.pypa.io/en/stable/installing/ | Click on the hyperlinked “get-pip.py”. | A tab should open that looks like a text file – save the page (Command-S) to a specific place on your computer (Desktop / Downloads / Home folder etc.). | In Terminal, cd into the directory where you downloaded the script. | Run the script: python path/to/get-pip.py . | Pip should now be installed. | . | . | Python 2.7.12 (for bagit) &amp; python3 (for other things) . | Go to https://www.python.org/downloads/mac-osx/ and install Python 2.7.12. | Then install: Brew install python3 . | Note: this also installs pip3, which you need in order to install python3 scripts below) | . | Bagit Python (install both) pip install bagit . pip3 install bagit . | Pymediainfo pip3 install pymediainfo . | Mediaconch &amp; Mediaconch CLI . | Install the Media Conch GUI then: brew install mediaconch . | . | QC Tools . | Go to https://bavc.org/preserve-media/preservation-tools | QCtools reports / QCparse - not in use yet, but have been tested; are installed on c03 corner Mac brew install qcli . ======= . | . | . ",
     "url": "http://localhost:4000/pages/resources.html#packages-and-software",
     "relUrl": "/pages/resources.html#packages-and-software"
-  },"110": {
+  },"116": {
     "doc": "Command Line Resources",
     "title": "Scripts and Repos",
     "content": "Github Repos . ami-metadata . | Dependencies: . | Npm &amp; ajv: brew install npm . | Then, in Terminal: npm install -g ajv-cli . | . | For json schema validation &amp; development. See usage instructions on GitHub. | . ami-tools . Many different scripts, mostly for bagit-related repair &amp; validation tasks . | pip3 install . (Be sure to include the “.”) This should automatically install the following dependencies (but here they are just in case): . | tqdm | xlrd | Openpyxl | . | Survey_drive.py This will create a series of reports on a specified drive: . | Mount drive | Open Terminal | cd ami-tools | python3 path/to/survey_drive.py -d path/to/Volume -o path/to/location_for_Reports | . | . make_bags.sh . For making a lot of directories into bags overnight. | https://github.com/genfhk/ghk-sandbox/tree/master/make_bags | Usage: . | cd path/to/dir/of/bags | /path/to/script (enter) | . | Note: Be sure to update the log-drop location in this script for your own machine, or it won’t work (until new version merged in ami-tools repo). | . check_mediainfo.py . | Usage: . python3 /path/to/check_mediainfo.py -d /path/to/dir/with/bags -f _filename.mp4 . | Currently this script is set to check files that have fewer than 2 audio channels (as reported by mediainfo), but this may be changed, enhanced for other fields / values, etc. | . repair_bag.py / Fix_baginfo.py . Use Case: Adding metadata file to a single Bag and repairing the manifests . | Add completed metadata file to the bag in the appropriate directory | Optional . Python3 path/to/repair_bags.py -b /path/to/bag --deletefiles . | (this will delete the .DS_Store ‘s) | Run repair_bags.py: . Python3 path/to/repair_bags.py -b /path/to/bag --addfiles . (this will update the manifest with any new files) . | Check if bag is complete using bagger or validate_bags.py (only checks bag ‘completeness’ - not checksum validation, but theoretically should be good enough): . Python3 path/to/validate_ami_bags.py -b /path/to/bag . Note: The above scripts can be used for checking directories of bags or single bags, by using -d for directories and specifying the parent directory containing the bags, or -b for bag and specifying just the bag directory. | . ffmpeg . Audio . | In-house Audio Edit Master &gt; AWS Audio Edit Master / Service Copy (audio as mp4): . | [individual file version]: ffmpeg -i path/to/input_em.wav -c:a aac -b:a 320k -dither_method rectangular -ar 44100 path/to/name-of-output_em.mp4 . | [directory of files version]: for file in *wav ; do ffmpeg -i \"$file\" -c:a aac -b:a 320k -dither_method rectangular -ar 44100 \"${file%.*}.mp4\" ; done . | . | . MediaConch . | Option A (Mac only): Use MediaConch CLI to ensure that files meet NYPL specifications . | Check that MediaConch CLI is installed. If it is not, install it. | If you’ve cloned the ami-tools Github repo, you can find all of NYPL’s MediaConch Policies within the ami-files directory. Otherwise, they can be found on ICC. | Basic terminology is to use the “find” command to locate the type of file you’ll be cross-checking against the policy (.mkv, .wav, etc.), and then applying the relevant MediaConch policy. Open Terminal to run the following commands for the specific media type &amp; file roles you are inspecting. | The CLI report is output as a .csv file. Move this file into the log folder for the batch you are reviewing. | The MediaConch GUI should be downloaded for checking individual files and for general purposes. | . | . MediaConch Command-line . | Media Type | File Role | Commands | . | Video | PM | cd /Volume/DRIVEID/ find ./ -name \"*.mkv\" -exec mediaconch -p path/to/video_PM_policy.xml \"{}\" \\; &gt; /path/to/ICC/DRIVEID_Medicaconch_PMs.csv | . | Video | SC | cd /Volume/DRIVEID/ find ./ -name \"*.mp4\" -exec mediaconch -p path/to/video_SC_policy.xml \"{}\" \\; &gt; path/to/ICC/DRIVEID_Medicaconch_SCs.csv | . | Audio | PM | cd /Volume/DRIVEID/ find ./ -name \"*_pm.wav\" -exec mediaconch -p path/to/audio_PM_policy.xml \"{}\" \\; &gt; path/to/ICC/DRIVEID_Medicaconch_PMs.csv | . | Audio | EM | cd /Volume/DRIVEID/ find ./ -name \"*_em.wav\" -exec mediaconch -p path/to/audio_EM_policy.xml \"{}\" \\; &gt; path/to/ICC/DRIVEID_Medicaconch_EMs.csv | . | Option B: Use MediaConch GUI to check a selection of Preservation Master files, or a single file, against the NYPL PAMI Preservation Master policy.Under “Check Files”: . | Select the NYPL Policy from the drop down list for the appropriate media type you are inspecting (analog / digital, audio / video) | Select Display MediaConch HTML | Choose Files: Select multiple PMs all at once &gt; done | Click “Check Files” on the ‘Checker’ interface | Adjust the number of items viewed in the list to 100 (upper left hand corner of results) MediaConch Failures Procedure . | CLI: TBD . | Review the JSON metadata for the files to see if there are attributes of the file or source object that would require you to use a different policy for those specific Preservation Master files. | If there definitely is something wrong with the file, if it is critical and appears systematic, notify vendor immediately to prevent creation of more bad files. If it seems like a one-off, make note of it in the log and save for the full QC report on the entire shipment/invoice. | . | GUI: . | Under “Results”, VIEW the report by clicking the [[SYMBOL GOES HERE]] symbol in the column under “Policy”. You can display the report in different formats using the “Display” drop down menu provided in the viewing window. MediaConch Text / HTML are easiest on the eyes. | . | . | . MEDIACONCH SCREENSHOT GOES HERE . Media Conch GUI, with PAMI Policy &amp; “Download policy report” bubble showing. | Note on MediaConch limitations &amp; Interlacing MediaInfo does not always adequately report all characteristics of a file (or may report them incorrectly). If a file fails, review the report to see why it failed. Investigate and determine whether there is actually something wrong with the file, or just a flaw / glitch with the software / policy. | For more accurate confirmation of interlacing / Scan Type, use Ffmpeg - run the following command, which checks the field dominance of the first 1000 frames of video: ffmpeg -filter:v idet -frames:v 1000 -an -f rawvideo -y /dev/null -ipath/to/file.mov | . Generating a QC list . | Cd /path/to/Audio or Video directory | ls Audio/Video &amp;gt; path/to/log/folder/batchID_assetlist.csv | [Import csv into google sheets qc log created from template:] . | The QC template has built-in formulas in the “list” tab. | Navigate to the “asset list” .csv file for the drive you are QCing. | Navigate to the “list” tab in your QC log | Select the proper cell for either Audio or Video media that you are importing data for (i.e. if you’re importing an AUDIO asset list, select the audio cell as instructed in the log). The two cells have different formulas applied for the different quotas we are meeting for audio vs. video data (5% audio vs. 10% video) | Once you’ve selected the cell, import assetlist.csv into A1 of the “list” tab of the existing Google Sheets QC log (File&gt;Import&gt;Upload a file) . | Select “Replace contents starting with selected cell” and “comma separated” when the dialog window appears (because you are importing a .csv) | . | The line items will then be imported into the sheet, and the column next to it will generate a filtered list. This is your spot checking list. | Copy/Paste Special&gt;”Paste values only” the list of filtered Primary IDs into the “QClog” tab, in the Primary ID column. Do this for one media type at a time. (i.e. if there are both audio and video assets on a single drive, first copy the audio items list, then copy the video items list below it. | . | Proceed with spot checking. | . | . Content Inspection . General Overview . | Software requirements: . | Text editor (Atom, Text Edit, Notepad all equally fine) | VLC | . | Content inspection can be completed either on ICC or on the drive. | On ICC: make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags. | Locate the directory that contains batch to QC in the 3_Ready_To_QC folder, if assigned by MPA. | Follow the below instructions (skip “Mount Read Only” section) | . | On Hard Drive: Mount Drive Read Only before opening any directories, and follow the below instructions | . | . Formatting Hard Drives exFAT . See: https://joshuatj.com/2015/05/13/how-to-format-your-hard-drive-hdd-for-mac-os-x-compatibility-with-the-correct-exfat-allocation-unit-size/ . | allocation unit size: 128kb Spot Checking Content &amp; JSON . | Open and inspect JSON file using a text-editor (Atom / Notepad / Text Edit etc.) to ensure that: . | There is one JSON file for each digital asset created from a physical object | JSON files are named properly | All elements are properly structured | All fields contain values (except “bibliographic date”, which is allowed to be left empty). | Technical characteristics/configurations noted in JSON make sense for what you are hearing / seeing. Note: if content quality is questionable, make sure to check whether item was cleaned/baked/in poor condition. This will give perspective on the quality of the file. | . | . | Check files for anomalies . | Manually check 30sec sections at beginning, middle, end of each file. | Things to consider when working with audio files: . | No 5 second overlap between heads and tails of Parts or Regions | Reversed content that was not transferred as a separate region | Tip: For a quick check of the entire drive for objects with Regions, grep the directory for “p01” or “r01” | . | Things to consider when working with video files: . | Service Copy plays and does not contain transcoding errors / is not corrupt. | . | . | . | . Logging QC Failures &amp; Flags . Use the Definitions below to review and mark-off the items listed in the QC log. | Be as concise as possible when noting questions and errors, so MPA does not have to double-check or clarify with you before compiling notes for Vendors. | Feel free to add rows for additional assets if you encounter more errors when troubleshooting. Rows are ‘per bag’. | When QC is complete, send an email to notify MPA / Asst Mgr. that there are some items to review. They will compile all notes for a shipment into a single email and communicate to the vendor. Note: Try to troubleshoot errors to make sure you’re not missing something about the nature of the tape that would impact the quality or structure of the file or metadata, e.g. if it was a very poor quality tape and they baked it twice and cleaned it and tried it on multiple machines. | . Definitions . | Question: A question which will help determine whether an item should be reworked or not. Example: . | Freeze frame at the head of the Preservation Master, not noted in the JSON signalNotes. Is this freeze-frame recorded in on-tape? | . | Flag: A moderate or minor error that is concerning but that DOES NOT require rework, but does require. Examples: . | An audio Edit Master was not levelled-out. The volume level is the same as the Preservation Master, which is lower than the ideal listening volume. | Audio channels in a video Service Copy were not mixed down the audio from the single channel audible in the Preservation Master, so Service Copy only has one channel of audible content. | . | Fail: A severe, systematic, or critical error that you think will most likely require retransfer, updating of metadata, and/or rebagging. Examples: . | The metadata for a video asset describes audible content, but the Preservation Master and Service Copy do not have audio. | An audio asset appears to sound entirely backwards (reversed content on a single face -f01 -was not split out into a separate Face -f02-) | . | Pass No errors, or any errors listed in the notes are inconsequential, inherent to tape, or only included as supplemental information for future cataloger inquiries. Urgent / Systematic errors . | If you notice that there is something consistently and terribly wrong with many files in a row, please notify MPA / Asst. Mgr immediately so we can notify vendor and avoid replicating the error in future deliverables ASAP. (e.g. the ’barcode’ field in the JSON files is consistently “000000000”, or the ‘duration’ values are all wrong, or every value for ‘filename’ is the same across an entire batch.) | . Media Ingest Preparation . | Make sure all logs are stored on ICC | Update STATS 3 | Move Trello card to proper list - Passed QC / Hold for Vendor Response (if flags / fails) | Store drive on proper shelf in C10: . | Shelf 1 = there is a “Passed QC” level in here | Shelf 9 = there is a “Hold for Vendor response” level in here. | Alternatively, give the drive back to the MPA / Asst. Mgr. or leave it on their desk and send an email. | . | . [QC complete! - if there are failures, all failures in an entire shipment will be combined and sent as a single email; report them to the MPA] . ",
     "url": "http://localhost:4000/pages/resources.html#scripts-and-repos",
     "relUrl": "/pages/resources.html#scripts-and-repos"
-  },"111": {
+  },"117": {
     "doc": "Command Line Resources",
     "title": ".DS_Store Files",
     "content": "Prevent creation of .DS_Store files on network shares . Run in Terminal: . | defaults write com.apple.desktopservices DSDontWriteNetworkStores -boolean true | . Run to check if it worked: . | defaults read com.apple.desktopservices DSDontWriteNetworkStores . Should return “true” or “1” . | . Remove .DS_Store files . | cd [path to volume you want to clean] [enter] | find . -name '.DS_Store' -type f -delete [enter] . Volume must be made writeable (be sure to put back to Read Only!), and you must not have anything in it selected in Finder - best not to open it in finder at all. | Disable .DS_Store files on MacOS El Capitan: . http://pixelcog.com/blog/2016/disable-ds_store-in-el-capitan/ . | Prevent creation of .DS_Store files on network shares: . defaults write com.apple.desktopservices DSDontWriteNetworkStores -boolean true . | Check if it worked: . defaults read com.apple.desktopservices DSDontWriteNetworkStores . (Should return “true” or “1”) . | . ",
     "url": "http://localhost:4000/pages/resources.html#ds_store-files",
     "relUrl": "/pages/resources.html#ds_store-files"
-  },"112": {
+  },"118": {
     "doc": "Command Line Resources",
     "title": "Transcoding and Packaging for In-House Video Files",
     "content": "A transcoding and packaging bash script (NYPLpackage.sh) that does it all (transcodes MKVs, MP4s, generates QCTools Reports, Framemd5 checksums, and packages all in the appropriate directory structure) is around for general use, but occasionally you may need to transcode single files or small groups of files. The following commands will help: . To make an MKV from an uncompressed source: . | NTSC . ffmpeg -i input_file -map 0 -dn -c:v ffv1 -level 3 -coder 1 -context 1 -g 1 -slicecrc 1 -slices 24 -field_order bt -vf setfield=bff,setdar=4/3 -color_primaries smpte170m -color_range tv -color_trc bt709 -colorspace smpte170m -c:a flac output_file.mkv . | PAL . ffmpeg -i input_file -map 0 -dn -c:v ffv1 -level 3 -coder 1 -context 1 -g 1 -slicecrc 1 -slices 24 -field_order tb -vf setfield=tff,setdar=4/3 -color_primaries bt470bg -color_range tv -color_trc bt709 -colorspace bt470bg -c:a flac output_file.mkv . | . Batch version: . | NTSC: . for file in *.mov ; do ffmpeg -i \"$file\" -map 0 -dn -c:v ffv1 -level 3 -coder 1 -context 1 -g 1 -slicecrc 1 -slices 24 -field_order bt -vf setfield=bff,setdar=4/3 -color_primaries smpte170m -color_range tv -color_trc bt709 -colorspace smpte170m -c:a flac \"${file%.*}.mkv\" ; done . | PAL . for file in *.mov ; do ffmpeg -i \"$file\" -map 0 -dn -c:v ffv1 -level 3 -coder 1 -context 1 -g 1 -slicecrc 1 -slices 24 -field_order tb -vf setfield=tff,setdar=4/3 -color_primaries bt470bg -color_range tv -color_trc bt709 -colorspace bt470bg -c:a flac \"${file%.*}.mkv\" ; done . | . To make an MP4: . ffmpeg -i input_file -map 0:a -map 0:v -c:v libx264 -movflags faststart -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -vf yadif -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 output_file.mp4 . Batch version: . for file in *.mkv ; do ffmpeg -i \"$file\" -map 0:a -map 0:v -c:v libx264 -movflags faststart -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -vf yadif -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 \"${file%.*}_sc.mp4\" ; done . Batch version w/ pan left to center: . for file in *mkv ; do ffmpeg -i \"$file\" -c:v libx264 -movflags faststart -filter_complex '[0:v]yadif[outv];[0:a]pan=stereo|c0=c0|c1=c0[outa]' -map '[outv]' -map '[outa]' -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 \"${file%.*}_sc.mp4\" ; done . Batch version w/ pan right to center: . for file in *mkv ; do ffmpeg -i \"$file\" -c:v libx264 -movflags faststart -filter_complex '[0:v]yadif[outv];[0:a]pan=stereo|c0=c1|c1=c1[outa]' -map '[outv]' -map '[outa]' -pix_fmt yuv420p -b:v 3500000 -bufsize 1750000 -maxrate 3500000 -c:a aac -strict -2 -b:a 320000 -ar 48000 -aspect 4:3 \"${file%.*}_sc.mp4\" ; done . To make a Prores 422 HQ from an uncompressed or lossless source: . ffmpeg -i input_file -map 0:a -map 0:v -c:v prores -profile:v 3 -vf yadif -c:a copy output_file.mov . Batch version: . for file in *.mkv ; do ffmpeg -i \"$file\" -map 0:a -map 0:v -c:v prores -profile:v 3 -vf yadif -c:a pcm_s24le \"${file%.*}_prores.mov\" ; done . Rsyncing JSON and JPEGS: . rsync -rtv /DRIVEID/*/*/data/*/*.json /path/to/destination . rsync -rtv /DRIVEID/*/*/data/*/*.jpg /path/to/destination . Occasionally, this will result in an “argument list too long” error (mostly a problem with audio drives, which can contain thousands and thousands of files). In these cases, the following will work: . find DRIVEID/ -name '*.json' -exec rsync -rtv --progress {} /path/to/destination ';' . find DRIVEID/ -name '*.jpg' -exec rsync -rtv --progress {} /path/to/destination ';' . ",
     "url": "http://localhost:4000/pages/resources.html#transcoding-and-packaging-for-in-house-video-files",
     "relUrl": "/pages/resources.html#transcoding-and-packaging-for-in-house-video-files"
-  },"113": {
+  },"119": {
     "doc": "Command Line Resources",
     "title": "MPV",
     "content": "Install mpv: https://mpv.io/installation/ . ",
     "url": "http://localhost:4000/pages/resources.html#mpv",
     "relUrl": "/pages/resources.html#mpv"
-  },"114": {
+  },"120": {
     "doc": "Command Line Resources",
     "title": "wget",
     "content": "For FTP and other types of file transfer . | Brew install wget: . wget -r 'ftp://username:password@ip/directoryname' . | Directory is cloned onto your current working directory . | . ",
     "url": "http://localhost:4000/pages/resources.html#wget",
     "relUrl": "/pages/resources.html#wget"
-  },"115": {
+  },"121": {
     "doc": "Command Line Resources",
     "title": "Formatting Harddrives",
     "content": ". | Brew cask install fuse . | Brew install ntfs3g . | . ",
     "url": "http://localhost:4000/pages/resources.html#formatting-harddrives",
     "relUrl": "/pages/resources.html#formatting-harddrives"
-  },"116": {
+  },"122": {
     "doc": "Command Line Resources",
     "title": "Commands",
     "content": "The following commands come in handy when troubleshooting specific errors, json failures, or preparing a machine for doing QC work. Mounting Drives Read-Only . The most important step during QC. | Open Terminal | Open Disk Utility | Plug in/turn on hard drive | Unmount using Disk Utility (or using Terminal command ‘umount’) | Make note of diskID: . | In Disk utility, click “info” or select the drive on the list and type ‘command+i’ . | or use Terminal command ‘list’ | . | . | In Terminal, type the following, where “diskID” = the diskID you just found (i.e. disk1s2): . | Diskutil mount readOnly diskID | . | Your disk should be mounted read-only now | . JSON Validation . | Run the following command(s) in Terminal to check if JSON is valid against schema . | cd path/to/ami-metadata | ajv validate -s path/to/versions/#.#/schema/digitized.json -r \"versions/#.#/schema/*.json\" -d \"dir_of_bags/*/data/*/*.json\" | Select entire output of validation and export as DRIVEID_jsonvalidationlog.txt into log folder | grep -o -c -i -h -r invalid  path/to/ICC/Logs/Project/DRIVEID_jsonvalidationlog.txt | . | JSON invalid?: . | Run validation on individual failed files to retrieve specific errors and create a list to send failure report to vendor. | To check for further errors, you must copy the file, fix the first error on the copy version, and validate the copy to see if more errors pop up - the validator will fail a file at the first error it encounters and stop there. | . | . | . Creating New HDmanifests . These commands will create manifests for all files, excluding all subdirectories and BagIt related files. You can add/remove file types within the -iname flags to include or exclude other types. Create a new HDmanifest for an Audio directory . | cd /Volumes/DRIVEID | find Audio/ -type f \\( -iname \"*.wav\" -or -iname \"*.json\" \\) &gt; path/to/dest.csv | . Create a new HDmanifest for an Video directory . | cd /Volumes/DRIVEID | find Video/ -type f \\( -iname \"*.mkv\" -or -iname \"*.mp4\" -or -iname \"*.json\" \\) &gt; path/to/dest.csv | . Parsing Files and Reports . Move JSON / JPGs . | rsync -rtv /DRIVEID/*/data/*/*.json /path/to/destination . | rsync -rtv /DRIVEID/*/*/data/*/*.jpg /path/to/destination . | . Occasionally, this will result in an “argument list too long” error (mostly a problem with audio drives, which can contain thousands and thousands of files). In these cases, the following will work: . | find DRIVEID/ -iname '*.json' -exec rsync -rtv --progress {} /path/to/destination ';' . | find DRIVEID/ -iname '*.jpg' -exec rsync -rtv --progress {} /path/to/destination ';' . | . Grep JSON . The Grep tool can be used for many things, including: . | Parsing the ‘Logs’ folder on ICC to find the drive that contains a certain Bag | Performing mass fixes on specific recurring errors | Identifying all files with a known error, to make a list of things to fix / rework | . grep -i -H -R \"someString\" Volumes/HardDrive/*/*/data/*/*.json . OR . Cd dir/of/bags/ . find . -name \"*.json\" | xargs grep \"audio cassette digital\" . This recursively searches for specific text in a json file and returns the line of text as well as the filename and path containing the text. Use * to mark any directories that will have variable names (such as objects / bags) . Grep Validation Logs . The following are examples for parsing the json validation log and bag validation log for invalid objects. | grep -i -H -R \"invalid\" path/to/jsonvalidationlog.txt . | grep -i -H -R \"invalid\" path/to/validationLogFile.log . | . ",
     "url": "http://localhost:4000/pages/resources.html#commands",
     "relUrl": "/pages/resources.html#commands"
-  },"117": {
+  },"123": {
     "doc": "Command Line Resources",
     "title": "Google Sheet formulas:",
     "content": "Return content/value after ‘nth’ character in a cell . =RIGHT(A1,LEN(A1)-5) (where A1 is the source cell. Adjust number of characters from “-5” to match the number of characters you want to omit from new cell) . Flag items that aren’t in a specified range . Insert the following formula next to a cell you’d like to confirm is in a given column. If the cell is not in the given column, it will return the value of that cell (which would enable you to create a filtered list of all items that show up as missing from the column). =IF(COUNTIF($C:$C, $B4)=0, B4, \"\") . Color-code duplicates in a range of columns . | Select range of columns (this works best with a small rage, where there are very few columns to consider, like 2) | ctrl-click and select conditional formatting for just that range. | Use custom formula below &amp; set desired color of cell / formatting (where A:B is the range - adjust for different ranges): | . =COUNTIF($A$1:$B$1031, INDIRECT(ADDRESS(ROW(), COLUMN(), 4))) &gt; 1 . | Good for performing check-in of physical assets (to confirm that the original list of items has been scanned | Finding duplicates between two lists, i.e. the DNC list from one batch to another to make sure projects aren’t getting mixed up | Checking between a list of items that have been QC’d vs total items | . Creating a filtered list divided by a number (for 10%, 20% etc.) . Query for cell content . | =QUERY( C1:C, \"Select C Where C contains 'f01r01_pm.wav' \" ) . | Syntax = ([range], “Select [column in range] Where [same column in range] contains ‘[string]’ ” ) | . | . ",
     "url": "http://localhost:4000/pages/resources.html#google-sheet-formulas",
     "relUrl": "/pages/resources.html#google-sheet-formulas"
-  },"118": {
+  },"124": {
     "doc": "Command Line Resources",
     "title": "Working with tars",
     "content": "For many years, the standard PAMI workflow was to tar (create a (t)ape (ar)chive, or “tarball”) any complexly structured AMI deliverables. Typically, this was used for born digital original documentation, and by creating a singular file (with a .tar extension) that could stand in for multiple files and directories, we were able to achieve certain measure of control, consistency, and ease of movement/storage. The tar manual (man tar) offers a full list of options/flags, but here are some helpful commands: . Creating tars . To create a tarball without compression: . tar -cvf mytar.tar input_directory . To create a tarball with gzip compression: . tar -czvf mytar.tar input_directory . The -c flag specifies the creation of a tar, -v the verbose output printed to your terminal window, -z the gzip compression, and -f the specified file that will be written to or read from. Examining tars . To get a list of all files and directories within a tar (with permissions and file sizes): . tar -tvf mytar.tar . Without permissions and file sizes: . tar -tf mytar.tar . To list all files (but not directories): . tar -tvf --exclude=\".*\" mytar.tar . Batching (output to csv): . find ExcelBornDigital/ -name '*.tar' -exec tar -tzf {} --exclude=\".*\" ';' &gt; /Users/pamiaudio/Desktop/ICA_borndigital.csv . Extracting files from tars . To extract a file from a tar: . cd into the directory in which you’d like to copy the file, and . tar -xvf mytar.tar myfile.ext . Some things to note: . | The tar will still be intact; the file will simply be copied to your chosen location | You’ll need the full file path (which you can get by using the -tf command) | Tar is picky about spaces, so you may need to transform something like this: Volumes/lpa/Working Storage/Transfer/2 - Ready for Finishing/zUnprocessedOrigidocsDAN/myd_mgzidvd57093_v01/Capture Scratch/Alvin Ailey 2012/CAM A4.mov . | To something like this: Volumes/lpa/Working\\ Storage/Transfer/2\\ -\\ Ready\\ for\\ Finishing/zUnprocessedOrigidocsDAN/myd_mgzidvd57093_v01/Capture\\ Scratch/Alvin\\ Ailey 2012/CAM\\ A4.mov . | . ",
     "url": "http://localhost:4000/pages/resources.html#working-with-tars",
     "relUrl": "/pages/resources.html#working-with-tars"
-  },"119": {
+  },"125": {
     "doc": "Command Line Resources",
     "title": "Command Line Resources",
     "content": " ",
     "url": "http://localhost:4000/pages/resources.html",
     "relUrl": "/pages/resources.html"
-  },"120": {
+  },"126": {
     "doc": "Shipping",
     "title": "AMI Shipping",
     "content": " ",
     "url": "http://localhost:4000/pages/shipping.html#ami-shipping",
     "relUrl": "/pages/shipping.html#ami-shipping"
-  },"121": {
+  },"127": {
     "doc": "Shipping",
     "title": "Table of contents",
     "content": ". | Pre-Shipping Administrative Duties | Batching &amp; Creation of Digitization Project SOW | Shipping | Return Shipment Procedures | Considerations | Truck and Dock Requirements | Shipping Vendor Info | . ",
     "url": "http://localhost:4000/pages/shipping.html#table-of-contents",
     "relUrl": "/pages/shipping.html#table-of-contents"
-  },"122": {
+  },"128": {
     "doc": "Shipping",
     "title": "Pre-Shipping Administrative Duties",
     "content": ". | PAMI Manager creates an estimate of the number of items the budget will cover. | Preliminary batch is generated by Preservation and Collections Processing (PCP) Manager. | Preliminary batch data is provided to vendors to gauge cost estimate. | . | Vendor provides preliminary quote. | Preliminary quote is compared to budget and adjustments are made to the batch as needed to accommodate budget constraints. | . ",
     "url": "http://localhost:4000/pages/shipping.html#pre-shipping-administrative-duties",
     "relUrl": "/pages/shipping.html#pre-shipping-administrative-duties"
-  },"123": {
+  },"129": {
     "doc": "Shipping",
     "title": "Batching &amp; Creation of Digitization Project SOW",
     "content": ". | Batch is created / finalized by PCP Manager | Metadata inventory sheet undergoes data cleanup | MPC/MPA reviews box check-out list, obtains box count and pallet count information | MPC/MPA drafts tentative schedule for box migration and shipping dates | MPC/MPA reviews loading dock / shipping calendar to ensure no conflicts, creates tentative calendar appointments for potential shipping dates . | Note: Thursdays are generally off-limits at LSC | . | MPC/MPA inquires with shipping vendors and provides the following information: . | Pickup and drop-off locations | Pallet count &amp; instructions | Loading dock info / requirements | Recipient loading dock info / requirements | Receive quotes &amp; select shipper | . | Creation of Shipping SOW . | Draft a final Shipment SOW (convert any quotes into PDF format) | . | Contact Procurement (2020 contacts: Joel Schlissler &amp; Carey Weiler) MPC/MPA emails procurement staff, describing the proposed timeline, shipper info, and attaching shipment documentation: . | Pdf: shipping vendor inquiry email | Pdf: shipping vendor quote | Pdf: finalized agreement email (statement of work) | . | Procurement form is completed by MPC | Requisition is entered into workday by MPC | MPC/MPA confirms shipper arrival times week-of for pickup and drop-off | MPC/MPA confirms that invoices have been paid following completion of shipment | . ",
     "url": "http://localhost:4000/pages/shipping.html#batching--creation-of-digitization-project-sow",
     "relUrl": "/pages/shipping.html#batching--creation-of-digitization-project-sow"
-  },"124": {
+  },"130": {
     "doc": "Shipping",
     "title": "Shipping",
     "content": ". | Boxes are migrated following coordination with SFP: . | See Project Workflow instructions for information regarding box check-out. | . | MPC obtains property pass from Registrar . | Property pass is given to security upon shipment (whenever collection materials leave the building). | . | Shipping document is created: Shipping Document Template . | MPC/MPA, Shipper, and Vendor sign document upon pick-up / delivery. | . | IF SHIPPING TO MULTIPLE VENDORS: Print paper signs with the destination city tape to top of each pallet to distinguish multiple shipments to different vendors. | Shippers arrive, wrap, and take pallets. | . ",
     "url": "http://localhost:4000/pages/shipping.html",
     "relUrl": "/pages/shipping.html"
-  },"125": {
+  },"131": {
     "doc": "Shipping",
     "title": "Return Shipment Procedures",
     "content": ". | MPC/MPA contacts digitization vendor to confirm new shipping dates and pallet count. | (follow above workflow for shipping procedures) | Boxes are checked-in upon arrival or before migration back to SFP staff. | (See Project Workflow instructions) for information regarding box check-in. | . | . ",
     "url": "http://localhost:4000/pages/shipping.html#return-shipment-procedures",
     "relUrl": "/pages/shipping.html#return-shipment-procedures"
-  },"126": {
+  },"132": {
     "doc": "Shipping",
     "title": "Considerations",
     "content": ". | A4 &amp; Clancy have off-site storage for layovers | Balance LSC storage capacities with incoming and outgoing timelines for all projects | . ",
     "url": "http://localhost:4000/pages/shipping.html#considerations",
     "relUrl": "/pages/shipping.html#considerations"
-  },"127": {
+  },"133": {
     "doc": "Shipping",
     "title": "Truck and Dock Requirements",
     "content": ". | Truck must be climate controlled | Pallets must not be stacked or dismantled; pallets must be wrapped by shipper | Delivery must take place MON-WED or FRI, between 8am-5pm (deliveries not accepted SAT/SUN or any day after 5pm) | “Straight truck” required, no more than 27” off ground (dock ceiling is short) | Lift gate required, ideally ~94” x 70” (“tractor trailer” or “gesticulating” lift gates are preferred to accommodate the incline of the dock floor. | Dock is 29” high from the ground, and only 19.5 ft long; outside of loading dock is a steep incline - short truck required. | . ",
     "url": "http://localhost:4000/pages/shipping.html#truck-and-dock-requirements",
     "relUrl": "/pages/shipping.html#truck-and-dock-requirements"
-  },"128": {
+  },"134": {
     "doc": "Shipping",
     "title": "Shipping Vendor Info",
     "content": "(tbd) . ",
     "url": "http://localhost:4000/pages/shipping.html#shipping-vendor-info",
     "relUrl": "/pages/shipping.html#shipping-vendor-info"
-  },"129": {
+  },"135": {
     "doc": "Templates",
     "title": "Templates",
     "content": "The templates included provide starter pages for short, single-page documents (childless pages) and longer, multi-page documents (pages with children and grand children). For example, this page is the parent of Parent Document and Childless Document and the grand parent of Child Document. ",
     "url": "http://localhost:4000/docs/templates/index",
     "relUrl": "/docs/templates/index"
-  },"130": {
+  },"136": {
     "doc": "Templates",
     "title": "Notes",
     "content": "Below are some notes on formatting, YAML / Jekyll front matter, and other important things to consider when creating a new page. nav_order . | nav_order depends on whether the page is a parent, child, or grand child, and must be updated in order to display properly. | For example, this page has a navigation order that corresponds to the main pages on this site, and this page does not have a parent. Because this page has children, the nav_order for those children begins at 1, and the nav_order for any grand children would also begin again at 1. | Grand children will not appear in the navigation sidebar (i.e. Child Document is actually the grandchild of Documentation Policy, so it doesn’t appear below Parent Document in the sidebar). | . ",
     "url": "http://localhost:4000/docs/templates/index#notes",
     "relUrl": "/docs/templates/index#notes"
-  },"131": {
+  },"137": {
     "doc": "Vendor Administration",
     "title": "Vendor Project Administration",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#vendor-project-administration",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#vendor-project-administration"
-  },"132": {
+  },"138": {
     "doc": "Vendor Administration",
     "title": "Table of contents",
     "content": ". | Project Creation | Project Preparation and Logistics | Project tracking . | PAMI Database | Vendor Shipments | Trello | . | Project Close-Out . | Project Summaries . | Capture issue object management | . | . | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#table-of-contents",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#table-of-contents"
-  },"133": {
+  },"139": {
     "doc": "Vendor Administration",
     "title": "Project Creation",
     "content": ". | Digitization batch inventories are generated by Preservation and Collections Processing, exported from CMS, and emailed to the PAMI Manager / MPC. | A project ID (“PAMI ID”) is generated in the PAMI Database (PAMI DB) and used to begin all documentation. The following preparatory documents are stored in AMI folders on Google Drive . | Statement of Work | Vendor Project Worksheet &amp; Metadata Inventory | Shipping Document | . | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#project-creation",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#project-creation"
-  },"134": {
+  },"140": {
     "doc": "Vendor Administration",
     "title": "Project Preparation and Logistics",
     "content": ". | Vendor Workflow | Shipping | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#project-preparation-and-logistics",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#project-preparation-and-logistics"
-  },"135": {
+  },"141": {
     "doc": "Vendor Administration",
     "title": "Project tracking",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#project-tracking",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#project-tracking"
-  },"136": {
+  },"142": {
     "doc": "Vendor Administration",
     "title": "PAMI Database",
     "content": ". | The PAMI Database is used to establish project IDs, track deliverables, and generate statistics and metadata for AMI digitization projects. | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#pami-database",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#pami-database"
-  },"137": {
+  },"143": {
     "doc": "Vendor Administration",
     "title": "Vendor Shipments",
     "content": ". | Upon arrival, all deliverables (hard drive or network-based shipments) are logged in the AMI Vendor Project Tracking sheet document. | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#vendor-shipments",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#vendor-shipments"
-  },"138": {
+  },"144": {
     "doc": "Vendor Administration",
     "title": "Trello",
     "content": "NYPL AMI Vendor Labs . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#trello",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#trello"
-  },"139": {
+  },"145": {
     "doc": "Vendor Administration",
     "title": "Project Close-Out",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#project-close-out",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#project-close-out"
-  },"140": {
+  },"146": {
     "doc": "Vendor Administration",
     "title": "Project Summaries",
     "content": "Project summaries are created by compiling mediainfo manifests and capture issue reports. | Capture Issues Report Data Cleanup: Find &amp; delete the following characters in the vendor’s DNC reports &amp; HDmanifests . | vertical tab \\v | tab \\t | carriage return \\r | new line [similar to carriage return but they both appeared separately] \\n | . | . Capture issue object management . | Separate the items by original project fund (pami work orders should at a minimum be separated by project fund). Example: Slifka, Mellon. No need to separate by unit or research center. | Manager will forward the DNC list separately, and you can review to identify what should be sent to PAMI. Manager will pull objects and box-up according to project fund. On return, media goes back into they’re original boxes. | For PAMI metadata, pull item records from the original metadata inventory from initial project and create internal db records (remembering to change the cms project code). CMS: . | CMS project code: PAMI | CMS title / description: DNC - [fund name] . | EXAMPLE: ```dnc - mellon CMS batch #:… next available sequential ## (can we put a placeholder in PAMI work orders until this is ready?) | . | . | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html#project-summaries",
     "relUrl": "/pages/contractDigitization/vendor-admin.html#project-summaries"
-  },"141": {
+  },"147": {
     "doc": "Vendor Administration",
     "title": "Vendor Administration",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-admin.html",
     "relUrl": "/pages/contractDigitization/vendor-admin.html"
-  },"142": {
+  },"148": {
     "doc": "Vendor Workflow",
     "title": "Project Implementation",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#project-implementation",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#project-implementation"
-  },"143": {
+  },"149": {
     "doc": "Vendor Workflow",
     "title": "Table of contents",
     "content": ". | Creation of Vendor Project Worksheet: | CMS Export (Metadata Inventory) Cleanup: . | Search entire inventory sheet for the described content and make edits as instructed: | Find &amp; Replace: | Media Inventory &amp; Physical Preparation | Box Check-Out/In Google Sheet Color-Coding Guide | . | Shipping Coordination | Quality Control | Project Close-Out . | Project Summaries . | Capture Issue Review | . | . | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#table-of-contents",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#table-of-contents"
-  },"144": {
+  },"150": {
     "doc": "Vendor Workflow",
     "title": "Creation of Vendor Project Worksheet:",
     "content": ". | MPC creates a copy of the Vendor Project Worksheet Template: . | 20#####_keyword###_metadataInventory_DATE - TEMPLATE | . | Import the contents of the CMS batch export into the ‘metadataInventory’ tab of the project worksheet, ensuring that the data is entered into the correct columns. | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#creation-of-vendor-project-worksheet",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#creation-of-vendor-project-worksheet"
-  },"145": {
+  },"151": {
     "doc": "Vendor Workflow",
     "title": "CMS Export (Metadata Inventory) Cleanup:",
     "content": "CMS exports often contain characters and values which are incompatible with JSON metadata. After copying the CMS export into the template, these values and characters must be manually removed / updated before the spreadsheet (the “…metadataInventory.xlsx” sheet) is sent to vendors for database import. Search entire inventory sheet for the described content and make edits as instructed: . | Remove the default source.subobject.faceNumber from all non-audio items | Remove the contents of source.physicalDescription.stockLength.measure from all rows | Metadata version: add current version (per May 2017 = 2.0.0) | Update source.object.format to reflect correct JSON terminology, for example: video cassette will need to be changed to video cassette analog or video cassette digital, etc. | Add current version of asset.schemaVersion to all rows (per May 2020 = 2.0.0) | . Find &amp; Replace: . | Select “search using regular expressions” . | Select “this sheet” (for the sheet you’re working on), | Review the specific ranges mentioned below and find/replace as described: | . | Find the following characters… . | double quotations: “ (replace with two single-quotes placed side by side, without spaces (Example: Audio Reel 10\" becomes Audio Reel 10'') | semicolon: ; (replace with-) | backslash: \\ (replace with -) | new line: \\n (replace with -) | vertical tab: \\v (replace with -) | tab: \\t (replace with -) | carriage return: \\r (replace with -) | . | Double check to make sure you replaced all values as needed (sometimes the first one you find is skipped) | . Media Inventory &amp; Physical Preparation . | Box Check-Out: . | The template for the box check-out sheet is included in the Vendor Project Worksheet template. When you import the CMS batch export data, the ‘box-barcode-list’ tab in that sheet should be autopopulated using the values from the ‘metadataInventory’ tab. Do not alter the locked sheets. | the ‘box-check-out’ and ‘box-check-in’ tabs are pre-filled with formulas that should pull the box barcodes from the auto-populated list. The check-out/in sheets may need to have rows added to them in order to accommodate the actual number of boxes that exist in the project. To do this, ‘add rows’ and drag drag formulas in columns A &amp; B down to the last row, so that all formulas are working properly for all rows. Test by entering in valid and invalid barcodes into the column. | Boxes are pulled by SFP team &amp; PAMI staff by staging boxes on carts to prepare for movement. | Once a cart is full and ready to move, PAMI Media Preservation Coordinator or Assistant scans box barcodes into the prepared Box Check-Out sheet - before they are moved to LSC room 306. The check-out sheet confirms that the scanned barcode matches the list of barcodes that is expected from the finalized Metadata Inventory in the Vendor Project Worksheet. If any discrepancies occur, box barcodes must be checked against the metadataInventory spreadsheet tab. | . | Boxes on carts are brought to LSC room 306 and palletized; wrapp 2 with plastic if possible to give shippers a head start; | . Box Check-Out/In Google Sheet Color-Coding Guide . | Column B (“Inventory Box Barcodes Confirmation”) value defaults to the value “CHECK BARCODE”. Therefor, if you scan a box and the barcode is not on the expected barcode list, Column B will remain colored red with the CHECK BARCODE value, instructing you to double-check the barcode. | If Column B turns orange, it means that you have already scanned that box barcode, or there is a duplicated barcode, and you must double check this box. | If Column B returns the same barcode number you just scanned, then all is well. Proceed with barcode-scanning. | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#cms-export-metadata-inventory-cleanup",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#cms-export-metadata-inventory-cleanup"
-  },"146": {
+  },"152": {
     "doc": "Vendor Workflow",
     "title": "Shipping Coordination",
     "content": "See Shipping. ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#shipping-coordination",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#shipping-coordination"
-  },"147": {
+  },"153": {
     "doc": "Vendor Workflow",
     "title": "Quality Control",
     "content": "See Quality Control workflow documentation . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#quality-control",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#quality-control"
-  },"148": {
+  },"154": {
     "doc": "Vendor Workflow",
     "title": "Project Close-Out",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#project-close-out",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#project-close-out"
-  },"149": {
+  },"155": {
     "doc": "Vendor Workflow",
     "title": "Project Summaries",
     "content": ". | Compiling Manifests &amp; Reports | . Capture Issue Review . | Capture Issues: Find &amp; delete the following characters in the vendor’s DNC reports &amp; HDmanifests . | vertical tab \\v | tab \\t | carriage return \\r | new line [similar to carriage return but they both appeared separately] \\n | . | Separate the items by original project fund (pami work orders should at a minimum be separated by project fund). Example: Slifka, Mellon. No need to separate by unit or research center. | Manager will forward the DNC list separately, and you can review to identify what should be sent to PAMI. Manager will pull objects and box-up according to project fund. On return, media goes back into they’re original boxes. | For PAMI metadata, pull item records from the original metadata inventory from initial project and create internal db records (remembering to change the cms project code). CMS: . | CMS project code: PAMI | CMS title / description: DNC - [fund name]….EXAMPLE: dnc - mellon CMS batch #:… next available sequential ## (can we put a placeholder in PAMI work orders until this is ready?) | . | . ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html#project-summaries",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html#project-summaries"
-  },"150": {
+  },"156": {
     "doc": "Vendor Workflow",
     "title": "Vendor Workflow",
     "content": " ",
     "url": "http://localhost:4000/pages/contractDigitization/vendor-workflow.html",
     "relUrl": "/pages/contractDigitization/vendor-workflow.html"
-  },"151": {
+  },"157": {
     "doc": "Video",
     "title": "Video Digitization",
     "content": " ",
     "url": "http://localhost:4000/pages/amiLabs/video.html#video-digitization",
     "relUrl": "/pages/amiLabs/video.html#video-digitization"
-  },"152": {
+  },"158": {
     "doc": "Video",
     "title": "Table of contents",
     "content": ". | Pre-digitization conservation treatments . | Triage and sorting | Inspection | Cleaning . | Cleaning machines | Bench cleaning cassette without disassembly | . | Incubation | Tools for conservation | . | Set-up and monitoring during transfer | Post-digitization editing, spot-checking, and packaging | . ",
     "url": "http://localhost:4000/pages/amiLabs/video.html#table-of-contents",
     "relUrl": "/pages/amiLabs/video.html#table-of-contents"
-  },"153": {
+  },"159": {
     "doc": "Video",
     "title": "Pre-digitization conservation treatments",
     "content": "Before developing a conservation plan, media objects must first go through a detailed assessment process, a form of “triage” in which tapes are separated and grouped according to degradation symptoms and potential treatment paths. The problematic videotape is, most likely, a cassette, and this effort to accurately gauge the condition of a tape prior to playback is a key first step in preparing for optimal digitization. Keep in mind: despite the attention paid to each item during acquisition and initial archival processing, a member of the AMI Labs will likely be the first person to bring an extensive empirical background to the assessment and inspection of these objects. Ultimately, it is the variety or uniformity of a group of tapes that will dictate the subsequent plan of action. Triage and sorting . | Item-level check-in—the first phase of triage/sorting—is a sequence of steps designed to confirm that all items listed within a Work Order have been received and are logged properly in the AMI Database. This process involves the following: . | Opening the AMI Database and searching within a production layout for the Work Order ID (Click Find located in the top toolbar) | Reconcile all items with corresponding database entries, looking for any omissions, additions, or format misidentifications | Check all physical objects for two identifying numbers: barcode and CMS ID. These numbers are typically affixed to the case or cover. | Take care not to separate the tape from its case. | . | . Inspection . Words go here! . Cleaning . Cleaning machines . Bench cleaning cassette without disassembly . | The AMI Labs (Room C-04) are equipped with a bench vacuum that has a set micro-attachments ideal for cleaning videotape cassette guides prior to transfer. To use effectively, first place a set of weights on either side of the cassette shell to secure the tape in an upright position, resting along its spine. | Next, hold the cassette flap open with an Ethafoam log and carefully remove a generous loop of contaminated leader and tape. | . Incubation . Words go here! . Tools for conservation . | Vacuum Cleaner + Weights + Ethafoam Log | . ",
     "url": "http://localhost:4000/pages/amiLabs/video.html#pre-digitization-conservation-treatments",
     "relUrl": "/pages/amiLabs/video.html#pre-digitization-conservation-treatments"
-  },"154": {
+  },"160": {
     "doc": "Video",
     "title": "Set-up and monitoring during transfer",
     "content": "Words go here! . | Bulleted list . | sub-bullets with command line text | . | . ",
     "url": "http://localhost:4000/pages/amiLabs/video.html#set-up-and-monitoring-during-transfer",
     "relUrl": "/pages/amiLabs/video.html#set-up-and-monitoring-during-transfer"
-  },"155": {
+  },"161": {
     "doc": "Video",
     "title": "Post-digitization editing, spot-checking, and packaging",
     "content": "Words go here! . | Bulleted list . | sub-bullets with command line text | . | . ",
     "url": "http://localhost:4000/pages/amiLabs/video.html#post-digitization-editing-spot-checking-and-packaging",
     "relUrl": "/pages/amiLabs/video.html#post-digitization-editing-spot-checking-and-packaging"
-  },"156": {
+  },"162": {
     "doc": "Video",
     "title": "Video",
     "content": " ",
