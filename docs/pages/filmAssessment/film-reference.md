@@ -55,7 +55,7 @@ parent: Film Assessment
 * **Magnetic Soundtrack (stripe)**: A thin strip of magnetic tape which contains a film's soundtrack. Found most commonly on Super 8mm film, but can also be the soundtrack for 16mm film.
 * **Nitrate**: Nitrocellulose film base that was introduced in the late 1890s and was most commonly produced during the silent era. Nitrate is highly flammable and went out of use by 1951. Identification of nitrate film is easy to identify, as “Nitrate” is printed on the edge of the film near the date codes.
 * **Optical Soundtracks**: The most common form of sound on 16mm and 35mm prints. Optical soundtracks are printed into the film at one of the edges. There are two types of optical soundtracks
-  * a.) **Variable Area**
-  * b.) **Variable Density**
+  * **Variable Area**
+  * **Variable Density**
 * **Polyester**: A film base made from polyester. Polyester is thinner and stronger than acetate. Polyester stock became the industry standard in the 1990s and is ideal for long-term storage. Acetate decay does not affect polyester-based films. Polyester stock can only be spliced together by tape or ultra-sonic splices. Cement splices do not hold for polyester-based film.
 * **Reduction**: When a film element or print is duplicated to a smaller gauge: A 35mm internegative to 16mm print.
