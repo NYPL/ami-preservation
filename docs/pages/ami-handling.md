@@ -22,7 +22,7 @@ This document outlines vendor requirements for administration, shipping and medi
 - [Original Media Shipping Document](#original-media-shipping-document)
   - [Discrepancy report](#discrepancy-report)
   - [Hard Drive Manifest](#hard-drive-manifest)
-  - [Did Not Capture Report](#did-not-capture-report)
+  - [Capture Issues](#capture-issues-report)
 - [Media Formats](#media-formats)
 - [Digital Asset Deliverables](#digital-asset-deliverables)
 - [Metadata](#metadata)
@@ -124,8 +124,7 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   * Scope: assets contained on hard drive
   * Expected: with each hard drive shipped
   * Instructions: the hard drive manifest should be stored in the root directory of the hard drive (do not combine hard drives)
-  * Template for "HD Manifest": (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_DRIVEID_hdmanifest_yyyymmdd.xlsx
-)
+
 <a name="discrepancy-report"></a>
 ### Discrepancy report
   * Produced by: Vendor
@@ -133,12 +132,12 @@ All tasks must comply with NYPL specifications, which are maintained in publical
       * a) there are objects listed in inventory that were not received by vendor as expected; or
       * b) there are objects received by the vendor that were not listed in the inventory and/or for which accurate metadata was not yet provided by NYPL.
 
-<a name="did-not-capture-report"></a>
-### Did Not Capture Report
+<a name="capture-issues-report"></a>
+### Capture Issues Report
   * Produced by: Vendor
   * Scope: list of physical objects that were unable to be fully transferred
   * Expected: via email at conclusion of project
-  * Template for "Did Not Capture" report: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_didnotcapture_yyyymmdd.xlsx )
+  * [Template for "Capture Issues" report: ](https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=1009731562)
 
 <a name="media-formats"></a>
 ## Media Formats
@@ -269,20 +268,29 @@ The following BEXT metadata must be captured in the original Broadcast Wave file
 All magnetic and optical media and enclosures must be photographed in order to capture significant bibliographic annotations or other content. Film will not be photographed.
 
 <a name="image-file-naming-convention"></a>
-### Image file naming convention
-Image files should follow the same pattern as the media files, and be placed in the Images directory, at the same hierarchical level as the PreservationMasters and EditMasters directory: division_PrimaryID_v#f#  (front/back/top/bottom/left/right/etc).jpg
+### Image file naming convention and controlled vocabulary
+Image files should follow the same pattern as the media files, and be placed in the Images directory, at the same hierarchical level as the PreservationMasters and EditMasters directory, but the following controlled vocabulary must be appended as the final suffix in each image file name:
+* assetfront
+* assetback
+* assetside
+  * The following may be used if more than one side will be captured: assetrightside, assetleftside, assettop, assetbottom
+* boxfront
+* boxback
+* boxside
+  * The following may be used if more than one box side will be captured: boxrightside, boxleftside, boxtop, boxbottom
+* ephemera
 
+**Example:**
   * PrimaryID
     * Data  
       * PreservationMasters
       * EditMasters
       * Images
-        * division_PrimaryID_v01f01.jpg
-        * division_PrimaryID_v01f02.jpg
-        * division_PrimaryID_v01_front.jpg
-        * division_PrimaryID_v01_back.jpg
-        * division_PrimaryID_v01_side1.jpg
-        * division_PrimaryID_v01_side2.jpg
+        * div_PrimaryID_v01f01.jpg
+        * div_PrimaryID_v01f02.jpg
+        * div_PrimaryID_v01_assetfront.jpg
+        * div_PrimaryID_v01_assetback.jpg
+        * div_PrimaryID_v01_assetside.jpg
 
 **_Image Specifications for photographs of media objects:_**
 
@@ -431,17 +439,18 @@ If any physical problems are detected, either during inspection or playback, con
 <a name="capture-issues"></a>
 ### Capture Issues
 NYPL recognizes that some media may pose challenges to capture or may not be able to be captured due to extremely poor condition or other circumstances.
-    * If media exhibit audiovisual artifacts inherent to their source formats or conditions that impact the quality of transfer, but do not prevent a full capture, such artifacts must be described in the metadata signal notes.
-    * If an object is not captured, the object must be listed in the required ‘did not capture’ (DNC) report, described in the documentation section of this RFP:
-      * DNC report must adhere to the provided template: (https://github.com/NYPL/ami-handling/blob/master/templates/2020_000_example1_didnotcapture_yyyymmdd.xlsx)
-      * **Capture Issue Category**: Issues that result in an an object not being captured must be described in the DNC report using the following categories, with additional notes provided as needed. **If additional categories are required, NYPL must approve before they are used**:
-          * playback issue
-          * condition issue
-          * duplicate
-          * blank media
-          * unsupported AMI format
-          * unopened commercial media
-      * **Capture Issue Notes**: Notes must be added to provide supplemental information about the category issue selected. For example, if the category is “unsupported AMI format”, the notes must describe the format that is not supported and why; if the category is “condition issue”, the notes must indicate what treatments were attempted and failed to facilitate capture.
+  * If media exhibit audiovisual artifacts inherent to their source formats or conditions that impact the quality of transfer, but do not prevent a full capture, such artifacts must be described in the metadata signal notes.
+  * If an object is not captured, the object must be listed in the required capture issues report, described in the documentation section of this RFP:
+  * Capture issues reports must adhere to the [provided template: ](https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
+  * **Capture Issue Category**: Issues that result in an an object not being captured must be described in the report using the following categories, with additional notes provided as needed. **If additional categories are required, NYPL must approve before they are used**:
+    * playback issue
+    * condition issue
+    * duplicate
+    * blank media
+    * unsupported AMI format
+    * unopened commercial media
+
+  * **Capture Issue Notes**: Notes must be added to provide supplemental information about the category issue selected. For example, if the category is “unsupported AMI format”, the notes must describe the format that is not supported and why; if the category is “condition issue”, the notes must indicate what treatments were attempted and failed to facilitate capture.
 
 <a name="vendor-quality-assurance-and-control"></a>
 ### Vendor Quality Assurance and Control
