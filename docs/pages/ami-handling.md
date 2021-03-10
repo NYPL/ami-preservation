@@ -124,6 +124,7 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   * Scope: assets contained on hard drive
   * Expected: with each hard drive shipped
   * Instructions: the hard drive manifest should be stored in the root directory of the hard drive (do not combine hard drives)
+  * [Manifest template ](https://docs.google.com/spreadsheets/d/18wmKKwtO7HGfwG_la6gpV_ZfAILkDi_dBBTv3YXOk0g/edit#gid=0) 
 
 <a name="discrepancy-report"></a>
 ### Discrepancy report

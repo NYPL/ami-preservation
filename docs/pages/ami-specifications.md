@@ -451,7 +451,7 @@ In congress with capturing a Broadcast Wave file prior to transcoding to .flac, 
   * Careful determination of the groove pitch (Threads Per Inch or TPI), speed (with correction if needed), and cylinder material (brown wax, Gold Moulded, etc.) need to be determined BEFORE transfer and noted in metadata digitization process notes.
 
 <a name="edit-masters-all"></a>
-**_Edit master file specifications: all audio groups_**
+**_Edit master file specifications: all magnetic and optical audio groups_**
 
   | Attribute | Specification |
   | ---- | ----- |
@@ -463,7 +463,7 @@ In congress with capturing a Broadcast Wave file prior to transcoding to .flac, 
 
 #### Head and Tail Edits (Trimming)
   * The “needle-drop” and “needle-lift” present in preservation master files must be edited out of the edit master files.
-  * Unrecorded portions of the collection object captured in the preservation master shall be eliminated.
+  * Unrecorded portions of the collection object captured in the preservation master shall be eliminated for all Edit Masters except those created from multi-track production masters (for which the unrecorded portions are intentionally silent due to the mastering process).
   * Test tones and any equipment noise at the start and/or end of audible content (such as equipment on/off “clicks” or a stylus in the groove) should be trimmed. Trimming should not result in an abrupt start and/or end of audible content.
   * Elimination of the 5-second overlap included on any Preservation Masters that have been split out into multiple files for separate regions / streams / etc.
 
