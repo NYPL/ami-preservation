@@ -39,7 +39,7 @@ def get_file_list(source_directory):
     for root, dirs, files in os.walk(source_directory):
         for file in files:
             sourcepath = os.path.join(root, file)
-            if file.endswith(('.mkv', 'pm.json', '.dv', '.framemd5', '.gz', 'graphs.jpeg', 'pm.wav', 'pm.flac', '.iso')):
+            if file.endswith(('.mkv', 'pm.json', '.dv', '.framemd5', '.gz', 'graphs.jpeg', 'timecodes.txt', 'pm.wav', 'pm.flac', '.iso')):
                 destpath = os.path.join(pm_path, file)
                 print('Moving: {}'.format(file))
                 shutil.move(sourcepath, destpath)
