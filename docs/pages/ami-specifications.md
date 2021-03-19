@@ -350,6 +350,9 @@ Files that exceed the Broadcast Wave Format 4GB file size limitation should be c
             * Speed Changes: If multiple preservation masters are created for a single recording due to speed changes, the cut should be made at a logical break in the audible content (if at all possible), and there must be exactly 5 seconds of audible content overlapping between the tail of the first preservation master and the head of the following PM so that the regions may be recombined in the future if necessary.
             * Sampling Rate Changes: If a digital source object has been recorded at multiple sampling rates, a separate preservation master must be created for each region. _These regions do not need to overlap, but please include a note listing the timestamp on the source object where each region begins._
 
+#### Multi-track audio Preservation Masters
+For multi-track audio masters, multiple **streams** are captured of identical length and intended to be mixed down. As mentioned below, the Edit Masters for these streams must not be trimmed or altered in any way.
+
 #### Embedded metadata
 BEXT metadata must be embedded in each audio file upon capturing to WAV. See Metadata section for details.
 
@@ -460,6 +463,9 @@ In congress with capturing a Broadcast Wave file prior to transcoding to .flac, 
   | Bit depth | equal to preservation master |
   | Sampling rate | equal to preservation master |
   | Number of audio channels | Mono, 1; Stereo, 2 |
+
+#### Multi-track audio exceptions to below EM requirements
+For multi-track audio masters, multiple streams are captured of identical length and intended to be mixed down. The Edit Masters for these streams must not be trimmed or altered in any way.
 
 #### Head and Tail Edits (Trimming)
   * The “needle-drop” and “needle-lift” present in preservation master files must be edited out of the edit master files.
