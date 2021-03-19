@@ -485,6 +485,10 @@ For each collection object, the following shall be produced:
   * One metadata file per media file
   * Image files as described
 
+**Filenaming and metadata protocol for discs described as Audio or Video, but are found to actually contain files:**
+* Unless the disc has two physical faces (i.e. DVD Dual Layer), Faces are not applicable to data optical discs (and video optical discs). Omit any provided Face metadata; filenames should not contain any component beyond Volume. Example: abc_123456_v01_pm.ISO
+* Format and media type information should be updated to the formats allowable in the [Data Optical Disc JSON schema](https://github.com/NYPL/ami-metadata/blob/main/versions/2.0/schema/digitized_dataopticaldisc.json) 
+
 #### Capture tools
 Preservation masters must be captured/encoded as ISO9660 Disc Images.
 
