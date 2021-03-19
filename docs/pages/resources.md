@@ -604,3 +604,16 @@ Volumes/lpa/Working Storage/Transfer/2 - Ready for Finishing/zUnprocessedOrigido
 ```
 Volumes/lpa/Working\ Storage/Transfer/2\ -\ Ready\ for\ Finishing/zUnprocessedOrigidocsDAN/myd_mgzidvd57093_v01/Capture\ Scratch/Alvin\ Ailey 2012/CAM\ A4.mov
 ```
+
+## Performing a Clean Installation for Apple Computers
+
+* Open terminal, run: sysadminctl interactive -secureTokenOn [admin user shortname] -password -
+* Then run: diskutil apfs updatePreboot /
+* Plug in bootable installer (USB)
+* Boot in recovery mode (hold command + R when restarting)
+* Open Startup Security Utility, change external boot settings
+* Click on new OS (Big Sur)
+* Open Disk Utility, wipe Macintosh HD
+* Close Disk Utility, restart computer holding Option key at first ding
+* Install new OS
+
