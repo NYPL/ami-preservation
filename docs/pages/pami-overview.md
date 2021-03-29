@@ -14,6 +14,10 @@ nav_order: 2
 {:toc}
 
 ## Staff
+#### Noelle Byer, Media Preservation Engineer - Audio
+{: .no_toc }
+Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
+
 #### Rhony Dostaly, Media Preservation Engineer - Moving Image
 {: .no_toc }
 Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections.
@@ -35,10 +39,6 @@ Coordinates, implements, and documents workflows and specifications for contract
 Manages overall AMI preservation program, recommends and develops preservation priorities, technology solutions, and workflows. Develops and manages donor and grant funds, vendor contracts, and mass digitization projects. Provides support for acquisitions and emergency response.
 
 #### Jeff Willens, Media Preservation Engineer - Audio
-{: .no_toc }
-Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
-
-#### Seth Winner, Media Preservation Engineer - Audio
 {: .no_toc }
 Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
 
