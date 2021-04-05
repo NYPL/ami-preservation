@@ -33,7 +33,7 @@ def get_file_list(source_directory):
         os.makedirs(pm_path)
     if not os.path.exists(sc_path):
         os.makedirs(sc_path)
-    if not os.path.exists(sc_path):
+    if not os.path.exists(em_path):
         os.makedirs(em_path)
 
     for root, dirs, files in os.walk(source_directory):
@@ -47,7 +47,7 @@ def get_file_list(source_directory):
                 destpath = os.path.join(sc_path, file)
                 print('Moving: {}'.format(file))
                 shutil.move(sourcepath, destpath)
-            elif file.endswith(('.em.wav', 'em.json')):
+            elif file.endswith(('.em.wav', 'em.json', 'em.flac')):
                 destpath = os.path.join(em_path, file)
                 print('Moving: {}'.format(file))
                 shutil.move(sourcepath, destpath)
