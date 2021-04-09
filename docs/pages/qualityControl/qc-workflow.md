@@ -32,36 +32,45 @@ Internal workflow for carrying out QC on digital assets.
 
 * **Mount drive read-only.**
 
-* Validate JSON: (refer to [ami-metadata](https://github.com/NYPL/ami-metadata) for schema details)
-_**note: if you encounter failures during JSON validation, add failed Bag/s to QC list and mark as failed and note the reason in detail.**_
+* Validate Packages: 
+Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for usage)
+
+or...
+just validate JSON:
 ```
 ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
+
 * Run MediaConch:
-the ami-preservation repo contains a directory, [qc_utilities](https://github.com/NYPL/ami-preservation/tree/master/qc_utilities). Within this are various scripts and tools, including the mediaconch scripts listed below which will generate 'pass/fail' logs in your home directory when run against a directory of media files.
+The ami-preservation repo contains a directory, [qc_utilities](https://github.com/NYPL/ami-preservation/tree/master/qc_utilities). Within this are various scripts and tools, including the mediaconch scripts listed below which will generate 'pass/fail' logs in your home directory when run against a directory of media files.
 ```
 cd /Volumes/DRIVE-ID/
 ```
 *then...*
-  * For VIDEO: ```
+  * For analog VIDEO: 
+```
 /path/to/qc_utilities/mediaconch_videoFFv1.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
 ```
 
-  * For AUDIO: ```
+  * For analog AUDIO: 
+```
 /path/to/qc_utilities/mediaconch_audioAnalog.sh
 ```
+  * For FILM:
+  ```
+  /path/to/qc_utilities/mediaconch_filmPM.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
+  ```
 
-* Validate Bags Overnight: (Ensure that your computer does not sleep. Darken your display manually before leaving.)
+Note: the video service copy mediaconch policy works for all video/film deliverables.
+
+
+* Validate Bags:
 ```
 cd path/to/dir/of/bags
-```
-..then...
-
-```
 path/to/validate_bags.sh
 ```
-* Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
+* Log destination is home/user directory. Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
 * AUDIO ONLY: Check a selection of FLAC for embedded metadata
   * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
@@ -70,6 +79,12 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 ```
   * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
 
+* Film PMs only:
+Check a selection of PMs for RAWCooked reversability:
+```
+rawcooked /path/to/mkv --check
+```
+
 * Perform Manual QC ...
   * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
   * Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
@@ -77,11 +92,11 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 * After manual QC, **if all bags are valid**...Then:
 
   * Move JSON to ICC (must be connected to ICC):
-  ```
+```
 find /Volumes/DRIVE-ID/ -name '*.json' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/VendorJSON ';'
 ```
 
-  * Move IMAGES to ICC, if received (must be connected to ICC)
+  * Move IMAGES to ICC, if received (must be connected to ICC):
 
 ```
 find /Volumes/DRIVE-ID/ -name '*.JPG' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/AssetImages ';'
