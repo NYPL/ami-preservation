@@ -5,3 +5,5 @@ search_tokenizer_separator: /[\s/]+/
 heading_anchors: true
 color_scheme: "dark"
 
+ga_tracking: UA-179479901-1
+ga_tracking_anonymize_ip: true
