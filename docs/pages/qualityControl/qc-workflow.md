@@ -33,7 +33,11 @@ Internal workflow for carrying out QC on digital assets.
 * **Mount drive read-only.**
 
 * Validate Packages: 
-Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for usage)
+Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for additional usage)
+```
+python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metadata --quiet
+```
+* Review any Bags that report as "not ready for ingest"
 
 or...
 just validate JSON:
