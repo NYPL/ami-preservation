@@ -158,7 +158,8 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   | --- | --- | ---- |
   | Video Group 1 | Video Cassette Analog | Betacam Oxide, Betacam SP, Betamax, Hi8, MII, S-VHS, S-VHS-C, U-matic, U-matic SP, VHS, VHS-C, Video8 | Video Cassette Digital | D-1, D-2, D-3, D-5, D-9, Digital Betacam, HDCAM, HDCAM SR, HDCAM SX, MPEG IMX | Video Reel Analog | Two-inch quad open-reel (LoBand, HiBand and SuperHiBand), One-inch open-reel, Type A, One-inch open-reel, Type C, One-inch open-reel, EV, One-inch open reel video, IVC, One-inch open-reel, other/non-standard, Half-inch open-reel, Sony CV, Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2), Half-inch open-reel, other/non-standard
   | Video Group 2 | Video Cassette DV | Digital8, DVCam, MiniDV, HDV, DVCPRO, DVCPRO 50, DVCPRO HD
-  | Video Group 3 | Video Optical Disc | DVD, pressed, DVD±R, DVD±RW, Blu-Ray, Laser Disc, VCD
+  | Video Group 3 | Video Optical Disc | DVD, pressed, DVD±R, DVD±RW, Blu-Ray, VCD
+  | Video Group 3* | Laser Disc | Metadata requirements are the same as Video Group 3, but asset type should be MKV instead of ISO. | 
 
 
   |Group | Type | Formats |
