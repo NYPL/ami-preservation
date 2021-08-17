@@ -47,7 +47,7 @@ def get_file_list(source_directory):
                 destpath = os.path.join(sc_path, file)
                 print('Moving: {}'.format(file))
                 shutil.move(sourcepath, destpath)
-            elif file.endswith(('.em.wav', 'em.json', 'em.flac')):
+            elif file.endswith(('em.wav', 'em.json', 'em.flac')):
                 destpath = os.path.join(em_path, file)
                 print('Moving: {}'.format(file))
                 shutil.move(sourcepath, destpath)
