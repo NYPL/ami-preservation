@@ -42,7 +42,7 @@ python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metad
 or...
 just validate JSON:
 ```
-ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
+ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
 
@@ -150,7 +150,7 @@ For Vendor deliverables, QC is primarily performed directly on hard-drives.
 ### JSON Validation
 Run the following in Terminal to check if JSON is valid against the appropriate schema:
 ```
-ajv validate -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
+ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
 ### Media specification validation (MediaConch)
