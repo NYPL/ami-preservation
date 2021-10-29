@@ -21,8 +21,4 @@
   <rule name="Is Progressive?" value="ScanType" tracktype="Video" occurrence="1" operator="=">Progressive</rule>
   <rule name="Video/Width is 1920" value="Width" tracktype="Video" occurrence="*" operator="=">1920</rule>
   <rule name="Video/Height is 1080" value="Height" tracktype="Video" occurrence="*" operator="=">1080</rule>
-  <policy type="or" name="Audio is 2 channels or n/a">
-    <rule name="Audio does not exist" value="Channels" tracktype="Audio" occurrence="*" operator="must not exist"/>
-    <rule name="Audio is 2 channel" value="Channels" tracktype="Audio" occurrence="*" operator="=">2</rule>
-  </policy>
 </policy>

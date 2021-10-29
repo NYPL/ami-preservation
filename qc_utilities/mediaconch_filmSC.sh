@@ -12,10 +12,10 @@ while getopts 'd:l:' flag; do
 done
 
 dateCreated=$(date "+%Y%m%d_%H%M")
-log_path="$log_dir/mediaconch_videoPM_$dateCreated.csv"
+log_path="$log_dir/mediaconch_filmSC_$dateCreated.csv"
 i=0
 
 for line in $dir_of_bags; do
-find $PWD -name "*.mkv" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL_filmPM.xml {} ';' > $log_path
+find $PWD -name "*.mp4" -exec mediaconch -p /$log_dir/ami-preservation/qc_utilities/MediaconchPolicies/MediaConch_NYPL_filmSC.xml {} ';' > $log_path
 
 done
