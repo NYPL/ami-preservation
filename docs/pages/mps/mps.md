@@ -4,7 +4,7 @@ layout: default
 nav_order: 3
 ---
 
-# Overview of PAMI Unit
+# Overview of Media Preservation Services
 {: .no_toc }
 
 ## Table of contents
@@ -13,8 +13,7 @@ nav_order: 3
 1. TOC
 {:toc}
 
-## Services
-The Media Preservation Services team of NYPL's Digital Collections department suports NYPL's digitization activities by managing vendor logistics, physical media conservation, digital asset quality control, and coordination of ingest for digital assets. Our team works closely with NYPL Research Libraries curatorial units, AMI Labs, and Digital Preservation to ensure that media are prioritized for preservation, treated with care, and that our technical requirements are met.
+The Media Preservation Services team suports NYPL's digitization activities by managing vendor logistics, physical non-print media conservation, digital asset quality control, and coordination of ingest for digital assets. Our team works closely with Media Preservation Labs, Digital Preservation / Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for preservation, treated with care, and that our technical requirements are met before being staged for long-term preservation.
 
 ## Staff
 #### Genevieve Havemeyer-King, Manager, Media Preservation Services
