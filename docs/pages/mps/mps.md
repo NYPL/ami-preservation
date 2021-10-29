@@ -35,14 +35,6 @@ Assists with the coordination, evaluation, and implementation of specifications 
 ### Oursourced Digitization
 NYPL utilizes external vendors for high-volume, grant-funded digitization projects, focusing on at-risk audiovisual media identified within the scope of NYPL's Audio and Moving Image Preservation Initative.
 
-The following pages detail workflows, policies, and procedures for coordinating mass audio, video, and film digitization and optical media migration, broken down into the following processes:
-
-* Administration and project management
-* Shipping, logistics
-* Quality control
-* Secure file transfer
-* Project reporting and analysis
-
 ### Quality Control
 
 
