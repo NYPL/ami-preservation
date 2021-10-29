@@ -11,5 +11,5 @@ This site provides documentation for these units' programmatic workflows, includ
 
 Scripts and tools referenced in the documentation can be found within [ami-preservation on GitHub](https://github.com/NYPL/ami-preservation).
 
-## [Media Preservation Labs](ami-labs.md)
-## [Media Preservation Services](mps.md)
+## [Media Preservation Labs]( /docs/pages/ami-labs.md)
+## [Media Preservation Services](/docs/pages/mps.md)
