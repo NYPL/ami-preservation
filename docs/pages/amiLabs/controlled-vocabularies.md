@@ -1,7 +1,7 @@
 ---
 title: Signal Notes Controlled Vocabularies
 layout: default
-nav_order: 5
+nav_order: 7
 parent: AMI Labs
 ---
 

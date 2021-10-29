@@ -1,7 +1,7 @@
 ---
-title: AMI Labs
+title: Media Preservation Labs
 layout: default
-nav_order: 3
+nav_order: 2
 has_children: true
 ---
 Quick Resources:
