@@ -2,7 +2,7 @@
 title: Video
 layout: default
 nav_order: 5
-parent: AMI Labs
+parent: Media Preservation Labs
 ---
 
 
