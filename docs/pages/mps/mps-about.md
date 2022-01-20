@@ -13,7 +13,7 @@ nav_order: 3
 1. TOC
 {:toc}
 
-The Media Preservation Services team suports NYPL's digitization activities by managing vendor logistics, physical non-print media conservation, digital asset quality control, and coordination of ingest for digital assets. Our team works closely with Media Preservation Labs, Digital Preservation / Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for preservation, treated with care, and that our technical requirements are met before being staged for long-term perseration.
+The Media Preservation Services team supports NYPL's preservation activities by managing outsourced digitization logistics, time-based media conservation, and digital asset quality control and migration. Our team works closely with Media Preservation Labs, Digital Preservation, Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for reformatting and conservation treatment, and that all deliverables meet standards-based technical requirements prior to long-term preservation and access. Additional services include technical specification development, workflow documentation, and administrative management of grant-funded media preservation projects.
 
 ## Staff
 #### Genevieve Havemeyer-King, Manager, Media Preservation Services
@@ -40,6 +40,4 @@ NYPL utilizes external vendors for high-volume, grant-funded digitization projec
 Following digitization / reformatting (of digital media on physical carriers), digital assets are delivered to and reviewed by MPS. This process includes automated validation of packaging, metadata, and technical specifications, plus manual review of content to check for errors which cannot be discovered by our automated systems, such as audio sync and analog artifacts.
 
 ### Digital Asset Ingest Staging
-Once digital assets are approved, they are staged in our ingest queue, which is managed by NYPL's Digital Preservation department. 
-
-
+Once digital assets are approved, they are staged in our ingest queue, which is managed by NYPL's Digital Preservation department.

@@ -1,12 +1,12 @@
 ---
-title: Signal Notes Controlled Vocabularies
+title: Signal Notes / Controlled Vocabularies
 layout: default
 nav_order: 7
-parent: AMI Labs
+parent: Media Preservation Labs
 ---
 
 
-# AMI Labs Signal Notes Controlled Vocabularies and Syntax Guide
+# AMI Labs Signal Notes, Controlled Vocabularies, and Syntax Guide
 
 ## Table of contents
 1. [Audio Terms](#audio-terms)
