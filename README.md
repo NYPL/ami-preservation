@@ -7,16 +7,16 @@ NYPL's Preservation of Audio and Moving Image (PAMI) team performs reformatting 
 ### Documentation Site Installation and Development
 Administrators must set up their site development environment before attempting to make changes to any documents, so they can test funcitonality on the live site before releasing it to the public. Below are the installation instructions.
 
-#### Installaton
+#### Installation
 
 * See this site for ruby / gem / bundler troubleshooting:
 https://idratherbewriting.com/documentation-theme-jekyll/mydoc_install_jekyll_on_mac.html
 
-* If you don’t have ruby:  ```brew install ruby```
-* If ruby is not in usr/local/bin:  ```echo 'export PATH="/usr/local/opt/ruby/bin:$PATH"' >> ~/.bash_profile```
+* If you don’t have ruby: ```brew install ruby```
+* If ruby is not in usr/local/bin: ```echo 'export PATH="/usr/local/opt/ruby/bin:$PATH"' >> ~/.bash_profile```
 
   * Quit & restart Terminal 
-  * Open Terminal and check again:   ```which ruby ``` and ```which gem ``` (again, [see here](https://idratherbewriting.com/documentation-theme-jekyll/mydoc_install_jekyll_on_mac.html) for info on installing ruby in the correct location)
+  * Open Terminal and check again: ```which ruby``` and ```which gem``` (again, [see here](https://idratherbewriting.com/documentation-theme-jekyll/mydoc_install_jekyll_on_mac.html) for info on installing ruby in the correct location)
   * All set!? (if not, seek help with a human)
 
 * Install dependencies
@@ -33,5 +33,3 @@ https://idratherbewriting.com/documentation-theme-jekyll/mydoc_install_jekyll_on
 * Run ```bundle exec jekyll serve```
 * Open your Web Browser and navigate to [http://localhost:4000](http://localhost:4000)
 * Reload page as needed to view changes in real time.
-
-testing...
