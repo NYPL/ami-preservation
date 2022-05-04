@@ -98,7 +98,7 @@ CMS exports often contain characters and values which are incompatible with JSON
   * the 'box-check-out' and 'box-check-in' tabs are pre-filled with formulas that should pull the box barcodes from the auto-populated list. The check-out/in sheets may need to have rows added to them in order to accommodate the actual number of boxes that exist in the project. To do this, 'add rows' and drag drag formulas in columns A & B down to the last row, so that all formulas are working properly for all rows. Test by entering in valid and invalid barcodes into the column.
   * Boxes are pulled by SFP team & PAMI staff by staging boxes on carts to prepare for movement.
   * Once a cart is full and ready to move, PAMI Media Preservation Coordinator or Assistant scans box barcodes into the prepared Box Check-Out sheet - before they are moved to LSC room 306. The check-out sheet confirms that the scanned barcode matches the list of barcodes that is expected from the finalized Metadata Inventory in the Vendor Project Worksheet. If any discrepancies occur, box barcodes must be checked against the metadataInventory spreadsheet tab.
-* Boxes on carts are brought to LSC room 306 and palletized; wrapp 2 with plastic if possible to give shippers a head start;
+* Boxes on carts are brought to LSC room 306 and palletized; wrap 2 with plastic if possible to give shippers a head start.
 
 
 ### Box Check-Out/In Google Sheet Color-Coding Guide
