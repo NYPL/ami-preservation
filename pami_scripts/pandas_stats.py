@@ -17,14 +17,14 @@ avgsize = df['technical.fileSize.measure'].mean()
 print('Average file size: {}'.format(size(avgsize, system=si)))
 
 print('\nTotal data by media type: ')
-print(df.groupby(['media-type'])['technical.fileSize.measure'].sum())
+print(df.groupby(['mediaType'])['technical.fileSize.measure'].sum())
 
-avgaudiocassette = df['technical.fileSize.measure'][df['media-type'] == 'audio cassette analog'].sum()
+avgaudiocassette = df['technical.fileSize.measure'][df['mediaType'] == 'audio cassette analog'].sum()
 print('\nTotal audiocassette analog data: {}'.format(size(avgaudiocassette, system=si)))
 
 
-avgwav = df['technical.fileSize.measure'][df['technical.extension'] == 'wav'].mean()
-print('\nAverage WAV size: {}'.format(size(avgwav, system=si)))
+avgflac = df['technical.fileSize.measure'][df['technical.extension'] == 'flac'].mean()
+print('\nAverage FLAC size: {}'.format(size(avgflac, system=si)))
 avgmkv = df['technical.fileSize.measure'][df['technical.extension'] == 'mkv'].mean()
 print('Average MKV size: {}'.format(size(avgmkv, system=si)))
 
@@ -39,15 +39,15 @@ avgtime = df['technical.durationMilli.measure'].mean()
 minutes = (avgtime % 3600000) // 60000
 print('Average duration (min): {}'.format(minutes))
 
-avgwavduration = df['technical.durationMilli.measure'][df['technical.extension'] == 'wav'].mean()
+avgflacduration = df['technical.durationMilli.measure'][df['technical.extension'] == 'FLAC'].mean()
 avgmkvduration = df['technical.durationMilli.measure'][df['technical.extension'] == 'mkv'].mean()
 
-avgwavhours = avgwavduration // 3600000
-avgwavminutes = (avgwavduration % 3600000) // 60000
-avgwavseconds = (avgwavduration % 60000) // 1000
-avgwavms = avgwavduration % 1000
-avgwav_duration = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(int(avgwavhours), int(avgwavminutes), int(avgwavseconds), int(avgwavms))
-print('Average WAV duration: {}'.format((avgwav_duration)))
+avgflachours = avgflacduration // 3600000
+avgflacminutes = (avgflacduration % 3600000) // 60000
+avgflacseconds = (avgflacduration % 60000) // 1000
+avgflacms = avgflacduration % 1000
+avgflac_duration = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(int(avgflachours), int(avgflacminutes), int(avgflacseconds), int(avgflacms))
+print('Average FLAC duration: {}'.format((avgflac_duration)))
 
 avgmkvhours = avgmkvduration // 3600000
 avgmkvminutes = (avgmkvduration % 3600000) // 60000

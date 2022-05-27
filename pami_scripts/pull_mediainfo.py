@@ -37,13 +37,13 @@ def main():
         if os.path.isdir(args.directory):
             glob_abspath = os.path.abspath(os.path.join(args.directory, '**/*'))
             for filename in glob.glob(glob_abspath, recursive = True):
-                if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso', '.flac')):
+                if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso', '.flac','.DAT')):
                     files_to_examine.append(filename)
 
     if args.file:
         if os.path.isfile(args.file):
             filename = args.file
-            if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso', '.flac')):
+            if filename.endswith(('.mkv', '.mov', '.wav', '.WAV', '.mp4', '.dv', '.iso', '.flac','.DAT')):
                 files_to_examine.append(filename)
 
     all_file_data = []
@@ -89,7 +89,7 @@ def main():
                     role = file_no_ext.split('_')[-1]
                     division = file_no_ext.split('_')[0]
                     driveID = path.split('/')[2]
-                    if track.file_extension in ('mkv', 'mov', 'iso', 'mp4', 'dv'):
+                    if track.file_extension in ('mkv', 'mov', 'iso', 'mp4', 'dv','DAT'):
                         mediaType = 'video'
                         file_data.append(mediaType)
                     if track.file_extension in ('wav', 'WAV', 'flac'):
