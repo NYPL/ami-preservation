@@ -18,9 +18,9 @@ for item in dirlist:
     # filter out good directory names  
     if not re.match(r'^\d{6}$', item): 
      
-        # look for potential in directory name
+        # look for potential ID in directory name
         newid = re.match(r'\d{6}', item)
-        # if potential id found
+        # if potential ID found
         if newid:
             # print directory and what was found
             print(f'old id: {item}, new id: {newid.group(0)}')
