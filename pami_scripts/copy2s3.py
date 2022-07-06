@@ -3,16 +3,11 @@
 import argparse
 import os
 import subprocess
-import bagit
-import glob
-import shutil
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Transcode directories of video files')
+    parser = argparse.ArgumentParser(description='Copy files to EAVie (AWS s3)')
     parser.add_argument('-s', '--source',
                         help = 'path to the source directory of bags', required=True)
-    #parser.add_argument('-d', '--destination',
-    #                    help = 'path to the output directory', required=True)
     args = parser.parse_args()
     return args
 
@@ -31,10 +26,6 @@ def get_directories(args):
                 path = os.path.join(directory_path, path)
                 if os.path.isdir(path):
                     bags.append(path)
-    #if os.path.exists(args.destination):
-    #    destination_directory = os.path.abspath(args.destination)
-    #else:
-    #    raise OSError("No such directory")
     return bags
 
 def get_file_list(source_directory):
@@ -53,7 +44,7 @@ def cp_files(file_list):
         cp_command = [
             'aws', 's3', 'cp',
             filename,
-            's3://ami-service-copies'
+            's3://ami-carnegie-servicecopies/'
             ]
         print(cp_command)
         subprocess.call(cp_command)
