@@ -12,7 +12,7 @@ from collections import Counter
 def get_args():
     parser = argparse.ArgumentParser(description='Validate a directory of JSON files')
     parser.add_argument('-m', '--metadata',
-                        help = 'path to the directory of JSON schema files', required=True)    
+                        help = 'path to the directory of JSON schema files', required=True)
     parser.add_argument('-d', '--directory',
                         help = 'path to the directory of JSON', required=True)
     args = parser.parse_args()
@@ -26,10 +26,10 @@ def get_directory(args):
     try:
         test_directory2 = os.listdir(args.metadata)
     except OSError:
-        exit('please retry with a valid directory')       
+        exit('please retry with a valid directory')
     source_directory = args.directory
     metadata_directory = args.metadata
-    
+
     return source_directory, metadata_directory
 
 def get_info(source_directory, metadata_directory):
@@ -44,21 +44,21 @@ def get_info(source_directory, metadata_directory):
     print('\nCounts by Type:\n')
     types = []
     for file in json_list:
-        with open(file, "r") as jsonFile:
+        with open(file, 'r') as jsonFile:
             data = json.load(jsonFile)
             types.append(data['source']['object']['type'])
     print(Counter(types))
     print('\n')
     print('JSON Validation:\n')
-    
+
     schema_directory = os.path.join(metadata_directory, 'versions/2.0/schema')
 
     os.chdir(schema_directory)
 
     for file in json_list:
-        with open(file, "r") as jsonFile:
+        with open(file, 'r') as jsonFile:
             data = json.load(jsonFile)
-            if data['source']['object']['type'] == "video cassette analog":
+            if data['source']['object']['type'] == 'video cassette analog':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -70,7 +70,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "video cassette digital":
+            elif data['source']['object']['type'] == 'video cassette digital':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -82,7 +82,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "video reel":
+            elif data['source']['object']['type'] == 'video reel':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -94,7 +94,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "video optical disc":
+            elif data['source']['object']['type'] == 'video optical disc':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -106,7 +106,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio cassette analog":
+            elif data['source']['object']['type'] == 'audio cassette analog':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -118,7 +118,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio reel analog":
+            elif data['source']['object']['type'] == 'audio reel analog':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -130,7 +130,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio cassette digital":
+            elif data['source']['object']['type'] == 'audio cassette digital':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -142,7 +142,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio reel digital":
+            elif data['source']['object']['type'] == 'audio reel digital':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -154,7 +154,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio optical disc":
+            elif data['source']['object']['type'] == 'audio optical disc':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -166,7 +166,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio grooved disc":
+            elif data['source']['object']['type'] == 'audio grooved disc':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -178,7 +178,7 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio grooved cylinder":
+            elif data['source']['object']['type'] == 'audio grooved cylinder':
                 ajv_command = [
                     'ajv',
                     'validate',
@@ -190,12 +190,43 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
-            elif data['source']['object']['type'] == "audio magnetic wire":
+            elif data['source']['object']['type'] == 'audio magnetic wire':
                 ajv_command = [
                     'ajv',
                     'validate',
                     '-s',
                     '../schema/digitized_audiomagneticwire.json',
+                    '-r',
+                    '../schema/fields.json',
+                    '-d', file,
+                    '--all-errors',
+                    '--errors=json'
+                    ]
+            elif data['source']['object']['format'] in ('8mm film, silent', '8mm film, optical sound', 
+                                                        '8mm film, magnetic sound', 'Super 8 film, silent', 
+                                                        'Super 8 film, optical sound', 'Super 8 film, magnetic sound', 
+                                                        '16mm film, silent', '16mm film, optical sound', '16mm film, magnetic sound', 
+                                                        '35mm film, silent', '35mm film, optical sound', '35mm film, magnetic sound', 
+                                                        '9.5mm film, silent', 'Double 8mm film, silent'):
+                ajv_command = [
+                    'ajv',
+                    'validate',
+                    '-s',
+                    '../schema/digitized_motionpicturefilm.json',
+                    '-r',
+                    '../schema/fields.json',
+                    '-d', file,
+                    '--all-errors',
+                    '--errors=json'
+                    ]
+            
+            elif data['source']['object']['format'] in ('16mm film, optical track', '16mm film, full-coat magnetic sound', 
+                                                        '35mm film, optical track', '35mm film, full-coat magnetic sound'):
+                ajv_command = [
+                    'ajv',
+                    'validate',
+                    '-s',
+                    '../schema/digitized_audiofilm.json',
                     '-r',
                     '../schema/fields.json',
                     '-d', file,
