@@ -30,7 +30,7 @@ While some errors may require a vendor or engineer to rework and re-deliver file
 {:toc}
 
 
-## Repairable Errors 
+## Repairable Errors
 
 ###  Invalid Oxum (Size Discrepancy)
 
