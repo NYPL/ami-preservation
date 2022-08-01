@@ -12,7 +12,7 @@ while getopts 'd:l:' flag; do
 done
 
 dateCreated=$(date "+%Y%m%d_%H%M")
-log_path="$log_dir/mediaconch_filmPM_$dateCreated.csv"
+log_path="$log_dir/mediaconch_8-16mm_filmPM_$dateCreated.csv"
 i=0
 
 for line in $dir_of_bags; do
