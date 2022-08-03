@@ -142,6 +142,8 @@ mv /path/to/source path/to/destination
 
 ##  Locate a string within a file type 
 
+[insert image]
+
 During QC it may be necessary to locate recurring file types, filenames, operators, or errors within a directory. 
 
 Information about using grep can be found on the NYPL Media Preservation Documentation [Command Line Resources](https://nypl.github.io/ami-preservation/pages/resources.html#parsing-files-and-reports) page. 
