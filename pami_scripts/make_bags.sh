@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 1. Discover directories names
-# 2. Validate directories as bags
+# 2. Use names as bag names
 # 3. Log results
 
 log_dir=$HOME
