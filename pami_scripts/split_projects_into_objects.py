@@ -49,7 +49,7 @@ def make_object_dirs(source_directory, file_list):
         new_file_path = os.path.join(source_directory, cms_id, file_path)
         if not os.path.exists(os.path.dirname(new_file_path)):
             os.makedirs(os.path.dirname(new_file_path))
-        if old_file_path.endswith(('mkv', 'json', 'mp4', 'dv', 'flac', 'iso')):
+        if old_file_path.endswith(('mkv', 'json', 'mp4', 'dv', 'flac', 'iso', 'cue')):
             shutil.move(old_file_path, new_file_path)
         else:
             tags.append(old_file_path)
