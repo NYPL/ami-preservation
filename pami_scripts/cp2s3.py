@@ -16,14 +16,14 @@ def get_args():
 
 def get_directories(args):
     try:
-        test_directory = os.listdir(args.source)
+        test_directory = os.listdir(args.directory)
     except OSError:
         exit('please retry with a valid directory of files')
 
     bags = []
 
-    if args.source:
-        directory_path = os.path.abspath(args.source)
+    if args.directory:
+        directory_path = os.path.abspath(args.directory)
         for path in os.listdir(directory_path):
             if not path.startswith(('.', '$')):
                 path = os.path.join(directory_path, path)
