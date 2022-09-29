@@ -36,7 +36,8 @@ def get_file_list(source_directory):
 
     for root, dirs, files in os.walk(source_directory):
         for file in files:
-            if file.endswith(('sc.mp4', 'sc.json', 'em.wav', 'em.flac', 'em.json')):
+            if (file.endswith(('sc.mp4', 'sc.json', 'em.wav', 'em.flac', 'em.json')) 
+            and not file.startswith('._')):
                 item_path = os.path.join(root, file)
                 filename = os.path.basename(item_path)
                 file_list.append(item_path)
