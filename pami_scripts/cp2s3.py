@@ -6,30 +6,31 @@ import subprocess
 import bagit
 import glob
 import shutil
+import re
 
 def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
     parser.add_argument('-d', '--directory',
-                        help = 'path to directory of bags', required=True)
+                        help = 'path to directory of bags or a hard drive', required=True)
     args = parser.parse_args()
     return args
 
-def get_directories(args):
+def find_bags(args):
     try:
         test_directory = os.listdir(args.directory)
     except OSError:
         exit('please retry with a valid directory of files')
-
+    
+    path = args.directory
+    all_manifests = glob.iglob(os.path.join(path,'**/manifest-md5.txt'), recursive=True)
     bags = []
-
-    if args.directory:
-        directory_path = os.path.abspath(args.directory)
-        for path in os.listdir(directory_path):
-            if not path.startswith(('.', '$')):
-                path = os.path.join(directory_path, path)
-                if os.path.isdir(path):
-                    bags.append(path)
-    return bags
+    bag_ids = []
+    for filepath in all_manifests:
+        bags.append(os.path.split(filepath)[0])
+    for bag in bags:
+        bag_id = re.findall('\d{6}', bag)[-1]
+        bag_ids.append(bag_id)
+    return bags, bag_ids
 
 def get_file_list(source_directory):
     file_list = []
@@ -56,7 +57,9 @@ def cp_files(file_list):
 
 def main():
     arguments = get_args()
-    bags = get_directories(arguments)
+    bags, bag_ids = find_bags(arguments)
+    print(f'This directory/drive has {len(bag_ids)} bags.')
+    print(f'This is the list of bags: {bag_ids}.')
     for bag in bags:
         print("now working on: {}".format(bag))
         list_of_files = get_file_list(bag)
