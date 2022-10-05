@@ -20,30 +20,45 @@ def find_bags(args):
         test_directory = os.listdir(args.directory)
     except OSError:
         exit('please retry with a valid directory of files')
-    
-    path = args.directory
-    all_manifests = glob.iglob(os.path.join(path,'**/manifest-md5.txt'), recursive=True)
     bags = []
     bag_ids = []
-    for filepath in all_manifests:
-        bags.append(os.path.split(filepath)[0])
-    for bag in bags:
-        bag_id = re.findall('\d{6}', bag)[-1]
-        bag_ids.append(bag_id)
+    if test_directory:
+        path = args.directory
+        all_manifests = glob.iglob(os.path.join(path,'**/manifest-md5.txt'), recursive=True)
+        
+        for filepath in all_manifests:
+            bags.append(os.path.split(filepath)[0])
+        for bag in bags:
+            bag_id = re.findall('\d{6}', bag)[-1]
+            bag_ids.append(bag_id)
     return bags, bag_ids
 
-def get_file_list(source_directory):
-    file_list = []
-
-    for root, dirs, files in os.walk(source_directory):
+def check_media_json_match(source_directory):
+    media_fn = set()
+    json_fn = set()
+    for root, dirs, files in os.walk(source_directory): 
         for file in files:
-            if (file.endswith(('sc.mp4', 'sc.json', 'em.wav', 'em.flac', 'em.json')) 
+            pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
+            if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac')) 
             and not file.startswith('._')):
-                item_path = os.path.join(root, file)
-                filename = os.path.basename(item_path)
-                file_list.append(item_path)
+                filename = re.search(pattern, file).group(1)
+                media_fn.add(filename)
+            if (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
+                filename = re.search(pattern, file).group(1)
+                json_fn.add(filename)
+        if not media_fn == json_fn:
+            print("Mismatch of media and json: {}".format(media_fn.symmetric_difference(json_fn)))
+        return True
 
-    return file_list
+def get_file_list(source_directory):
+    all_file_list = []
+    for root, dirs, files in os.walk(source_directory):        
+        for file in files:    
+            item_path = os.path.join(root, file)
+            if (file.lower().endswith(('sc.mp4', 'sc.json', 'em.wav', 'em.flac', 'em.json')) 
+            and not file.startswith('._')):
+                all_file_list.append(item_path)
+    return all_file_list
 
 def cp_files(file_list):
     for filename in sorted(file_list):
@@ -62,8 +77,10 @@ def main():
     print(f'This is the list of bags: {bag_ids}.')
     for bag in bags:
         print("now working on: {}".format(bag))
-        list_of_files = get_file_list(bag)
-        cp_files(list_of_files)
+        good_bag = check_media_json_match(bag)
+        if good_bag == True:
+            list_of_files = get_file_list(bag)
+            cp_files(list_of_files)
 
 if __name__ == '__main__':
     main()
