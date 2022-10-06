@@ -47,13 +47,12 @@ def check_media_json_match(source_directory):
                 filename = re.search(pattern, file).group(1)
                 json_fn.add(filename)
         if not media_fn == json_fn:
-            print("Mismatch of media and json: {}".format(media_fn.symmetric_difference(json_fn)))
-        return True
+            raise Exception("Mismatch of media and json: {}".format(media_fn.symmetric_difference(json_fn)))
 
 def get_file_list(source_directory):
     all_file_list = []
-    for root, dirs, files in os.walk(source_directory):        
-        for file in files:    
+    for root, dirs, files in os.walk(source_directory):
+        for file in files: 
             item_path = os.path.join(root, file)
             if (file.lower().endswith(('sc.mp4', 'sc.json', 'em.wav', 'em.flac', 'em.json')) 
             and not file.startswith('._')):
@@ -92,15 +91,14 @@ def main():
     total_json = 0
     for bag in bags:
         print("now working on: {}".format(bag))
-        good_bag = check_media_json_match(bag)
-        if good_bag == True:
-            list_of_files = get_file_list(bag)
-            mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(list_of_files)
-            cp_files(list_of_files)
-            total_mp4 += mp4_ct
-            total_wav += wav_ct
-            total_flac += flac_ct
-            total_json += json_ct
+        check_media_json_match(bag)
+        list_of_files = get_file_list(bag)
+        mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(list_of_files)
+        cp_files(list_of_files)
+        total_mp4 += mp4_ct
+        total_wav += wav_ct
+        total_flac += flac_ct
+        total_json += json_ct
     print(f'''This batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac;
     and {total_json} json, except mismatched bags.''')
 
