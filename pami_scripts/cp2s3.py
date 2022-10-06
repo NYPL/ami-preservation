@@ -60,6 +60,17 @@ def get_file_list(source_directory):
                 all_file_list.append(item_path)
     return all_file_list
 
+def file_type_counts(all_file_list):
+    mp4_files = [ file for file in all_file_list if file.lower().endswith('.mp4')]
+    wav_files = [ file for file in all_file_list if file.lower().endswith('.wav')]
+    flac_files = [ file for file in all_file_list if file.lower().endswith('.flac')]
+    json_files = [ file for file in all_file_list if file.lower().endswith('.json')]
+    mp4_ct = len(mp4_files)
+    wav_ct = len(wav_files)
+    flac_ct = len(flac_files)
+    json_ct = len(json_files)
+    return mp4_ct, wav_ct, flac_ct, json_ct
+
 def cp_files(file_list):
     for filename in sorted(file_list):
         cp_command = [
@@ -75,12 +86,23 @@ def main():
     bags, bag_ids = find_bags(arguments)
     print(f'This directory/drive has {len(bag_ids)} bags.')
     print(f'This is the list of bags: {bag_ids}.')
+    total_mp4 = 0
+    total_wav = 0
+    total_flac = 0
+    total_json = 0
     for bag in bags:
         print("now working on: {}".format(bag))
         good_bag = check_media_json_match(bag)
         if good_bag == True:
             list_of_files = get_file_list(bag)
+            mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(list_of_files)
             cp_files(list_of_files)
+            total_mp4 += mp4_ct
+            total_wav += wav_ct
+            total_flac += flac_ct
+            total_json += json_ct
+    print(f'''This batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac;
+    and {total_json} json, except mismatched bags.''')
 
 if __name__ == '__main__':
     main()
