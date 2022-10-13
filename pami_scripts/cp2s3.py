@@ -27,7 +27,8 @@ def find_bags(args):
         all_manifests = glob.iglob(os.path.join(path,'**/manifest-md5.txt'), recursive=True)
         
         for filepath in all_manifests:
-            bags.append(os.path.split(filepath)[0])
+            if not '$RECYCLE' in filepath:
+                bags.append(os.path.split(filepath)[0])
         for bag in bags:
             bag_id = re.findall('\d{6}', bag)[-1]
             bag_ids.append(bag_id)
