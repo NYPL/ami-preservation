@@ -2,6 +2,7 @@
 
 import argparse
 import os
+from statistics import median
 import subprocess
 import bagit
 import glob
@@ -12,6 +13,10 @@ def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
     parser.add_argument('-d', '--directory',
                         help = 'path to directory of bags or a hard drive', required=True)
+    parser.add_argument('-c', '--check_only',
+                        action='store_true',
+                        help = f'''check if all bags from the directory of bags/a hard drive
+                        are in the AWS bucket''')
     args = parser.parse_args()
     return args
 
@@ -34,37 +39,45 @@ def find_bags(args):
             bag_ids.append(bag_id)
     return bags, bag_ids
 
-def catch_media_json_mismatch(source_directory):
+def get_files_and_mismatch(source_directory):
+    all_file_list = []
+    all_file_paths_list = []
+    mismatch_dir = ''
     media_fn = set()
     json_fn = set()
-    mismatch_dir = ''
-    for root, dirs, files in os.walk(source_directory): 
-        for file in files:
-            pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
-            if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac')) 
-            and not file.startswith('._')):
-                filename = re.search(pattern, file).group(1)
-                media_fn.add(filename)
-            if (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
-                filename = re.search(pattern, file).group(1)
-                json_fn.add(filename)
-        try:
-            if not media_fn == json_fn:
-                mismatch_dir = source_directory
-                print("Mismatch of media and json: {}".format(media_fn.symmetric_difference(json_fn)))
-        except:
-            pass
-    return mismatch_dir
 
-def get_file_list(source_directory):
-    all_file_list = []
     for root, dirs, files in os.walk(source_directory):
         for file in files: 
             item_path = os.path.join(root, file)
-            if (file.lower().endswith(('sc.mp4', 'sc.json', 'em.wav', 'em.flac', 'em.json')) 
+            pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
+            if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac')) 
             and not file.startswith('._')):
-                all_file_list.append(item_path)
-    return all_file_list
+                all_file_paths_list.append(item_path)
+                all_file_list.append(file)
+                filename = re.search(pattern, file).group(1)
+                media_fn.add(filename)
+            if (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
+                all_file_paths_list.append(item_path)
+                all_file_list.append(file)
+                filename = re.search(pattern, file).group(1)
+                json_fn.add(filename)
+        
+        if not media_fn == json_fn:
+            mismatch_dir = source_directory
+            print("Mismatch of media and json: {}".format(media_fn.symmetric_difference(json_fn)))
+                
+    return all_file_paths_list, all_file_list, mismatch_dir
+
+def check_bucket(filenames_list):
+    to_upload = []
+    for file in filenames_list:
+        cmd = ['aws', 's3api', 'head-object',
+           '--bucket', 'ami-carnegie-servicecopies',
+           '--key', file]
+        output = subprocess.run(cmd, capture_output=True).stdout
+        if not output:
+            to_upload.append(file)
+    return to_upload
 
 def file_type_counts(all_file_list):
     mp4_files = [ file for file in all_file_list if file.lower().endswith('.mp4')]
@@ -94,23 +107,37 @@ def main():
     print(f'This is the list of bags: {bag_ids}.')
     total_mp4 = total_wav = total_flac = total_json = 0
     mismatch_ls = []
+    incomplete_in_bucket = []
+    
     for bag in bags:
-        print("now working on: {}".format(bag))
-        mismatch_bag = catch_media_json_mismatch(bag)
+        all_file_paths, all_files, mismatch_bag = get_files_and_mismatch(bag)
         if mismatch_bag:
             mismatch_ls.append(mismatch_bag)
+        elif arguments.check_only:
+            print("now checking if {} is in the bucket".format(bag))
+            to_upload = check_bucket(all_files)
+            if to_upload:
+                incomplete_in_bucket.append(bag)
+                print(f'{bag} not in the bucket. Added to the "need to upload" list.')
+            else:
+                print(f'Yes {bag} is in the bucket.')
         else:
-            list_of_files = get_file_list(bag)
-            mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(list_of_files)
-            cp_files(list_of_files)
+            print("now uploading: {}".format(bag))
+            mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
+            cp_files(all_file_paths)
             total_mp4 += mp4_ct
             total_wav += wav_ct
             total_flac += flac_ct
             total_json += json_ct
-    print(f'''This batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac;
-    and {total_json} json, except mismatched bag(s): {mismatch_ls}''')
-    print(f'''This upload includes {len(bag_ids) - len(mismatch_ls)} bags,
-    except {len(mismatch_ls)} mismatched bag(s)''')
+        
+    if not arguments.check_only:
+        print(f'''This batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac;
+        and {total_json} json, except mismatched bag(s): {mismatch_ls}''')
+        print(f'''This upload includes {len(bag_ids) - len(mismatch_ls)} bags,
+        except {len(mismatch_ls)} mismatched bag(s)''')
+    else:
+        print(f'''This directory/drive has {mismatch_ls} mismatch bags.
+        {incomplete_in_bucket} need to be uploaded to EAVie bucket.''')
 
 if __name__ == '__main__':
     main()
