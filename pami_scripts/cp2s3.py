@@ -129,7 +129,7 @@ def cp_files(file_list):
             's3://ami-carnegie-servicecopies'
             ]
         print(cp_command)
-        #subprocess.call(cp_command)
+        subprocess.call(cp_command)
 
 def main():
     arguments = get_args()
