@@ -1,7 +1,7 @@
 ---
-title: AMI Labs
+title: Media Preservation Labs
 layout: default
-nav_order: 4
+nav_order: 2
 has_children: true
 ---
 Quick Resources:
@@ -17,7 +17,7 @@ Quick Resources:
 {:toc}
 
 # AMI Labs
-NYPL's in-house media preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Preservation of Audio and Moving Image (PAMI). Today, the AMI Labs are part of Digital Collections Services, within the Digital Research Division.
+NYPL's in-house media preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Preservation of Audio and Moving Image (PAMI). Today, the AMI Labs are part of Digital Collections, within the Digital Research Division.
 
 The following pages detail workflows, policies, and procedures for audio/video digitization, optical media migration, and born-digital processing, broken into the following categories:
    * Pre-digitization conservation treatments
@@ -25,6 +25,28 @@ The following pages detail workflows, policies, and procedures for audio/video d
    * Post-digitization editing, spot-checking, and packaging
    * Quality control
    * Safe and secure file transfer
+
+## Staff
+
+#### Rhony Dostaly, Media Preservation Engineer - Moving Image
+{: .no_toc }
+Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections.
+
+#### Fran Dougherty, Media Preservation Engineer - Moving Image
+{: .no_toc }
+Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections. Processes include: media stabilization/cleaning/repair, signal extraction, and creation of high quality digital files.
+
+#### Jeff Willens, Media Preservation Engineer - Audio
+{: .no_toc }
+Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
+
+#### Seth Winner, Media Preservation Engineer - Audio
+{: .no_toc }
+Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
+
+#### Benjamin Turkus, Assistant Manager of Audio and Moving Image Preservation
+{: .no_toc }
+Provides oversight for all in-house media preservation lab operations, and manages Media Preservation Engineers. Develops workflows, documents processes, and pursues open source solutions.
 
 ## Supported Formats & Equipment
 The AMI Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.

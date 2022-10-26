@@ -30,9 +30,10 @@ def get_files(source_directory):
 
 
 def make_object_dirs(source_directory, file_list):
-    # list to report object_dirs created and untouched files
+    # list to report object_dirs created, untouched files, and tag files to move after bagging
     cms_ids = set()
     unmoved = []
+    tags = []
 
     # extract cms_id from filename and insert into path
     for file_path in file_list:
@@ -48,16 +49,45 @@ def make_object_dirs(source_directory, file_list):
         new_file_path = os.path.join(source_directory, cms_id, file_path)
         if not os.path.exists(os.path.dirname(new_file_path)):
             os.makedirs(os.path.dirname(new_file_path))
-        shutil.move(old_file_path, new_file_path)
+        if old_file_path.endswith(('mkv', 'json', 'mp4', 'dv', 'flac', 'iso', 'cue', 'mov')):
+            shutil.move(old_file_path, new_file_path)
+        else:
+            tags.append(old_file_path)
         print('Moving: {}'.format(cms_id))
 
-    return cms_ids, unmoved
+    return cms_ids, unmoved, tags
 
 
 def make_object_bags(source_directory, cms_objects):
     for cms_id in cms_objects:
         bagit.make_bag(os.path.join(source_directory, cms_id), checksums=['md5'])
         print('Bagging: {}'.format(cms_id))
+
+
+def move_tag_files(source_directory, tags):
+    # move tag files after bagging into a tags folder
+    # then update the tag manifest
+    for tag_file in tags:
+        cms_id = re.search(r'_(\d{6})_', tag_file).group(1)
+        object_bag = os.path.join(source_directory, cms_id)
+
+        # tag file for object that didn't get bagged
+        if not os.path.exists(object_bag):
+            print('ummm, no bag for {}'.format(cms_id))
+            continue
+
+        else:
+            tag_dir = os.path.join(object_bag, 'tags')
+            os.makedirs(tag_dir, exist_ok=True)
+            shutil.move(tag_file, tag_dir)
+
+            # update the tag manifest,
+            # messy but takes advantage of bagit setup
+            # rewrites tag manifest for every file move, not ideal, but not the worst
+            cur_dir = os.getcwd()
+            os.chdir(object_bag)
+            bagit._make_tagmanifest_file("md5", object_bag)
+            os.chdir(cur_dir)
 
 
 def clean_up(source_directory):
@@ -73,8 +103,9 @@ def main():
     arguments = get_args()
     source_directory = arguments.source
     file_list = get_files(source_directory)
-    cms_objects, unmoved = make_object_dirs(source_directory, file_list)
+    cms_objects, unmoved, tags = make_object_dirs(source_directory, file_list)
     make_object_bags(source_directory, cms_objects)
+    move_tag_files(source_directory, tags)
     clean_up(source_directory)
     print('Did not move this stuff: {}'.format(', '.join(unmoved)))
 

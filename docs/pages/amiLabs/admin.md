@@ -1,8 +1,8 @@
 ---
 title: Admin
 layout: default
-nav_order: 1
-parent: AMI Labs
+nav_order: 3
+parent: Media Preservation Labs
 ---
 
 
