@@ -76,12 +76,14 @@ def get_files_and_mismatch(source_directory):
 def check_bucket(filenames_list):
     to_upload = []
     for file in filenames_list:
+        key_name = file.replace('flac', 'mp4').replace('wav', 'mp4')
         cmd = ['aws', 's3api', 'head-object',
            '--bucket', 'ami-carnegie-servicecopies',
-           '--key', file]
+           '--key', key_name]
+        print(cmd)
         output = subprocess.run(cmd, capture_output=True).stdout
         if not output:
-            to_upload.append(file)
+            to_upload.append(key_name)
     return to_upload
 
 def file_type_counts(all_file_list):
@@ -135,12 +137,12 @@ def main():
     arguments = get_args()
     bags, bag_ids = find_bags(arguments)
     print(f'This directory/drive has {len(bag_ids)} bags')
-    print(f'List of bags: {bag_ids}')
+    print(f'List of bags: {sorted(bag_ids)}')
     total_mp4 = total_wav = total_flac = total_json = 0
     mismatch_ls = []
     incomplete_in_bucket = []
     
-    for bag in bags:
+    for bag in sorted(bags):
         all_file_paths, all_files, mismatch_bag, media_list, json_list = get_files_and_mismatch(bag)
         print(f'\nNow checking media and json file information for {bag}:\n')
         json_checks = check_json(media_list, json_list)
