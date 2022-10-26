@@ -108,7 +108,7 @@ def check_json(media_file_list, json_file_list):
             json_names.append(json_name)
 
             if not media_names == json_names:
-                print('--Check 1: Mismatch of media filenames and json asset ref filenames: {}\n'.format(media_names.symmetric_difference(json_names)))
+                print('--Check 1: Mismatch of media filenames and json asset ref filenames: {}\n'.format(set(media_names).symmetric_difference(set(json_names))))
             else:
                 print('--Check 1:  Media filenames and json asset reference filenames match\n')
 
