@@ -140,7 +140,7 @@ def cp_files(file_list):
             's3://ami-carnegie-servicecopies'
             ]
         print(cp_command)
-        subprocess.call(cp_command)
+        #subprocess.call(cp_command)
 
 def main():
     arguments = get_args()
@@ -157,8 +157,10 @@ def main():
         print(f'\nNow checking media and json file information for {bag}:\n')
         fn_mismatch, barcode_mismatch = check_json(media_list, json_list)
         
-        if fn_mismatch or barcode_mismatch:
+        if fn_mismatch:
             fn_mismatch_ls.append(fn_mismatch)
+        
+        elif barcode_mismatch:
             bc_mismatch_ls.append(barcode_mismatch)
 
         elif arguments.check_only:
