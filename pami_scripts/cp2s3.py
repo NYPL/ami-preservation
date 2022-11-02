@@ -65,15 +65,27 @@ def get_files(source_directory):
 
 def check_bucket(filenames_list):
     to_upload = []
+    cmd = ['aws', 's3api', 'head-object',
+            '--bucket', 'ami-carnegie-servicecopies',
+            '--key', '']
     for file in filenames_list:
-        key_name = file.replace('flac', 'mp4').replace('wav', 'mp4')
-        cmd = ['aws', 's3api', 'head-object',
-           '--bucket', 'ami-carnegie-servicecopies',
-           '--key', key_name]
-        print(cmd)
-        output = subprocess.run(cmd, capture_output=True).stdout
-        if not output:
-            to_upload.append(key_name)
+        if 'flac' in file or 'wav' in file:
+            cmd[-1] = file
+            print(cmd)
+            output_original_media = subprocess.run(cmd, capture_output=True).stdout
+            if not output_original_media:
+                mp4_key = file.replace('flac', 'mp4').replace('wav', 'mp4')
+                cmd[-1] = mp4_key
+                print(cmd)
+                output_mp4 = subprocess.run(cmd, capture_output=True).stdout
+                if not output_mp4:
+                    to_upload.append(file)
+        else:
+            cmd[-1] = file
+            print(cmd)
+            output_json = subprocess.run(cmd, capture_output=True).stdout
+            if not output_json:
+                to_upload.append(file)
     return to_upload
 
 def file_type_counts(all_file_list):
