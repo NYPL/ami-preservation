@@ -154,7 +154,6 @@ def main():
     
     for bag in sorted(bags):
         all_file_paths, all_files, media_list, json_list = get_files(bag)
-        print(f'\nNow checking media and json file information for {bag}\n')
         fn_mismatch, barcode_mismatch = check_json(media_list, json_list)
         
         if fn_mismatch:
