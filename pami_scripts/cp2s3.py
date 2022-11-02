@@ -154,7 +154,7 @@ def main():
     
     for bag in sorted(bags):
         all_file_paths, all_files, media_list, json_list = get_files(bag)
-        print(f'\nNow checking media and json file information for {bag}:\n')
+        print(f'\nNow checking media and json file information for {bag}\n')
         fn_mismatch, barcode_mismatch = check_json(media_list, json_list)
         
         if fn_mismatch:
@@ -168,9 +168,9 @@ def main():
             to_upload = check_bucket(all_files)
             if to_upload:
                 incomplete_in_bucket.append(bag)
-                print(f'--Check 3: {bag} not in the bucket. Added to the "need to upload" list.')
+                print(f'\nNo, {bag} not in the bucket. Added to the "need to upload" list.')
             else:
-                print(f'--Check 3: Yes, {bag} is in the bucket.')
+                print(f'\nYes, {bag} is in the bucket.')
         else:
             print(f'Now uploading: {bag}\n')
             mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
