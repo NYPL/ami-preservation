@@ -48,20 +48,32 @@ def get_files(source_directory):
 
     for root, dirs, files in os.walk(source_directory):
         for file in files: 
-            item_path = os.path.join(root, file)
-            pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
+            item_path = os.path.join(root, file)  
             if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac')) 
-            and not file.startswith('._')):
+                and not file.startswith('._')):
                 all_file_paths_list.append(item_path)
                 all_file_list.append(file)
                 media_file_list.append(item_path)
 
-            if (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
+            elif (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
                 all_file_paths_list.append(item_path)
                 all_file_list.append(file)
                 json_file_list.append(item_path)
-                
+            
     return all_file_paths_list, all_file_list, media_file_list, json_file_list
+
+def check_fn_convention(all_file_list):
+    pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
+    answer = bool
+    for file in all_file_list:
+        try:
+            re.search(pattern, file).group(0)
+            answer = True
+        except AttributeError:
+            print(f'{file} not named correctly')
+            answer = False
+            continue
+    return answer
 
 def check_bucket(filenames_list):
     to_upload = []
@@ -116,7 +128,6 @@ def check_json(media_file_list, json_file_list):
 
             if not media_names == json_names:
                 fn_mismatch = file
-                
             else:
                 pass
 
@@ -151,16 +162,21 @@ def main():
     fn_mismatch_ls = []
     bc_mismatch_ls = []
     incomplete_in_bucket = []
+    incorrect_name_ls = []
     
     for bag in sorted(bags):
         all_file_paths, all_files, media_list, json_list = get_files(bag)
         fn_mismatch, barcode_mismatch = check_json(media_list, json_list)
+        fn_bool = check_fn_convention(all_files)
         
         if fn_mismatch:
             fn_mismatch_ls.append(fn_mismatch)
-        
+
         elif barcode_mismatch:
             bc_mismatch_ls.append(barcode_mismatch)
+        
+        elif fn_bool == False:
+            incorrect_name_ls.append(bag)
 
         elif arguments.check_only:
             print(f'Now checking if {bag} is in the bucket:\n')
@@ -182,11 +198,12 @@ def main():
     if not arguments.check_only:
         print(f'''\nThis batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac; and {total_json} json,
         except filename mismatched bag(s): {fn_mismatch_ls} and
-        barcode mismatched bag(s): {bc_mismatch_ls}''')
+        barcode mismatched bag(s): {bc_mismatch_ls} and
+        incorrect file names bag(s): {incorrect_name_ls}''')
       
     else:
         print(f'''\nThis directory/drive has filename mismatched bag(s): {fn_mismatch_ls} and
-        barcode mismatched bag(s): {bc_mismatch_ls}.
+        barcode mismatched bag(s): {bc_mismatch_ls} and incorrect file names bag(s): {incorrect_name_ls}.
         {incomplete_in_bucket} need to be uploaded to EAVie bucket.''')
 
 if __name__ == '__main__':
