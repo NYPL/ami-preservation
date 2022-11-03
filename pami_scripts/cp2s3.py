@@ -18,6 +18,10 @@ def get_args():
                         action='store_true',
                         help = f'''check if all bags from the directory of bags/a hard drive
                         are in the AWS bucket''')
+    parser.add_argument('--check_and_upload',
+                        action='store_true',
+                        help=f'''check if all bags from the directory of bags/a hard drive
+                        are in the AWS bucket, and upload ONLY the ones not in the bucket''')
     args = parser.parse_args()
     return args
 
@@ -178,14 +182,23 @@ def main():
         elif fn_bool == False:
             incorrect_name_ls.append(bag)
 
-        elif arguments.check_only:
+        elif arguments.check_only or arguments.check_and_upload:
             print(f'Now checking if {bag} is in the bucket:\n')
             to_upload = check_bucket(all_files)
             if to_upload:
                 incomplete_in_bucket.append(bag)
-                print(f'\nNo, {bag} not in the bucket. Added to the "need to upload" list.')
+                print(f'\nNo, {bag} not in the bucket.')
+                if arguments.check_and_upload:
+                    print(f'Now uploading: {bag}\n')
+                    mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
+                    cp_files(all_file_paths)
+                    total_mp4 += mp4_ct
+                    total_wav += wav_ct
+                    total_flac += flac_ct
+                    total_json += json_ct
             else:
                 print(f'\nYes, {bag} is in the bucket.')
+
         else:
             print(f'Now uploading: {bag}\n')
             mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
