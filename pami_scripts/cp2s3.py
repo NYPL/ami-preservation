@@ -99,8 +99,8 @@ def check_bucket(filenames_list):
         else:
             cmd[-1] = file
             print(cmd)
-            output_json = subprocess.run(cmd, capture_output=True).stdout
-            if not output_json:
+            output_json_mp4 = subprocess.run(cmd, capture_output=True).stdout
+            if not output_json_mp4:
                 to_upload.append(file)
     return to_upload
 
@@ -176,7 +176,7 @@ def main():
         if fn_mismatch:
             fn_mismatch_ls.append(fn_mismatch)
 
-        elif barcode_mismatch:
+        elif barcode_mismatch: 
             bc_mismatch_ls.append(barcode_mismatch)
         
         elif fn_bool == False:
