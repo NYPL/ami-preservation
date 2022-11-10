@@ -46,8 +46,8 @@ def find_bags(args):
 
 def get_files(source_directory):
     all_file_list = []
-    media_file_list = []
-    json_file_list = []
+    media_paths_list = []
+    json_paths_list = []
     all_file_paths_list = []
 
     for root, dirs, files in os.walk(source_directory):
@@ -57,27 +57,62 @@ def get_files(source_directory):
                 and not file.startswith('._')):
                 all_file_paths_list.append(item_path)
                 all_file_list.append(file)
-                media_file_list.append(item_path)
+                media_paths_list.append(item_path)
 
             elif (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
                 all_file_paths_list.append(item_path)
                 all_file_list.append(file)
-                json_file_list.append(item_path)
+                json_paths_list.append(item_path)
             
-    return all_file_paths_list, all_file_list, media_file_list, json_file_list
+    return all_file_paths_list, all_file_list, media_paths_list, json_paths_list
 
-def check_fn_convention(all_file_list):
+def valid_fn_convention(all_file_list):
     pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
-    answer = bool
+    invalid_fn_ls = []
+
     for file in all_file_list:
         try:
             re.search(pattern, file).group(0)
-            answer = True
+            return True
         except AttributeError:
             print(f'{file} not named correctly')
-            answer = False
-            continue
-    return answer
+            invalid_fn_ls.append(file)
+            return invalid_fn_ls
+
+def valid_media_json_match(media_paths_list, json_paths_list):
+    media_set = set([os.path.splitext(os.path.basename(i))[0]for i in media_paths_list])
+    json_set = set([os.path.splitext(os.path.basename(i))[0] for i in json_paths_list])
+    
+    if media_set == json_set:
+        return True
+    else:
+        return media_set.symmetric_difference(json_set)
+
+def valid_json_reference(media_file_list, json_file_list):
+    media_names = [os.path.basename(file) for file in media_file_list]
+    json_names = []
+    
+    for file in json_file_list:
+        with open(file, "r") as jsonFile:
+            data = json.load(jsonFile)
+            json_name = data['asset']['referenceFilename']
+            json_names.append(json_name)
+    if media_names == json_names:
+        return True
+    else:
+        return json_names
+
+def valid_json_barcode(json_file_list):
+    for file in json_file_list:
+        with open(file, "r") as jsonFile:
+            data = json.load(jsonFile)
+            barcode = data['bibliographic']['barcode']
+            match = re.search(r'^33433\d+', barcode)
+
+            if match:
+                return True
+            else:
+                return file
 
 def check_bucket(filenames_list):
     to_upload = []
@@ -115,38 +150,6 @@ def file_type_counts(all_file_list):
     json_ct = len(json_files)
     return mp4_ct, wav_ct, flac_ct, json_ct
 
-def check_json(media_file_list, json_file_list):
-    media_names = []
-    json_names = []
-    fn_mismatch = ''
-    barcode_mismatch = ''
-    
-    for file in media_file_list:
-        filename = os.path.basename(file)
-        media_names.append(filename)
-    for file in json_file_list:
-        with open(file, "r") as jsonFile:
-            data = json.load(jsonFile)
-            json_name = data['asset']['referenceFilename']
-            json_names.append(json_name)
-
-            if not media_names == json_names:
-                fn_mismatch = file
-            else:
-                pass
-
-            barcode = data['bibliographic']['barcode']
-            match = re.search(r'^33433\d+', barcode)
-
-            if match:
-                pass
-            else:
-                barcode_mismatch = file
-                
-    
-    return fn_mismatch, barcode_mismatch
-
-
 def cp_files(file_list):
     for filename in sorted(file_list):
         cp_command = [
@@ -163,61 +166,77 @@ def main():
     print(f'This directory/drive has {len(bag_ids)} bags')
     print(f'List of bags: {sorted(bag_ids)}')
     total_mp4 = total_wav = total_flac = total_json = 0
+    invalid_fn_ls = []
     fn_mismatch_ls = []
+    json_mismatch_ls = []
     bc_mismatch_ls = []
     incomplete_in_bucket = []
-    incorrect_name_ls = []
     
     for bag in sorted(bags):
         all_file_paths, all_files, media_list, json_list = get_files(bag)
-        fn_mismatch, barcode_mismatch = check_json(media_list, json_list)
-        fn_bool = check_fn_convention(all_files)
+        fn = valid_fn_convention(all_files)
+        media_json = valid_media_json_match(media_list, json_list)
+        reference = valid_json_reference(media_list, json_list)
+        barcode = valid_json_barcode(json_list)
         
-        if fn_mismatch:
-            fn_mismatch_ls.append(fn_mismatch)
-
-        elif barcode_mismatch: 
-            bc_mismatch_ls.append(barcode_mismatch)
+        if (fn == True and media_json == True and reference == True and barcode == True):
+            if arguments.check_only or arguments.check_and_upload:
+                print(f'Now checking if {bag} is in the bucket:\n')
+                to_upload = check_bucket(all_files)
+                if to_upload:
+                    incomplete_in_bucket.append(bag)
+                    print(f'\nNo, {bag} not in the bucket.')
+                    if arguments.check_and_upload:
+                        print(f'Now uploading: {bag}\n')
+                        mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
+                        cp_files(all_file_paths)
+                        total_mp4 += mp4_ct
+                        total_wav += wav_ct
+                        total_flac += flac_ct
+                        total_json += json_ct
+                else:
+                    print(f'\nYes, {bag} is in the bucket.')
         
-        elif fn_bool == False:
-            incorrect_name_ls.append(bag)
-
-        elif arguments.check_only or arguments.check_and_upload:
-            print(f'Now checking if {bag} is in the bucket:\n')
-            to_upload = check_bucket(all_files)
-            if to_upload:
-                incomplete_in_bucket.append(bag)
-                print(f'\nNo, {bag} not in the bucket.')
-                if arguments.check_and_upload:
-                    print(f'Now uploading: {bag}\n')
-                    mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
-                    cp_files(all_file_paths)
-                    total_mp4 += mp4_ct
-                    total_wav += wav_ct
-                    total_flac += flac_ct
-                    total_json += json_ct
             else:
-                print(f'\nYes, {bag} is in the bucket.')
-
+                print(f'Now uploading: {bag}\n')
+                mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
+                cp_files(all_file_paths)
+                total_mp4 += mp4_ct
+                total_wav += wav_ct
+                total_flac += flac_ct
+                total_json += json_ct
         else:
-            print(f'Now uploading: {bag}\n')
-            mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
-            cp_files(all_file_paths)
-            total_mp4 += mp4_ct
-            total_wav += wav_ct
-            total_flac += flac_ct
-            total_json += json_ct
-        
-    if not arguments.check_only:
-        print(f'''\nThis batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac; and {total_json} json,
-        except filename mismatched bag(s): {fn_mismatch_ls} and
-        barcode mismatched bag(s): {bc_mismatch_ls} and
-        incorrect file names bag(s): {incorrect_name_ls}''')
-      
-    else:
-        print(f'''\nThis directory/drive has filename mismatched bag(s): {fn_mismatch_ls} and
-        barcode mismatched bag(s): {bc_mismatch_ls} and incorrect file names bag(s): {incorrect_name_ls}.
+            if fn != True:
+                invalid_fn_ls.append(fn)
+            if media_json != True:
+                fn_mismatch_ls.append(media_json)
+            if reference != True:
+                json_mismatch_ls.append(reference)
+            if barcode != True:
+                bc_mismatch_ls.append(barcode)
+ 
+    if arguments.check_only:
+        print(f'''\nThis directory/drive has bags with invalid filename(s): {invalid_fn_ls}
+        media and json mismatched bag(s): {fn_mismatch_ls} and
+        json reference mismatched bag(s): {json_mismatch_ls} and
+        barcode mismatched bag(s): {bc_mismatch_ls}.
         {incomplete_in_bucket} need to be uploaded to EAVie bucket.''')
+    
+    elif arguments.check_and_upload:
+        print(f'''\nThis batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac; and {total_json} json,
+        except:
+        bags with invalid filename(s): {invalid_fn_ls}
+        media and json mismatched bag(s): {fn_mismatch_ls} and
+        json reference mismatched bag(s): {json_mismatch_ls} and
+        barcode mismatched bag(s): {bc_mismatch_ls}.''')
+
+    else:
+        print(f'''\nThis batch uploads {total_mp4} mp4; {total_wav} wav; {total_flac} flac; and {total_json} json,
+        except:
+        bags with invalid filename(s): {invalid_fn_ls}
+        media and json mismatched bag(s): {fn_mismatch_ls} and
+        json reference mismatched bag(s): {json_mismatch_ls} and
+        barcode mismatched bag(s): {bc_mismatch_ls}.''')
 
 if __name__ == '__main__':
     main()
