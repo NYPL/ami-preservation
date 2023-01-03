@@ -55,24 +55,24 @@ def get_files(source_directory):
     
     if os.path.exists(em_dir) or os.path.exists(sc_dir):
         for root, dirs, files in os.walk(source_directory):
-            if files:
-                for file in files: 
-                    item_path = os.path.join(root, file)  
-                    if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac')) 
-                        and not file.startswith('._')):
-                        all_file_paths_list.append(item_path)
-                        all_file_list.append(file)
-                        media_paths_list.append(item_path)
+            for file in files: 
+                item_path = os.path.join(root, file)  
+                if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac')) 
+                    and not file.startswith('._')):
+                    all_file_paths_list.append(item_path)
+                    all_file_list.append(file)
+                    media_paths_list.append(item_path)
 
-                    elif (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
-                        all_file_paths_list.append(item_path)
-                        all_file_list.append(file)
-                        json_paths_list.append(item_path)
-            else:
-                raise FileNotFoundError('No files in the EM or SC folder')
+                elif (file.lower().endswith(('sc.json', 'em.json')) and not file.startswith('._')):
+                    all_file_paths_list.append(item_path)
+                    all_file_list.append(file)
+                    json_paths_list.append(item_path)
     else:
         raise OSError('No EM or SC folder')
-            
+    
+    if not all_file_paths_list:
+        raise FileNotFoundError('No files in the EM or SC folder')
+
     return all_file_paths_list, all_file_list, media_paths_list, json_paths_list
 
 def valid_fn_convention(all_file_list):
