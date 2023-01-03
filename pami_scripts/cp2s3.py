@@ -2,11 +2,8 @@
 
 import argparse
 import os
-from statistics import median
 import subprocess
-import bagit
 import glob
-import shutil
 import re
 import json
 
@@ -102,7 +99,7 @@ def valid_json_reference(media_file_list, json_file_list):
     json_names = []
     
     for file in json_file_list:
-        with open(file, "r") as jsonFile:
+        with open(file, "r", encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
             json_name = data['asset']['referenceFilename']
             json_names.append(json_name)
@@ -113,7 +110,7 @@ def valid_json_reference(media_file_list, json_file_list):
 
 def valid_json_barcode(json_file_list):
     for file in json_file_list:
-        with open(file, "r") as jsonFile:
+        with open(file, "r", encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
             barcode = data['bibliographic']['barcode']
             match = re.search(r'^33433\d+', barcode)
