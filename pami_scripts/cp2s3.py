@@ -10,15 +10,19 @@ import json
 def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
     parser.add_argument('-d', '--directory',
-                        help = 'path to directory of bags or a hard drive', required=True)
+                        help = '''required. A path to directory of bags or a hard drive.
+                        If this is the only argument use, the script uploads service files from all bags to the AWS bucket''',
+                        required=True)
     parser.add_argument('-c', '--check_only',
                         action='store_true',
                         help = f'''check if all bags from the directory of bags/a hard drive
-                        are in the AWS bucket''')
+                        are in the AWS bucket; check if there is any filename or metadata mismatch;
+                        print out check result on the terminal''')
     parser.add_argument('--check_and_upload',
                         action='store_true',
                         help=f'''check if all bags from the directory of bags/a hard drive
-                        are in the AWS bucket, and upload ONLY the ones not in the bucket''')
+                        are in the AWS bucket; check if there is any filename or metadata mismatch;
+                        and upload ONLY the valid ones not in the AWS bucket''')
     args = parser.parse_args()
     return args
 
