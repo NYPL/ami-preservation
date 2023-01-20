@@ -99,18 +99,18 @@ def valid_media_json_match(media_paths_list, json_paths_list):
         return media_set.symmetric_difference(json_set)
 
 def valid_json_reference(media_file_list, json_file_list):
-    media_names = [os.path.basename(file) for file in media_file_list]
-    json_names = []
+    media_names = set([os.path.basename(file) for file in media_file_list])
+    json_names = set()
     
     for file in json_file_list:
         with open(file, "r", encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
             json_name = data['asset']['referenceFilename']
-            json_names.append(json_name)
+            json_names.add(json_name)
     if media_names == json_names:
         return True
     else:
-        return json_names
+        return json_names.symmetric_difference(media_names)
 
 def valid_json_barcode(json_file_list):
     for file in json_file_list:
