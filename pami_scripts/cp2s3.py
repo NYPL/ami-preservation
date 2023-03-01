@@ -6,6 +6,7 @@ import subprocess
 import glob
 import re
 import json
+import warnings
 
 def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
@@ -69,10 +70,10 @@ def get_files(source_directory):
                     all_file_list.append(file)
                     json_paths_list.append(item_path)
     else:
-        raise OSError('No EM or SC folder')
+        warnings.warn('No EM or SC folder')
     
     if not all_file_paths_list:
-        raise FileNotFoundError('No files in the EM or SC folder')
+        warnings.warn('No files in the EM or SC folder')
 
     return all_file_paths_list, all_file_list, media_paths_list, json_paths_list
 
