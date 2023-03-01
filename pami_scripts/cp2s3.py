@@ -70,7 +70,7 @@ def get_files(source_directory):
                     all_file_list.append(file)
                     json_paths_list.append(item_path)
     else:
-        warnings.warn('No EM or SC folder')
+        warnings.warn(f'{source_directory} has no EM or SC folder')
     
     if not all_file_paths_list:
         warnings.warn('No files in the EM or SC folder')
