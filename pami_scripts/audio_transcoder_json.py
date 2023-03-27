@@ -46,7 +46,6 @@ def get_file_list(source_directory, destination_directory):
         flac_command = [
             'flac', filename,
             '--best',
-            '--keep-foreign-metadata',
             '--preserve-modtime',
             '--verify',
             '-o'
