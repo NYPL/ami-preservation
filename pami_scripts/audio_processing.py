@@ -33,7 +33,6 @@ def get_args():
     return parser.parse_args()
 
 
-
 def verify_directory(source_directory, destination_directory):
     if not source_directory.exists():
         raise FileNotFoundError(f"{source_directory} doesn't exist")
@@ -183,18 +182,18 @@ def main():
     source_directory = args.source
     destination_directory = args.destination
 
-    verify_directory(source_directory, destination_directory)
-    transcode_files(source_directory, destination_directory)
-    organize_files(source_directory, destination_directory)
-    update_flac_info(destination_directory)
+    # Create a new directory inside the destination_directory
+    new_destination_directory = destination_directory / source_directory.name
+    verify_directory(source_directory, new_destination_directory)
     
-    create_bag(destination_directory)
+    transcode_files(source_directory, new_destination_directory)
+    organize_files(source_directory, new_destination_directory)
+    update_flac_info(new_destination_directory)
+    
+    create_bag(new_destination_directory)
 
-    check_json_exists(destination_directory)
-    check_pm_em_pairs(destination_directory)
+    check_json_exists(new_destination_directory)
+    check_pm_em_pairs(new_destination_directory)
 
 if __name__ == '__main__':
     main()
-
-
-
