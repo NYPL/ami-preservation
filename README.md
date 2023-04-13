@@ -1,8 +1,8 @@
 # ami-preservation
 NYPL's Media Preservation teams perform reformatting to provide long-term preservation and access for our audiovisual collections. This repository contains the resources, tools, internal documentation that support digitization, quality assurance, and quality control activities within the AMI workflow. Use the following links to navigate to various tools stored in the repo:
 
-## [AMI Digitization Scripts](https://github.com/NYPL/ami-preservation/tree/master/ami_scripts)
-## [AMI QC Scripts](https://github.com/NYPL/ami-preservation/tree/master/qc_scripts)
+## [AMI Production Scripts](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts)
+## [AMI QC Scripts](https://github.com/NYPL/ami-preservation/tree/main/qc_utilities)
 ## [AMI Documentation Site](https://nypl.github.io/ami-preservation/)
 ### Documentation Site Installation and Development
 Administrators must set up their site development environment before attempting to make changes to any documents, so they can test funcitonality on the live site before releasing it to the public. Below are the installation instructions.
