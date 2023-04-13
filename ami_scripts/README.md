@@ -79,6 +79,23 @@ The script processes video files with the following extensions: .mkv, .mov, .mp4
 
 * The pymediainfo library must be installed (install via pip install pymediainfo)
 
+### unbag_objects.py
+
+This script undoes object-level packaging and bagging by moving files to their respective subfolders (PreservationMasters, ServiceCopies, and EditMasters) and cleaning up empty directories.
+
+```python3 unbag_objects.py -s /path/to/object/bags```
+
+This script performs the following steps:
+
+1. Parse command-line arguments to get the source directory containing the object bags.
+2. Ensure that the provided source directory is valid and accessible.
+3. Create the required subfolders (PreservationMasters, ServiceCopies, and EditMasters) in the source directory, if they do not already exist.
+4. Iterate through the files in the source directory and its subdirectories.
+5. Based on each file's extension, move the file to the appropriate subfolder (PreservationMasters, ServiceCopies, or EditMasters).
+6. Iterate through the directories in the source directory to find any empty directories.
+7. If an empty directory is found, delete it.
+
+
 ### video_processing.py
 
 This script processes video files in a specified directory by converting and organizing them into different formats and categories.
