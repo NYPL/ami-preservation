@@ -42,6 +42,25 @@ This script performs the following steps:
 4. Add any additional information to the dataset (e.g., work order ID).
 5. Save the cleaned and transformed dataset as a new output data file (Excel) in the specified directory or the original file's directory.
 
+### create_object_bags.py
+
+This script moves files into object directories based on their CMS IDs, creates BagIt bags for these objects, and moves tag files into the appropriate 'tags' directory within the object bags. Empty directories in the source folder will be deleted at the end of the process.
+
+```python3 bag_object_files.py -s /path/to/source_directory```
+
+This script performs the following steps:
+
+1. Parse command-line arguments to get the source directory path.
+2. Traverse the source directory and generate a list of files to process.
+3. Create object directories based on the CMS IDs extracted from the file names.
+4. Move the files into their corresponding object directories.
+5. Create BagIt bags for each object directory.
+6. Move the tag files into the 'tags' directory within their corresponding object bags.
+7. Update the tag manifests in the object bags.
+8. Clean up any empty directories within the source directory.
+9. Print any files that were not moved during the process.
+
+
 ### cp2s3.py
 
 This script copies specific files (Service Copy Videos and Edit Master Audio) from a given directory of BagIt bags to an AWS S3 bucket.
