@@ -58,6 +58,27 @@ This script performs the following steps:
 
 * AWS CLI must be installed and configured with appropriate credentials.
 
+### mediainfo_extractor.py
+
+This script extracts MediaInfo from a collection of video or audio files in a specified directory or a single file and saves the extracted data to a CSV file.
+
+```python3 mediainfo_extractor.py [-d /path/to/media/directory] [-f /path/to/media/file] -o /path/to/output/csv```
+
+Use the -d flag followed by the path to the directory containing the media files or the -f flag followed by the path to a single media file. The -o flag followed by the path to the output CSV file is required.
+
+This script performs the following steps:
+
+1. Parse the input arguments to obtain the directory, file, and output paths.
+2. Determine the media files to examine based on the input directory or file.
+3. For each media file, retrieve its MediaInfo using the pymediainfo library.
+4. Extract the relevant track information from the MediaInfo.
+5. Append the extracted information to a list of file data.
+6. Write the file data to the output CSV file, including headers for each field.
+
+The script processes video files with the following extensions: .mkv, .mov, .mp4, .dv, .iso and audio files with the following extensions: .wav, .flac.
+
+* The pymediainfo library must be installed (install via pip install pymediainfo)
+
 ### video_processing.py
 
 This script processes video files in a specified directory by converting and organizing them into different formats and categories.
