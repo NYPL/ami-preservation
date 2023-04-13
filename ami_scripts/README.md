@@ -9,7 +9,7 @@ This repository contains a set of Python scripts designed to streamline the hand
 
 These scripts aim to automate and simplify the management of multimedia files, ensuring a seamless integration with NYPL's Digital Repository system. For detailed instructions, dependencies, and examples of usage, please refer to the README.md file.
 
-#### audio_processing.py
+### audio_processing.py
 
 This script automates the process of transcoding WAV files to FLAC, organizing the files into appropriate directories, updating metadata in JSON files, and creating BagIt bags.
 
@@ -25,7 +25,7 @@ The script performs the following steps:
 
 Please note that this script requires Python 3.6 or higher.
 
-#### clean_cms_export.py
+### clean_cms_export.py
 
 This script automates the process of cleaning up an Excel file containing NYPL CMS/SPEC (inventory system) metadata for import into AMIDB (our working production database). It performs character replacement, format fixes, and additional cleanup steps according to a provided configuration file (config.json).
 
@@ -41,3 +41,39 @@ This script performs the following steps:
 *  Apply custom cleanup steps for specific data types or conditions.
 4. Add any additional information to the dataset (e.g., work order ID).
 5. Save the cleaned and transformed dataset as a new output data file (Excel) in the specified directory or the original file's directory.
+
+### cp2s3.py
+
+This script copies specific files (Service Copy Videos and Edit Master Audio) from a given directory of BagIt bags to an AWS S3 bucket.
+
+```python3 cp2s3.py -d /path/to/directory/of/bags```
+
+This script performs the following steps:
+
+1. Parsing command-line arguments, specifically the path to the directory of bags.
+2. Lists all the directories in the given directory, filtering out hidden or system directories.
+3. For each directory (BagIt bag), the script walks through its contents and generates a list of files that have specific extensions (.sc.mp4, .sc.json, .em.wav, .em.flac, .em.json).
+4. Copies each file in the list to the AWS S3 bucket using the aws s3 cp command.
+5. The process is repeated for each BagIt bag in the directory.
+
+* AWS CLI must be installed and configured with appropriate credentials.
+
+### video_processing.py
+
+This script processes video files in a specified directory by converting and organizing them into different formats and categories.
+
+```python3 video_processing.py -d /path/to/input/directory [-t]```
+
+This script performs the following steps:
+
+1. Rename files in the input directory, removing "_ffv1" from their names.
+2. Convert .mkv and .dv files to .mp4 format.
+3. Process .mov files by converting them to FFV1 (.mkv) and H.264 (.mp4) formats.
+4. Generate .framemd5 files for .mkv files.
+5. Transcribe the audio of .mkv files to VTT format using the Whisper tool (optional).
+6. Create directories: PreservationMasters, ServiceCopies, V210, and AuxiliaryFiles.
+7. Move processed files (.mp4, .mov, .mkv, .framemd5, .vtt) to their respective directories.
+8. Move .log files to the AuxiliaryFiles directory and .xml.gz files to the PreservationMasters directory.
+9. Delete empty directories: AuxiliaryFiles and V210.
+
+* Whisper tool must be installed and available in your system's PATH (optional)
