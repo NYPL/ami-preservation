@@ -156,22 +156,22 @@ def check_pm_em_pairs(destination_directory):
     pm_files = sorted(destination_directory.glob("**/*pm.flac"))
     em_files = sorted(destination_directory.glob("**/*em.flac"))
 
-    pm_stems = [pm.stem.split('_')[1] for pm in pm_files]
-    em_stems = [em.stem.split('_')[1] for em in em_files]
+    pm_stems = [pm.stem for pm in pm_files]
+    em_stems = [em.stem for em in em_files]
 
-    missing_pm_files = [em for em in em_stems if em not in pm_stems]
-    missing_em_files = [pm for pm in pm_stems if pm not in em_stems]
+    missing_pm_files = [em for em in em_stems if em.replace("_em", "_pm") not in pm_stems]
+    missing_em_files = [pm for pm in pm_stems if pm.replace("_pm", "_em") not in em_stems]
 
     if missing_pm_files or missing_em_files:
         print("Warning: Some PM or EM files are missing:")
         if missing_pm_files:
             print("Missing PM files:")
             for missing_pm in missing_pm_files:
-                print(f"  PM: *_{missing_pm}_*pm.flac")
+                print(f"  PM: {missing_pm.replace('_em', '_pm')}.flac")
         if missing_em_files:
             print("Missing EM files:")
             for missing_em in missing_em_files:
-                print(f"  EM: *_{missing_em}_*em.flac")
+                print(f"  EM: {missing_em.replace('_pm', '_em')}.flac")
         print()
     else:
         print("All PM and EM file pairs match.\n")
