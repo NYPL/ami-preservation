@@ -117,20 +117,26 @@ This script performs the following steps:
 
 ### video_processing.py
 
-This script processes video files in a specified directory by converting and organizing them into different formats and categories.
+This script processes video and audio files in a specified directory. It converts .mkv and .dv files to .mp4, processes .mov files, generates .framemd5 files, renames files, moves files into appropriate subdirectories, transcribes audio to VTT format using the Whisper tool (optional), and extracts MediaInfo to save it in a CSV file (optional).
 
-```python3 video_processing.py -d /path/to/input/directory [-t]```
+```python3 video_processing.py -d DIRECTORY [-t] [-o OUTPUT]```
 
 This script performs the following steps:
 
-1. Rename files in the input directory, removing "_ffv1" from their names.
-2. Convert .mkv and .dv files to .mp4 format.
-3. Process .mov files by converting them to FFV1 (.mkv) and H.264 (.mp4) formats.
-4. Generate .framemd5 files for .mkv files.
-5. Transcribe the audio of .mkv files to VTT format using the Whisper tool (optional).
-6. Create directories: PreservationMasters, ServiceCopies, V210, and AuxiliaryFiles.
-7. Move processed files (.mp4, .mov, .mkv, .framemd5, .vtt) to their respective directories.
-8. Move .log files to the AuxiliaryFiles directory and .xml.gz files to the PreservationMasters directory.
-9. Delete empty directories: AuxiliaryFiles and V210.
+1. Parse command-line arguments:
+* Input directory containing video and audio files (-d or --directory)
+* Flag to transcribe audio using the Whisper tool (-t or --transcribe, optional)
+* Path to save extracted MediaInfo as CSV (-o or --output, optional)
+2. Check if the input directory is valid. If not, exit with an error message.
+3. Create subdirectories within the input directory: "AuxiliaryFiles", "V210", "PreservationMasters", and "ServiceCopies".
+4. Convert .mkv and .dv files to .mp4 format.
+5. Process .mov files by converting them to both FFV1 .mkv format and H.264 .mp4 format.
+6. Generate .framemd5 files for .mkv files.
+7. Rename files by removing the "_ffv1" substring from their names, if present.
+8. Move files to their respective subdirectories based on their file extensions.
+9. Move log files (.log) to the "AuxiliaryFiles" subdirectory and MediaInfo XML files (.xml.gz) to the "PreservationMasters" subdirectory.
+10. If the -t flag is provided, transcribe the audio of .mkv files to VTT format using the Whisper tool.
+11. Delete empty subdirectories among "AuxiliaryFiles", "V210", "PreservationMasters", and "ServiceCopies".
+12. If the -o flag is provided, extract MediaInfo for each file in the input directory and save the extracted information in a CSV file at the specified output path.
 
 * Whisper tool must be installed and available in your system's PATH (optional)
