@@ -77,6 +77,30 @@ This script performs the following steps:
 
 * AWS CLI must be installed and configured with appropriate credentials.
 
+### film_processing.py
+
+This script processes media files from motion picture film digitization. It automates the conversion of DPX image sequences to MKV files using RAWcooked, converts Mezzanine files (MOV) to MP4 files, and handles full coat mag audio film files by converting WAV files to FLAC files.
+
+```python3 film_processing.py -d /path/to/input_directory```
+
+This script performs the following steps:
+
+1. The script iterates through the subfolders in the specified root directory.
+2. For each subfolder, it checks for the existence of 'PreservationMasters' and 'Mezzanines' folders.
+3. If a 'PreservationMasters' folder contains a WAV file, the script processes it as full coat mag audio film:
+* Convert the WAV file to a FLAC file using the FLAC command-line tool.
+* Delete the original WAV file.
+* Create an 'EditMasters' folder (if it doesn't already exist).
+* Copy the FLAC file to the 'EditMasters' folder and update the name from '_pm' to '_em'.
+4. If both 'PreservationMasters' and 'Mezzanines' folders exist, the script processes the folder as a film with image and audio:
+* Convert the DPX image sequence in the 'PreservationMasters' folder to an MKV file using RAWcooked.
+* If the conversion is successful, move the MKV file to the 'PreservationMasters' folder and delete the DPX files.
+* Create a 'ServiceCopies' folder (if it doesn't already exist).
+* Convert the MOV file in the 'Mezzanines' folder to an MP4 file using FFmpeg and save it in the 'ServiceCopies' folder.
+5. If an error occurs or required folders are missing, the script will print an error message describing the issue.
+
+Note: Make sure you have RAWcooked, FFmpeg, and the FLAC command-line tool installed on your system and available in your PATH before running the script.
+
 ### mediainfo_extractor.py
 
 This script extracts MediaInfo from a collection of video or audio files in a specified directory or a single file and saves the extracted data to a CSV file.
