@@ -55,27 +55,15 @@ def process_directory(root_dir):
                 # Check for WAV files in the PreservationMasters folder
                 wav_file = next(iter(pm_folder.glob('*.wav')), None)
 
-                if wav_file:  # If a WAV file is found, run the flac command
-                    output_file = wav_file.with_suffix('.flac')
-                    flac_command = [
-                        'flac', str(wav_file),
-                        '--best',
-                        '--preserve-modtime',
-                        '--verify',
-                        '-o', str(output_file)
-                    ]
-                    return_code = subprocess.call(flac_command)
+                # Check for DPX files in the PreservationMasters folder
+                dpx_files = list(pm_folder.glob('*.dpx'))
 
-                    if return_code == 0:  # If the command ran successfully, delete the WAV file
-                        wav_file.unlink()
-                        copy_to_editmasters(pm_folder, output_file)
-
-                elif mz_folder.exists():
+                if dpx_files:  # If DPX files exist (including cases with WAV file)
                     sc_folder = folder / 'ServiceCopies'
                     sc_folder.mkdir(exist_ok=True)
 
                     mz_file = next(iter(sorted(mz_folder.glob('*.mov'))), None)
-                    first_dpx_file = next(iter(sorted(pm_folder.glob('*.dpx'))), None)
+                    first_dpx_file = next(iter(sorted(dpx_files)), None)
 
                     if first_dpx_file is not None:
                         output_stem = first_dpx_file.stem[:-8]
@@ -95,8 +83,25 @@ def process_directory(root_dir):
 
                     else:
                         print(f"Error: No Mezzanine file found in {mz_folder}")
-                else:
-                    print(f"Error: No DPX files found in {pm_folder}")
+
+                if wav_file:  # If a WAV file is found, run the flac command (covers both cases with and without DPX files)
+                    output_file = wav_file.with_suffix('.flac')
+                    flac_command = [
+                        'flac', str(wav_file),
+                        '--best',
+                        '--preserve-modtime',
+                        '--verify',
+                        '-o', str(output_file)
+                    ]
+                    return_code = subprocess.call(flac_command)
+
+                    if return_code == 0:  # If the command ran successfully, delete the WAV file
+                        wav_file.unlink()
+                        copy_to_editmasters(pm_folder, output_file)
+
+                elif not dpx_files:
+                    print(f"Error: No DPX files or WAV file found in {pm_folder}")
+
             else:
                 print(f"Error: Missing required folder(s) in {folder}")
 
