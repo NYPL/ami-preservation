@@ -12,11 +12,6 @@ from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def is_directory(path):
-    if not os.path.isdir(path):
-        raise argparse.ArgumentTypeError(f"{path} is not a valid directory.")
-    return Path(path)
-
 
 def get_args():
     parser = argparse.ArgumentParser(description='Transcode a directory of audio files')
@@ -33,6 +28,12 @@ def get_args():
     return parser.parse_args()
 
 
+def is_directory(path):
+    if not os.path.isdir(path):
+        raise argparse.ArgumentTypeError(f"{path} is not a valid directory.")
+    return Path(path)
+
+
 def verify_directory(source_directory, destination_directory):
     if not source_directory.exists():
         raise FileNotFoundError(f"{source_directory} doesn't exist")
@@ -42,7 +43,7 @@ def verify_directory(source_directory, destination_directory):
 
 
 def transcode_files(source_directory, destination_directory):
-    files = list(source_directory.glob("**/*.wav"))
+    files = skip_hidden_files(list(source_directory.glob("**/*.wav")))
     for file in tqdm(files, desc="Transcoding files", unit="file"):
         output_file = destination_directory / f"{file.stem}.flac"
         flac_command = [
@@ -60,25 +61,32 @@ def transcode_files(source_directory, destination_directory):
 
 
 def organize_files(source_directory, destination_directory):
-    for file in (destination_directory).glob("*pm.flac"):
+    for file in skip_hidden_files(destination_directory.glob("*pm.flac")):
         id_folder = destination_directory / file.stem.split("_")[1]
         preservation_masters_dir = id_folder / "PreservationMasters"
         preservation_masters_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(file, preservation_masters_dir)
 
-    for file in (destination_directory).glob("*em.flac"):
+    for file in skip_hidden_files(destination_directory.glob("*em.flac")):
         id_folder = destination_directory / file.stem.split("_")[1]
         edit_masters_dir = id_folder / "EditMasters"
         edit_masters_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(file, edit_masters_dir)
 
-    for file in source_directory.glob("**/*.json"):
+    for file in skip_hidden_files(source_directory.glob("**/*.json")):
         id_folder = destination_directory / file.stem.split("_")[1]
         if "em.json" in file.name:
             edit_masters_dir = id_folder / "EditMasters"
             edit_masters_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file, edit_masters_dir)
         elif "pm.json" in file.name:
+            preservation_masters_dir = id_folder / "PreservationMasters"
+            preservation_masters_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, preservation_masters_dir)
+
+    for file in skip_hidden_files(source_directory.glob("**/*.cue")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        if "pm.cue" in file.name:
             preservation_masters_dir = id_folder / "PreservationMasters"
             preservation_masters_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file, preservation_masters_dir)
@@ -176,6 +184,8 @@ def check_pm_em_pairs(destination_directory):
     else:
         print("All PM and EM file pairs match.\n")
 
+def skip_hidden_files(files):
+    return [file for file in files if not file.name.startswith("._")]
 
 def main():
     args = get_args()
