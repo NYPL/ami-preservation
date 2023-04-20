@@ -29,7 +29,14 @@ def make_parser():
 
 def process_directory(directory):
     valid_extensions = video_extensions.union(audio_extensions)
-    return [path for path in directory.rglob('*') if path.is_file() and path.suffix.lower() in valid_extensions]
+    media_files = []
+    for path in directory.rglob('*'):
+        if path.is_file() and path.suffix.lower() in valid_extensions:
+            if path.name.startswith("._"):
+                print(f"Skipping hidden Mac file: {path}")
+            else:
+                media_files.append(path)
+    return media_files
 
 def has_mezzanines(file_path):
     for parent in file_path.parents:
