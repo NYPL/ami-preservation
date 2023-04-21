@@ -42,6 +42,22 @@ This script performs the following steps:
 4. Add any additional information to the dataset (e.g., work order ID).
 5. Save the cleaned and transformed dataset as a new output data file (Excel) in the specified directory or the original file's directory.
 
+### copy_to_s3.py
+
+This script copies specific files (Service Copy Videos and Edit Master Audio) from a given directory of BagIt bags to an AWS S3 bucket.
+
+```python3 copy_to_s3.py -d /path/to/directory/of/bags```
+
+This script performs the following steps:
+
+1. Parsing command-line arguments, specifically the path to the directory of bags.
+2. Lists all the directories in the given directory, filtering out hidden or system directories.
+3. For each directory (BagIt bag), the script walks through its contents and generates a list of files that have specific extensions (.sc.mp4, .sc.json, .em.wav, .em.flac, .em.json).
+4. Copies each file in the list to the AWS S3 bucket using the aws s3 cp command.
+5. The process is repeated for each BagIt bag in the directory.
+
+* AWS CLI must be installed and configured with appropriate credentials.
+
 ### create_object_bags.py
 
 This script moves files into object directories based on their CMS IDs, creates BagIt bags for these objects, and moves tag files into the appropriate 'tags' directory within the object bags. Empty directories in the source folder will be deleted at the end of the process.
@@ -60,22 +76,23 @@ This script performs the following steps:
 8. Clean up any empty directories within the source directory.
 9. Print any files that were not moved during the process.
 
+### filemaker_to_json_validator.py
 
-### cp2s3.py
+This script converts a FileMaker merge file to JSON files and validates them against JSON schema files.
 
-This script copies specific files (Service Copy Videos and Edit Master Audio) from a given directory of BagIt bags to an AWS S3 bucket.
+```python3 filemaker_to_json_validator.py -s /path/to/source/filemaker_merge_file.mer -d /path/to/output/json_directory -m /path/to/schema_files_directory```
 
-```python3 cp2s3.py -d /path/to/directory/of/bags```
+Upon completion, the script will generate JSON files in the specified output directory, count the JSON files by type, and validate the JSON files against the schema files, printing the validation results.
 
-This script performs the following steps:
+Steps performed by the script:
 
-1. Parsing command-line arguments, specifically the path to the directory of bags.
-2. Lists all the directories in the given directory, filtering out hidden or system directories.
-3. For each directory (BagIt bag), the script walks through its contents and generates a list of files that have specific extensions (.sc.mp4, .sc.json, .em.wav, .em.flac, .em.json).
-4. Copies each file in the list to the AWS S3 bucket using the aws s3 cp command.
-5. The process is repeated for each BagIt bag in the directory.
-
-* AWS CLI must be installed and configured with appropriate credentials.
+1. The script reads command line arguments for the source FileMaker merge file, destination directory for JSON files, and the directory of JSON schema files.
+2. The FileMaker merge file is read using pandas, and empty columns and the 'asset.fileExt' column are dropped.
+3. The output directory for JSON files is created if it doesn't already exist.
+4. The script iterates through each row in the DataFrame, converting the flat dictionary to a nested dictionary using the convert_dotKeyToNestedDict() function.
+5. The nested dictionary is saved as a JSON file in the specified output directory.
+6. After processing all rows, the script prints the total number of JSON files created from the merge file.
+7. The script then counts the JSON files by type and validates them against the JSON schema files using the get_info() function. The results are printed, including the total number of valid and invalid JSON files.
 
 ### film_processing.py
 
