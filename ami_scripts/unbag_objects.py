@@ -8,7 +8,7 @@ import shutil
 def get_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Undo object-level packaging and bagging')
-    parser.add_argument('-s', '--source',
+    parser.add_argument('-d', '--directory',
                         help='path to the directory of object bags', required=True)
     args = parser.parse_args()
     return args

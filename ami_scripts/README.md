@@ -149,7 +149,7 @@ The script processes video files with the following extensions: .mkv, .mov, .mp4
 
 This script undoes object-level packaging and bagging by moving files to their respective subfolders (PreservationMasters, ServiceCopies, and EditMasters) and cleaning up empty directories.
 
-```python3 unbag_objects.py -s /path/to/object/bags```
+```python3 unbag_objects.py -d /path/to/object/bags```
 
 This script performs the following steps:
 
