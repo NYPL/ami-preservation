@@ -101,6 +101,29 @@ This script performs the following steps:
 
 Note: Make sure you have RAWcooked, FFmpeg, and the FLAC command-line tool installed on your system and available in your PATH before running the script.
 
+### json_updater.py
+
+This script allows you to update JSON files within a specified directory. It has the ability to update media information using MediaInfo and change specific key values within the JSON files.
+
+```python3 json_updater_new.py -s <source_directory> [-m] [-k <key_to_update>]```
+
+This script performs the following steps:
+
+1. Parse command-line arguments using argparse.
+2. Validate and process the provided source directory path.
+3. If the -m flag is provided, the script will:
+* a. Get a list of media files and JSON files within the source directory.
+* b. Run MediaInfo on each media file and extract relevant information.
+* c. Update the corresponding JSON files with the extracted media information.
+4. If the -k flag is provided along with a specific key, the script will:
+* a. Get a list of JSON files within the source directory.
+* b. For each JSON file, search for the specified key and retrieve its current value(s).
+* c. If there's only one occurrence of the key within the JSON file, update the value without user input.
+* d. If there are multiple occurrences of the key, prompt the user to choose the value they want to update and provide a new value.
+* e. Update the selected JSON files with the new value.
+5. Log the results of the process, including any warnings or errors encountered.
+
+
 ### mediainfo_extractor.py
 
 This script extracts MediaInfo from a collection of video or audio files in a specified directory or a single file and saves the extracted data to a CSV file.
