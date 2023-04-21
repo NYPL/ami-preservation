@@ -12,6 +12,7 @@ import glob
 def get_info(source_directory, metadata_directory):
     source_path = Path(source_directory)
     json_list = list(source_path.glob('**/*.json'))
+    json_list.sort()
 
     print(f'\nNow Counting JSON files by Type:\n')
     types = []
@@ -157,8 +158,11 @@ def main():
 
     # Drop empty columns and the 'asset.fileExt' column
     df = df.dropna(axis=1, how="all")
-    df = df.drop(['asset.fileExt'], axis=1)
 
+    # Replace NaN values with a default value, e.g., an empty string
+    df.fillna("", inplace=True)
+    df = df.drop(['asset.fileExt'], axis=1)
+    
     # Set the output directory for JSON files
     json_directory = Path(args.destination).resolve()
 
