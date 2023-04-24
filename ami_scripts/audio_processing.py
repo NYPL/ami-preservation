@@ -9,6 +9,7 @@ import logging
 import bagit
 from pathlib import Path
 from tqdm import tqdm
+import re
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -113,7 +114,12 @@ def update_flac_info(destination_directory):
             with open(json_file) as f:
                 data = json.load(f)
 
-            date = get_mediainfo(flac_file, "General;%File_Modified_Date%").split(' ')[1]
+            date_output = get_mediainfo(flac_file, "General;%File_Modified_Date%")
+            date_regex = r"\d{4}-\d{2}-\d{2}"
+            date_match = re.search(date_regex, date_output)
+            if date_match:
+                date = date_match.group()
+            
             duration = get_mediainfo(flac_file, "General;%Duration%")
             human_duration = get_mediainfo(flac_file, "General;%Duration/String5%")
             flac_format = get_mediainfo(flac_file, "General;%Format%")
@@ -124,7 +130,7 @@ def update_flac_info(destination_directory):
             data['technical']['filename'] = flac_file.stem
             data['technical']['extension'] = flac_file.suffix[1:]  # Remove the leading period
             data['technical']['dateCreated'] = date
-            data['technical']['durationMilli']['measure'] = duration
+            data['technical']['durationMilli']['measure'] = int(duration)
             data['technical']['durationHuman'] = human_duration
             data['technical']['fileFormat'] = flac_format
             data['technical']['audioCodec'] = codec
