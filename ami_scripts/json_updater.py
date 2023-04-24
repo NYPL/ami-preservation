@@ -5,6 +5,7 @@ import json
 import logging
 import subprocess
 from pathlib import Path
+import re
 
 def get_args():
     parser = argparse.ArgumentParser(description='Update JSON files in a directory')
@@ -53,20 +54,28 @@ def process_media_files(source_directory):
         media_info_data = json.loads(media_info.stdout)
         general_data = media_info_data['media']['track'][0]
 
-        with open(json_file, "r") as jsonFile:
+        with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
 
         data['asset']['referenceFilename'] = media_file.name
         data['technical']['filename'] = media_file.stem
         data['technical']['extension'] = media_file.suffix[1:]
-        data['technical']['dateCreated'] = general_data.get('File_Modified_Date', '').split(' ')[0]
+
+        date_created = general_data.get('File_Modified_Date', '')
+        date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
+        match = date_pattern.search(date_created)
+        if match:
+            data['technical']['dateCreated'] = match.group(0)
+        else:
+            data['technical']['dateCreated'] = ''
+
         data['technical']['fileFormat'] = general_data.get('Format', '')
         data['technical']['audioCodec'] = general_data.get('Audio_Codec_List', '')
         data['technical']['fileSize']['measure'] = int(general_data.get('FileSize', 0))
         data['technical']['durationMilli']['measure'] = int(float(general_data.get('Duration', 0)) * 1000)
         data['technical']['durationHuman'] = general_data.get('Duration_String3', '')
 
-        with open(json_file, "w") as jsonFile:
+        with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
     logging.info("Media information updated in all JSON files")
@@ -107,7 +116,7 @@ def update_key_in_json_files(source_directory, key):
     new_value = input(f"Enter the new value for the key '{key}': ")
 
     for json_file in json_files:
-        with open(json_file, "r") as jsonFile:
+        with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
 
         values = get_nested_values(data, key)
@@ -133,7 +142,7 @@ def update_key_in_json_files(source_directory, key):
             old_value = unique_values[choice - 1][1]
             update_nested_key(data, key, old_value, new_value)
 
-        with open(json_file, "w") as jsonFile:
+        with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
     logging.info(f"Key '{key}' updated in selected JSON files")

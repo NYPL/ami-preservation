@@ -16,7 +16,7 @@ def get_args():
 
 def get_directory(args):
     """Get source directory from arguments."""
-    source_directory = Path(args.source)
+    source_directory = Path(args.directory)
     if not source_directory.exists():
         exit('please retry with a valid directory of media files')
 
