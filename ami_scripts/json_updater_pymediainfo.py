@@ -51,7 +51,7 @@ def process_media_files(source_directory):
             logging.warning(f"No general track found for media file {media_file}")
             continue
 
-        with open(json_file, "r") as jsonFile:
+        with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
 
         data['asset']['referenceFilename'] = media_file.name
@@ -74,7 +74,7 @@ def process_media_files(source_directory):
         duration_human = other_duration[3] if len(other_duration) > 3 else ''
         data['technical']['durationHuman'] = duration_human
 
-        with open(json_file, "w") as jsonFile:
+        with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
     logging.info("Media information updated in all JSON files")
@@ -115,7 +115,7 @@ def update_key_in_json_files(source_directory, key):
     new_value = input(f"Enter the new value for the key '{key}': ")
 
     for json_file in json_files:
-        with open(json_file, "r") as jsonFile:
+        with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
 
         values = get_nested_values(data, key)
@@ -141,7 +141,7 @@ def update_key_in_json_files(source_directory, key):
             old_value = unique_values[choice - 1][1]
             update_nested_key(data, key, old_value, new_value)
 
-        with open(json_file, "w") as jsonFile:
+        with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
     logging.info(f"Key '{key}' updated in selected JSON files")
