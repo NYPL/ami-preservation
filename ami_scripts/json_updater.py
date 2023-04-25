@@ -113,8 +113,6 @@ def update_key_in_json_files(source_directory, key):
         logging.info("No JSON files found in the source directory")
         return
 
-    new_value = input(f"Enter the new value for the key '{key}': ")
-
     for json_file in json_files:
         with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
@@ -128,9 +126,18 @@ def update_key_in_json_files(source_directory, key):
 
         if len(unique_values) == 1:
             parent_keys, old_value = unique_values[0]
+            new_value = input(f"Enter the new value for the key '{key}': ")
+            new_value = convert_value_to_type(new_value, type(old_value))
+
+            if type(new_value) != type(old_value):
+                approval = input(f"The new value's data type ({type(new_value).__name__}) differs from the old value's data type ({type(old_value).__name__}). Proceed with the update? (yes/no): ")
+                if approval.lower() not in ['yes', 'y']:
+                    continue
+
             update_nested_key(data, key, old_value, new_value)
         else:
             print(f"\nValues found for key '{key}' in JSON file {json_file}:")
+            unique_values.sort(key=lambda x: x[0])  # Sorting by parent_keys
             for i, (parent_keys, value) in enumerate(unique_values, start=1):
                 parent_key_string = ' > '.join(parent_keys)
                 print(f"{i}. {parent_key_string} > {key}: {value}")
@@ -140,12 +147,45 @@ def update_key_in_json_files(source_directory, key):
                 continue
 
             old_value = unique_values[choice - 1][1]
+            new_value = input(f"Enter the new value for the key '{key}': ")
+            new_value = convert_value_to_type(new_value, type(old_value))
+
+            if type(new_value) != type(old_value):
+                approval = input(f"The new value's data type ({type(new_value).__name__}) differs from the old value's data type ({type(old_value).__name__}). Proceed with the update? (yes/no): ")
+                if approval.lower() not in ['yes', 'y']:
+                    continue
+
             update_nested_key(data, key, old_value, new_value)
 
         with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
     logging.info(f"Key '{key}' updated in selected JSON files")
+
+
+def convert_value_to_type(value, target_type):
+    if target_type == str:
+        return value
+    elif target_type == int:
+        try:
+            return int(value)
+        except ValueError:
+            if is_float(value):
+                return float(value)
+            raise
+    elif target_type == float:
+        return float(value)
+    elif target_type == bool:
+        return value.lower() in ['true', '1', 'yes', 'y']
+    else:
+        return value
+
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
 
 def main():
