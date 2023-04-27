@@ -6,6 +6,7 @@ import json
 import pandas as pd
 import re
 
+
 def get_args():
     parser = argparse.ArgumentParser(description='Prep CMS Excel for Import into AMIDB')
     parser.add_argument('-s', '--source',
@@ -82,7 +83,8 @@ def cleanup_excel(args):
         df.loc[df['asset.schemaVersion'] == 2, 'asset.schemaVersion'] = '2.0.0'
 
         # Video face fix:
-        df.loc[df['source.object.type'] == 'video cassette', 'source.subObject.faceNumber'] = ''
+        df.loc[df['source.object.type'] == 'video cassette analog', 'source.subObject.faceNumber'] = ''
+        df.loc[df['source.object.type'] == 'video cassette digital', 'source.subObject.faceNumber'] = ''
         df.loc[df['source.object.type'] == 'video reel', 'source.subObject.faceNumber'] = ''
         df.loc[df['source.object.type'] == 'video optical', 'source.subObject.faceNumber'] = ''
 
@@ -97,8 +99,14 @@ def cleanup_excel(args):
 
         if args.destination:
             if os.path.exists(args.destination):
-                output_path = os.path.join(args.destination, clean_name)
-                df.to_excel(output_path, sheet_name='Sheet1', index=False)
+                output_file_path = os.path.join(args.destination, clean_name)
+                writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
+                df.to_excel(writer, sheet_name='Sheet1')
+                writer.close()
+        else:
+            writer = pd.ExcelWriter(clean_name, engine='xlsxwriter')
+            df.to_excel(writer, sheet_name='Sheet1')
+            writer.close()
 
 def main():
     arguments = get_args()
