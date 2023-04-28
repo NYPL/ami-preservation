@@ -43,6 +43,8 @@ def process_media_files(source_directory):
             logging.warning(f"No media file found for JSON file {json_file}")
             continue
 
+        print(f"Now updating MediaInfo metadata for {media_file.name}")
+
         media_info = subprocess.run(
             [
                 'mediainfo', '--Language=raw', '--Full',
@@ -68,9 +70,17 @@ def process_media_files(source_directory):
             data['technical']['dateCreated'] = match.group(0)
         else:
             data['technical']['dateCreated'] = ''
+        
+        # Regex search for "PCM" or "AAC LC" in the 'Audio_Codec_List'
+        audio_codec_pattern = re.compile(r'(PCM|AAC LC)')
+        audio_codec_list = general_data.get('Audio_Codec_List', '')
+        match = audio_codec_pattern.search(audio_codec_list)
+        if match:
+            data['technical']['audioCodec'] = match.group(0)
+        else:
+            data['technical']['audioCodec'] = general_data.get('Audio_Codec_List', '')
 
         data['technical']['fileFormat'] = general_data.get('Format', '')
-        data['technical']['audioCodec'] = general_data.get('Audio_Codec_List', '')
         data['technical']['fileSize']['measure'] = int(general_data.get('FileSize', 0))
         data['technical']['durationMilli']['measure'] = int(float(general_data.get('Duration', 0)) * 1000)
         data['technical']['durationHuman'] = general_data.get('Duration_String3', '')
