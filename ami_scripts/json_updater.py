@@ -72,7 +72,7 @@ def process_media_files(source_directory):
             data['technical']['dateCreated'] = ''
         
         # Regex search for "PCM" or "AAC LC" in the 'Audio_Codec_List'
-        audio_codec_pattern = re.compile(r'(PCM|AAC LC)')
+        audio_codec_pattern = re.compile(r'(PCM|AAC LC|FLAC)')
         audio_codec_list = general_data.get('Audio_Codec_List', '')
         match = audio_codec_pattern.search(audio_codec_list)
         if match:
