@@ -55,6 +55,7 @@ def process_media_files(source_directory):
 
         media_info_data = json.loads(media_info.stdout)
         general_data = media_info_data['media']['track'][0]
+        print(general_data)
 
         with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
@@ -71,15 +72,16 @@ def process_media_files(source_directory):
         else:
             data['technical']['dateCreated'] = ''
         
-        # Regex search for "PCM" or "AAC LC" in the 'Audio_Codec_List'
+        # Regex search for "PCM" or "AAC LC" or "FLAC" in the 'Audio_Codec_List'
         audio_codec_pattern = re.compile(r'(PCM|AAC LC|FLAC)')
         audio_codec_list = general_data.get('Audio_Codec_List', '')
         match = audio_codec_pattern.search(audio_codec_list)
         if match:
             data['technical']['audioCodec'] = match.group(0)
-        else:
-            data['technical']['audioCodec'] = general_data.get('Audio_Codec_List', '')
+        elif 'Audio_Codec_List' in general_data:
+            data['technical']['audioCodec'] = general_data.get('Audio_Codec_List')
 
+        data['technical']['videoCodec'] = general_data.get('Video_Codec_List')
         data['technical']['fileFormat'] = general_data.get('Format', '')
         data['technical']['fileSize']['measure'] = int(general_data.get('FileSize', 0))
         data['technical']['durationMilli']['measure'] = int(float(general_data.get('Duration', 0)) * 1000)
