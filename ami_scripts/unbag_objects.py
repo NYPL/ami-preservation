@@ -29,6 +29,7 @@ def move_files_to_subfolders(source_directory):
     file_mappings = [
         (('.mkv', 'pm.json', '.dv', '.framemd5', '.gz', 'graphs.jpeg', 'timecodes.txt', 'pm.wav', 'pm.flac', '.iso', 'pm.cue'), 'PreservationMasters'),
         (('.mp4', 'sc.json'), 'ServiceCopies'),
+        (('.mov', 'mz.json'), 'Mezzanines'),
         (('em.wav', 'em.json', 'em.flac'), 'EditMasters'),
     ]
 
