@@ -55,7 +55,6 @@ def process_media_files(source_directory):
 
         media_info_data = json.loads(media_info.stdout)
         general_data = media_info_data['media']['track'][0]
-        print(general_data)
 
         with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
