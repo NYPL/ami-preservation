@@ -17,6 +17,9 @@ def get_args():
                         help='path to the output directory', required=False)
     parser.add_argument('-c', '--config',
                         help='path to the config file', default='config.json', required=False)
+    parser.add_argument('-v', '--vendor',
+                        help='Use vendor mode (skips certain cleanup steps and uses default Excel writer)',
+                        action='store_true') 
     args = parser.parse_args()
     return args
 
@@ -72,12 +75,13 @@ def cleanup_excel(args):
         apply_format_fixes(df, config['format_fixes'])
         apply_film_fix(df)
 
-        # Additional cleanup code:
-        df = df.drop('Filename (reference)', axis=1)
-        if 'MMS Collection ID' in df.columns:
-            df = df.drop('MMS Collection ID', axis=1)
+        if not args.vendor:  
+            # Additional cleanup code:
+            df = df.drop('Filename (reference)', axis=1)
+            if 'MMS Collection ID' in df.columns:
+                df = df.drop('MMS Collection ID', axis=1)
 
-        df['asset.fileRole'] = 'pm'
+            df['asset.fileRole'] = 'pm'
 
         # Schema fix
         df.loc[df['asset.schemaVersion'] == 2, 'asset.schemaVersion'] = '2.0.0'
@@ -100,13 +104,12 @@ def cleanup_excel(args):
         if args.destination:
             if os.path.exists(args.destination):
                 output_file_path = os.path.join(args.destination, clean_name)
-                writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
-                df.to_excel(writer, sheet_name='Sheet1')
-                writer.close()
-        else:
-            writer = pd.ExcelWriter(clean_name, engine='xlsxwriter')
-            df.to_excel(writer, sheet_name='Sheet1')
-            writer.close()
+                if args.vendor:  
+                    df.to_excel(output_file_path, sheet_name='Sheet1', index=False)  
+                else: 
+                    writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
+                    df.to_excel(writer, sheet_name='Sheet1')
+                    writer.close()
 
 def main():
     arguments = get_args()
