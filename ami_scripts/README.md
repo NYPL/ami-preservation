@@ -162,6 +162,22 @@ The script processes video files with the following extensions: .mkv, .mov, .mp4
 
 * The pymediainfo library must be installed (install via pip install pymediainfo)
 
+### rsync_validator.py
+
+This script is designed to safely copy files from one directory to another using the rsync utility while performing various checks to ensure the integrity of the copied files. 
+
+```python3 rsync_validator.py -s SOURCE_DIR -d DESTINATION_DIR [-c]```
+
+This script performs the following steps:
+
+1. A temporary subdirectory named temp_rsync is created within the destination directory to store the copied files during validation.
+2. The source directory is copied to the temporary subdirectory using the rsync command with -rtv flags for recursive copying and showing progress.
+3. The diff command is used to compare the contents of the source directory and the copied source directory in the temporary destination. If no differences are found, the script proceeds to the next step; otherwise, it prints the differences.
+4. The script compares the sizes of the source and temporary destination directories. If they are the same, it proceeds to the next step; otherwise, it prints the size difference.
+5. The script compares the number of files in the source and temporary destination directories. If the numbers are the same, it proceeds to the next step; otherwise, it prints the difference in file count.
+6. If the checksum flag is enabled, the script compares the MD5 checksums of the files in the source and temporary destination directories. If all checksums match, it proceeds to the next step; otherwise, it prints a message indicating that some files have different checksums.
+7. If all validations have passed, the script moves the files from the temporary subdirectory to the actual destination directory and removes the temporary subdirectory. If any validation fails, the script prints a message, and the files are not moved to the destination directory.
+
 ### unbag_objects.py
 
 This script undoes object-level packaging and bagging by moving files to their respective subfolders (PreservationMasters, ServiceCopies, and EditMasters) and cleaning up empty directories.
