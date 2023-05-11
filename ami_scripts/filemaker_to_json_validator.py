@@ -8,6 +8,9 @@ import subprocess
 from pathlib import Path
 from collections import Counter
 import glob
+import numpy as np
+
+ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks']
 
 def get_info(source_directory, metadata_directory):
     source_path = Path(source_directory)
@@ -153,7 +156,9 @@ def main():
         'bibliographic.barcode': object,
         'bibliographic.cmsCollectionID': object,
         'bibliographic.cmsItemID': object,
-        'bibliographic.primaryID': object
+        'bibliographic.primaryID': object,
+        'bibliographic.formerClassmark': object,
+        'bibliographic.classmark': object
     })
 
     # Drop empty columns and the 'asset.fileExt' column
@@ -178,7 +183,18 @@ def main():
 
         # Convert the flat dictionary to a nested dictionary
         for key, value in json_tree.items():
-            nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
+            if value:
+                if pd.isnull(value):
+                    continue
+                if type(value) == pd.Timestamp:
+                    value = value.strftime('%Y-%m-%d')
+                if isinstance(value, np.generic):
+                    value = np.asscalar(value)
+                nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
+
+                # 0-value fields get skipped, but some should be allowed
+                if key in ZERO_VALUE_FIELDS and value == 0:
+                    nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
 
         # Save the nested dictionary as a JSON file
         json_filename = os.path.splitext(row["asset.referenceFilename"])[0] + ".json"
