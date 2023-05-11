@@ -27,9 +27,9 @@ Please note that this script requires Python 3.6 or higher.
 
 ### clean_cms_export.py
 
-This script automates the process of cleaning up an Excel file containing NYPL CMS/SPEC (inventory system) metadata for import into AMIDB (our working production database). It performs character replacement, format fixes, and additional cleanup steps according to a provided configuration file (config.json).
+This script automates the process of cleaning up an Excel file containing NYPL CMS/SPEC (inventory system) metadata for import into AMIDB (our working production database) or a similar vendor system. It performs character replacement, format fixes, and additional cleanup steps according to a provided configuration file (config.json).
 
-```python3 clean_cms_export.py -s /path/to/source_excel.xlsx -w WORKORDER_ID -d /path/to/destination_directory -c /path/to/config.json```
+```python3 clean_cms_export.py -s /path/to/source_excel.xlsx -w WORKORDER_ID -d /path/to/destination_directory -c /path/to/config.json [-v]```
 
 This script performs the following steps:
 
@@ -39,8 +39,11 @@ This script performs the following steps:
 * Replace characters in specified columns.
 *  Apply format fixes to map specific values to target values.
 *  Apply custom cleanup steps for specific data types or conditions.
-4. Add any additional information to the dataset (e.g., work order ID).
-5. Save the cleaned and transformed dataset as a new output data file (Excel) in the specified directory or the original file's directory.
+4. If the --vendor flag is not specified:
+* Remove 'Filename (reference)' and 'MMS Collection ID' columns if present.
+* Set 'asset.fileRole' to 'pm'.
+5. Add any additional information to the dataset (e.g., work order ID).
+6. Save the cleaned and transformed dataset as a new output data file (Excel) in the specified directory or the original file's directory. If the --vendor flag is specified, it will use the default pandas Excel writer and skip index saving.
 
 ### copy_to_s3.py
 
