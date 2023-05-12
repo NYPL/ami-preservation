@@ -34,7 +34,7 @@ While some errors may require a vendor or engineer to rework and re-deliver file
 
 ###  Invalid Oxum (Size Discrepancy)
 
-[insert image]
+![Invalid Oxum](/am-preservation/docs/assets/images/invalid_oxum.png)
 
 The oxum of a bag may become invalid when the number of files listed in the manifest-md5.txt file do not correspond with the number of files present in the bag. Fixing an invalid oxum requires manually inspecting the manifest-md5.txt file against the number of items in the bag and using ```fix_baginfo.py``` and ```validate_ami_bags.py``` to fix and confirm validation of the bag.  
 
