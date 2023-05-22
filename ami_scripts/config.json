@@ -1,0 +1,101 @@
+{
+    "replacements": [
+      {
+        "find": ";",
+        "replace": "-"
+      },
+      {
+        "find": "\\\\",
+        "replace": "-"
+      },
+      {
+        "find": "\\n",
+        "replace": "-"
+      },
+      {
+        "find": "\\r",
+        "replace": "-"
+      },
+      {
+        "find": "\\t",
+        "replace": "-"
+      },
+      {
+        "find": "\"",
+        "replace": "''"
+      }
+    ],
+  "format_fixes": {
+    "video cassette analog": [
+      "Betacam",
+      "Betacam SP",
+      "Betacam Oxide",
+      "Betamax",
+      "Hi8",
+      "MII",
+      "S-VHS",
+      "S-VHS-C",
+      "U-matic",
+      "U-matic S",
+      "U-matic SP",
+      "VCR",
+      "VHS",
+      "VHS-C",
+      "Video8"
+    ],
+    "video cassette digital": [
+      "Betacam SX",
+      "D-1",
+      "D-2",
+      "D-3",
+      "D-5",
+      "D-9",
+      "Digital Betacam",
+      "Digital8",
+      "DVCam",
+      "DVCPRO",
+      "DVCPRO 50",
+      "DVCPRO HD",
+      "HDCAM",
+      "HDCAM SR",
+      "HDV",
+      "MiniDV",
+      "MPEG IMX"
+    ],
+    "audio reel analog": [
+      "half-inch open-reel audio",
+      "one-inch open-reel audio",
+      "quarter-inch open-reel audio",
+      "quarter-inch open-reel audio with Pilottone",
+      "two-inch open-reel audio",
+      "eighth-inch open-reel audio"
+    ],
+    "audio reel digital": [
+      "ProDigi",
+      "DASH",
+      "NAGRA-D",
+      "half-inch open-reel audio, digital"
+    ],
+    "audio cassette analog": [
+      "8-track",
+      "Compact cassette",
+      "Microcassette",
+      "Minicassette",
+      "Fidelipac Cartridge",
+      "RCA Cartridge",
+      "NAB Cartridge",
+      "Elcaset",
+      "Philips Norelco Cartridge"
+    ],
+    "audio cassette digital": [
+      "ADAT",
+      "DAT",
+      "DA-88",
+      "Digital Compact Cassette",
+      "Betamax/PCM",
+      "U-matic/PCM",
+      "VHS/PCM",
+      "Hi8/PCM"
+    ]
+  }
+}

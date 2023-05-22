@@ -37,14 +37,17 @@ def get_info(source_directory, metadata_directory):
     for root, dirs, files in os.walk(source_directory):
         for file in files:
             if file.endswith('.json'):
-                item_path = os.path.join(root, file)
-                filename = os.path.basename(item_path)
-                json_list.append(item_path)
+                if file.startswith('premis-events'):
+                    pass
+                else:
+                    item_path = os.path.join(root, file)
+                    filename = os.path.basename(item_path)
+                    json_list.append(item_path)
 
     print('\nCounts by Type:\n')
     types = []
     for file in json_list:
-        with open(file, 'r') as jsonFile:
+        with open(file, 'r', encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
             types.append(data['source']['object']['type'])
     print(Counter(types))
@@ -56,7 +59,7 @@ def get_info(source_directory, metadata_directory):
     os.chdir(schema_directory)
 
     for file in json_list:
-        with open(file, 'r') as jsonFile:
+        with open(file, 'r', encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
             if data['source']['object']['type'] == 'video cassette analog':
                 ajv_command = [

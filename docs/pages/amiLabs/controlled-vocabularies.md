@@ -6,7 +6,7 @@ parent: Media Preservation Labs
 ---
 
 
-# AMI Labs Signal Notes, Controlled Vocabularies, and Syntax Guide
+# Media Preservation Labs Signal Notes, Controlled Vocabularies, and Syntax Guide
 
 ## Table of contents
 1. [Audio Terms](#audio-terms)

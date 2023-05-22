@@ -13,20 +13,18 @@ nav_order: 3
 1. TOC
 {:toc}
 
-The Media Preservation Services team supports NYPL's preservation activities by managing outsourced digitization logistics, time-based media conservation, and digital asset quality control and migration. Our team works closely with Media Preservation Labs, Digital Preservation, Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for reformatting and conservation treatment, and that all deliverables meet standards-based technical requirements prior to long-term preservation and access. Additional services include technical specification development, workflow documentation, and administrative management of grant-funded media preservation projects.
+The Media Preservation Services team supports NYPL's preservation activities by managing outsourced digitization logistics, pre-digitization conservation, and digital asset quality control and migration. Our team works closely with Media Preservation Labs, Digital Preservation, Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for reformatting and conservation treatment, and that all deliverables meet standards-based technical requirements prior to long-term preservation and access. Additional services include technical specification development, workflow documentation, and administrative management of grant-funded media preservation projects.
 
 ## Staff
-#### Genevieve Havemeyer-King, Manager, Media Preservation Services
-{: .no_toc }
-Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment; trains and supervises Media Preservation Assistants.
+
 
 #### Ryan Marino, Media Preservation Coordinator
 {: .no_toc }
-Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment; trains and supervises Media Preservation Assistants.
+Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment.
 
-#### Casey McNamara, Media Preservation Assistant
+#### Casey McNamara, Media Preservation Coordinator
 {: .no_toc }
-Assists with the coordination, evaluation, and implementation of specifications and workflows for digital asset quality control and film assessment.
+Coordinates film assessment program for the Media Preservation Labs and leads quality control effort for all in-house digitization.
 
 ## Services
 

@@ -1,5 +1,5 @@
 ---
-title: Quality Control Workflow
+title: QC Workflow
 layout: default
 nav_order: 1
 parent: Quality Control
@@ -32,7 +32,7 @@ Internal workflow for carrying out QC on digital assets.
 
 * **Mount drive read-only.**
 
-* Validate Packages: 
+* Validate Packages:
 Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for additional usage)
 ```
 python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metadata --quiet
@@ -52,12 +52,12 @@ The ami-preservation repo contains a directory, [qc_utilities](https://github.co
 cd /Volumes/DRIVE-ID/
 ```
 *then...*
-  * For analog VIDEO: 
+  * For analog VIDEO:
 ```
 /path/to/qc_utilities/mediaconch_videoFFv1.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
 ```
 
-  * For analog AUDIO: 
+  * For analog AUDIO:
 ```
 /path/to/qc_utilities/mediaconch_audioAnalog.sh
 ```

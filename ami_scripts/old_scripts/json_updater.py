@@ -3,7 +3,6 @@
 import argparse
 import os
 import subprocess
-import bagit
 import glob
 import shutil
 import json
@@ -107,8 +106,7 @@ def get_info(source_directory):
 
         with open(media_json, "w") as jsonFile:
             json.dump(data, jsonFile, indent = 4)
-    #print("Bagging...")
-    #bag = bagit.make_bag(os.getcwd(), checksums=['md5'])
+
 
 def main():
     arguments = get_args()
