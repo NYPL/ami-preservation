@@ -270,7 +270,7 @@ def get_channel_layout(vob_file):
 def get_resolution(vob_file):
     command = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", vob_file]
     try:
-        output = subprocess.check_output(command).decode().strip()
+        output = subprocess.check_output(command).decode().strip().rstrip('x')
     except subprocess.CalledProcessError:
         return None
     return output
