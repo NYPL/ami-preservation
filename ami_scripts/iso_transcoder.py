@@ -7,9 +7,20 @@ import subprocess
 import shutil
 import logging
 import tempfile
+import sys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+def verify_mkvmerge_installation():
+    try:
+        result = subprocess.run(["mkvmerge", "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        print("mkvmerge is not installed on this system. Please install mkvtoolnix (brew install mkvtoolnix).")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("mkvmerge is not found in your system's path. Please make sure mkvtoolnix is installed and mkvmerge is accessible.")
+        sys.exit(1)
 
 
 def mount_Image(ISO_Path):
@@ -101,34 +112,55 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                 with open(tmp_vob_file.name, 'wb') as outfile:  # use 'wb' because we're working with binary files
                     logging.info(f"Concatenating VOB files to {tmp_vob_file.name}")
                     subprocess.run(cat_command, stdout=outfile, check=True)
-        except subprocess.CalledProcessError:
-            logging.warning(f"Concatenating failed for VOB files due to subprocess error. Trying with mkvmerge.")
+
+                output_file = output_directory / f"{iso_basename}_sc.mp4"
+                channel_layout = get_channel_layout(tmp_vob_file.name)
+                resolution = get_resolution(tmp_vob_file.name)
+                ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
+
+                if resolution not in ['720x480', '720x576']:
+                    vf_index = ffmpeg_command.index('-vf')
+                    ffmpeg_command[vf_index + 1] += ',scale=720:480'
+
+                logging.info(f"Transcoding concatenated VOB file to {output_file}")
+                try:
+                    subprocess.run(ffmpeg_command, check=True)
+                except subprocess.CalledProcessError:
+                    logging.error(f"Transcoding failed for {tmp_vob_file.name} due to subprocess error")
+                    raise Exception("Transcoding failed")
+        except Exception as e:
+            logging.warning(f"Either concatenation or transcoding failed with 'cat'. Error: {e}")
             os.remove(tmp_vob_file.name)  # delete the previous failed file
             try:
                 with tempfile.NamedTemporaryFile(suffix=".mkv", delete=False) as tmp_vob_file:
                     for disc_vob_files in vob_files:
-                        mkvmerge_command = ["mkvmerge", "-o", tmp_vob_file.name, str(disc_vob_files[0])]
-                        for vob_file in disc_vob_files[1:]:
-                            mkvmerge_command.extend(["+", str(vob_file)])
-                        subprocess.run(mkvmerge_command, check=True)
-            except subprocess.CalledProcessError:
+                        try:
+                            mkvmerge_command = ["mkvmerge", "-o", tmp_vob_file.name, str(disc_vob_files[0])]
+                            for vob_file in disc_vob_files[1:]:
+                                mkvmerge_command.extend(["+", str(vob_file)])
+                            subprocess.run(mkvmerge_command, check=True)
+                        except subprocess.CalledProcessError:
+                            logging.warning(f"Concatenating failed for {disc_vob_files} with mkvmerge, but continuing anyway.")
+
+                    output_file = output_directory / f"{iso_basename}_sc.mp4"
+                    channel_layout = get_channel_layout(tmp_vob_file.name)
+                    resolution = get_resolution(tmp_vob_file.name)
+                    ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
+
+                    if resolution not in ['720x480', '720x576']:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:480'
+
+                    logging.info(f"Transcoding concatenated VOB file to {output_file}")
+                    try:
+                        subprocess.run(ffmpeg_command, check=True)
+                    except subprocess.CalledProcessError:
+                        logging.error(f"Transcoding failed for {tmp_vob_file.name} due to subprocess error")
+                        raise Exception("Transcoding failed")
+            except Exception as e:
                 logging.error(f"Concatenating failed for {disc_vob_files} with mkvmerge too.")
                 os.remove(tmp_vob_file.name)  # delete the failed file
                 raise Exception("Both concatenation methods failed.")
-        
-        output_file = output_directory / f"{iso_basename}_sc.mp4"
-        channel_layout = get_channel_layout(tmp_vob_file.name)
-        ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
-
-        logging.info(f"Transcoding concatenated VOB file to {output_file}")
-        try:
-            subprocess.run(ffmpeg_command, check=True)
-        except subprocess.CalledProcessError:
-            logging.error(f"Transcoding failed for {tmp_vob_file.name} due to subprocess error")
-        except Exception as e:
-            logging.error(f"Transcoding failed for {tmp_vob_file.name}. Error: {e}")
-
-        os.remove(tmp_vob_file.name)  # remove the temp file
 
     else:
         disc_count = 1
@@ -138,7 +170,13 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                 output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4"
                 logging.info(f"Transcoding VOB file {vob_file} to {output_file}")
                 channel_layout = get_channel_layout(vob_file)
+                resolution = get_resolution(tmp_vob_file.name)
+
                 ffmpeg_command = build_ffmpeg_command(vob_file, output_file, channel_layout)
+                if resolution not in ['720x480', '720x576']:
+                    vf_index = ffmpeg_command.index('-vf')
+                    ffmpeg_command[vf_index + 1] += ',scale=720:480'
+
                 try:
                     subprocess.run(ffmpeg_command, check=True)
                 except subprocess.CalledProcessError:
@@ -148,47 +186,69 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                 disc_count += 1
         else:
             for disc_vob_files in vob_files:  # disc_vob_files is a list of file paths (strings)
-                try:
-                    # try with cat method first
-                    with tempfile.NamedTemporaryFile(suffix=".vob", delete=False) as tmp_vob_file:
-                        cat_command = ["cat"] + disc_vob_files
-                        with open(tmp_vob_file.name, 'wb') as outfile:  # use 'wb' because we're working with binary files
-                            logging.info(f"Concatenating VOB files to {tmp_vob_file.name}")
-                            subprocess.run(cat_command, stdout=outfile, check=True)
-                except subprocess.CalledProcessError:
-                    logging.warning(f"Concatenating failed for {disc_vob_files} due to subprocess error. Trying with mkvmerge.")
-                    os.remove(tmp_vob_file.name)  # delete the previous failed file
+                tmp_vob_file = None
+                mkvmerge_used = False
+                while True:
                     try:
-                        with tempfile.NamedTemporaryFile(suffix=".mkv", delete=False) as tmp_vob_file:
-                            mkvmerge_command = ["mkvmerge", "-o", tmp_vob_file.name]
-                            for vob_file in disc_vob_files[:-1]:
-                                mkvmerge_command.extend([vob_file, "+"])
-                            mkvmerge_command.append(disc_vob_files[-1])
-                            print("HELOO.../n")
-                            print(mkvmerge_command)
-                            subprocess.run(mkvmerge_command, check=True)
+                        if not mkvmerge_used:
+                            with tempfile.NamedTemporaryFile(suffix=".vob", delete=False) as tmp_vob_file:
+                                cat_command = ["cat"] + disc_vob_files
+                                with open(tmp_vob_file.name, 'wb') as outfile:  # use 'wb' because we're working with binary files
+                                    logging.info(f"Concatenating VOB files to {tmp_vob_file.name}")
+                                    subprocess.run(cat_command, stdout=outfile, check=True)
+                        else:
+                            try:
+                                with tempfile.NamedTemporaryFile(suffix=".mkv", delete=False) as tmp_vob_file:
+                                    mkvmerge_command = ["mkvmerge", "-o", tmp_vob_file.name]
+                                    for vob_file in disc_vob_files[:-1]:
+                                        mkvmerge_command.extend([vob_file, "+"])
+                                    mkvmerge_command.append(disc_vob_files[-1])
+                                    subprocess.run(mkvmerge_command, check=True)
+                            except subprocess.CalledProcessError:
+                                logging.warning("MKVMerge failed, but proceeding to FFmpeg")
                     except subprocess.CalledProcessError:
-                        logging.error(f"Concatenating failed for {disc_vob_files} with mkvmerge too.")
-                        os.remove(tmp_vob_file.name)  # delete the failed file
-                        raise Exception("Both concatenation methods failed.")
+                        logging.warning(f"Concatenation failed for {disc_vob_files}. Trying alternative method.")
+                        if tmp_vob_file is not None:
+                            os.remove(tmp_vob_file.name)  # delete the previous failed file
+                            tmp_vob_file = None
+                        if mkvmerge_used:
+                            logging.error(f"Concatenation failed for {disc_vob_files} with both methods.")
+                            raise Exception("Both concatenation methods failed.")
+                        else:
+                            mkvmerge_used = True
+                            continue
 
-                output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4" if len(vob_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
-                channel_layout = get_channel_layout(tmp_vob_file.name)
-                ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
+                    output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4" if len(vob_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
+                    channel_layout = get_channel_layout(tmp_vob_file.name)
+                    resolution = get_resolution(tmp_vob_file.name)
 
-                logging.info(f"Transcoding concatenated VOB file to {output_file}")
-                try:
-                    subprocess.run(ffmpeg_command, check=True)
-                except subprocess.CalledProcessError:
-                    logging.error(f"Transcoding failed for {tmp_vob_file.name} due to subprocess error")
-                except Exception as e:
-                    logging.error(f"Transcoding failed for {tmp_vob_file.name}. Error: {e}")
+                    ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
+                    if resolution not in ['720x480', '720x576']:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:480'
 
-                disc_count += 1
-                os.remove(tmp_vob_file.name)  # remove the temp file
+                    logging.info(f"Transcoding concatenated VOB file to {output_file}")
+                    try:
+                        subprocess.run(ffmpeg_command, check=True)
+                    except subprocess.CalledProcessError:
+                        logging.error(f"Transcoding failed for {tmp_vob_file.name} due to subprocess error")
+                        if mkvmerge_used:
+                            # if mkvmerge was already used for concatenation, raise an exception
+                            raise
+                        else:
+                            # if mkvmerge was not yet used for concatenation, set the flag and try again
+                            logging.info("Will retry with mkvmerge concatenation.")
+                            mkvmerge_used = True
+                            continue
+                    except Exception as e:
+                        logging.error(f"Transcoding failed for {tmp_vob_file.name}. Error: {e}")
 
-        logging.info(f"Unmounting {mount_point}")
-        unmount_Image(mount_point)
+                    disc_count += 1
+                    os.remove(tmp_vob_file.name)  # remove the temp file
+                    break  # break the while loop when everything is successful
+
+    logging.info(f"Unmounting {mount_point}")
+    unmount_Image(mount_point)
 
 
 def get_channel_layout(vob_file):
@@ -206,6 +266,14 @@ def get_channel_layout(vob_file):
         return "4.0"
     else:
         return None
+
+def get_resolution(vob_file):
+    command = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", vob_file]
+    try:
+        output = subprocess.check_output(command).decode().strip()
+    except subprocess.CalledProcessError:
+        return None
+    return output
 
 def build_ffmpeg_command(input_file, output_file, channel_layout):
     ffmpeg_command = [
@@ -252,6 +320,7 @@ def main():
     parser.add_argument('-f', '--force-concat', action='store_true', default=False, help='force concatenating all VOBs into one MP4 (optional)')
     args = parser.parse_args()
 
+    verify_mkvmerge_installation()
 
     input_directory = Path(args.i)
     output_directory = Path(args.o) if args.o else input_directory
