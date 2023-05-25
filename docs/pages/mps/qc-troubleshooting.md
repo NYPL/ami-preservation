@@ -79,12 +79,35 @@ Ajv will report any fields that don’t correspond to values allowed by the form
 ```
 ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
-* Once the JSON file has been reapired and replaced, this new JSON file will have a different md5 checksum than the original; the md5 manifest must now be updated. Do this by using ```fix_baginfo.py``` as directed.
+* Once the JSON file has been reapired and replaced, this new JSON file will have a different md5 checksum than the original; the md5 manifest must now be updated. Do this by using ```repair_ami_json_bag.py``` as directed below.
 
 * Validate bag structure (Note: below command does not validate checksums - only structure and contents)
  ```
- validate_ami_bags.py -b path/to/bag
+ validate_ami_bags.py --slow -b path/to/bag
  ```
+
+
+###  Repairing JSON MD5 Checksums
+
+[insert image]
+
+Making changes to any JSON file within a bag will result in the MD5 checksum of the file to change, resulting in an invalid bag. A new checksum must be created in order for the bag to validate. While it is possible to generate a new checksum using the md5 command, this process can be time-consuming, especially when dealing with a large number of files requiring new checksums. A quick and effective way to generate new checksums for multiple JSON files at a time is by using ```repair_ami_json_bag.py``` with the –badjson flag. 
+
+* Before generating new checksums, you will need to fix the bag info by using ```fix_baginfo.py ```.
+
+```
+path/to/ami-tools/bin/fix_baginfo.py -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory  
+```
+* Once the bag info has been fixed you can generate new MD5 checksums for JSON files.
+
+```
+repair_ami_json_bag.py -badjson -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory 
+```
+* After the new checksums have been created, validate the integrity of repaired bag(s) 
+
+```
+validate_ami_bags.py --slow -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory 
+```
 
 ###  Hidden System Files
 
