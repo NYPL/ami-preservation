@@ -95,10 +95,10 @@ rawcooked /path/to/mkv --check
 
 * After manual QC, **if all bags are valid**...Then:
 
-  * Pull MediaInfo & output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC
+  * Pull MediaInfo & output the resulting mediainfo.csv log to the directory for your project or HD on ICC
 
 ```
-python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
+python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
 ```
 
 * Wrap Up...
