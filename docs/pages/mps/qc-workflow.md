@@ -71,8 +71,7 @@ Note: the video service copy mediaconch policy works for all video/film delivera
 
 * Validate Bags:
 ```
-cd path/to/dir/of/bags
-path/to/validate_bags.sh
+path/to/ami-tools/bin/validate_ami_bags.py --metadata -- slow -d /Volumes/driveID/
 ```
 * Log destination is home/user directory. Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
