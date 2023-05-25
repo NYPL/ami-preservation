@@ -5,7 +5,7 @@ nav_order: 2
 parent: Quality Control
 ---
 
-# Quality Control Workflow
+# Quality Control Troubleshooting
 {: .no_toc }
 
 Internal resource for troubleshooting some of the most common issues encountered during our quality control process. The steps outlined below utilize a combination of open source and custom-built tools built in collaboration with and maintained by Media Preservation Services, Media Preservation Labs, and Digital Preservation.
