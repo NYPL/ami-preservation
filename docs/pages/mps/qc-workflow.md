@@ -71,7 +71,7 @@ Note: the video service copy mediaconch policy works for all video/film delivera
 
 * Validate Bags:
 ```
-path/to/ami-tools/bin/validate_ami_bags.py --metadata -- slow -d /Volumes/driveID/
+path/to/ami-tools/bin/validate_ami_bags.py --metadata --slow -d /Volumes/driveID/
 ```
 * Log destination is home/user directory. Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
@@ -103,15 +103,16 @@ python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes
 * Wrap Up...
   * Move the Trello Card to the proper list (passed / failed etc.)
   * IF APPROVED:
-    * email vendor to confirm QC approval of designated shipment & invoice number; CC Rebecca to approve invoice
+    * Update QC status and check Due date in Trello Card; Move the Trello Card to the passed list; stage HD for delivery to Digital Preservation
     * Database: update database for approved shipments
 
   * IF NOT APPROVED
     * Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames.
 &
-    * Move Trello card to "Flags & Failures To Review" list in Trello.
-    * MPC: Follow up with vendor about errors and resolve before approving shipments with errors and moving Trello card to the 'Passed QC' list.
-
+    * Move Trello card to "Vendor: QC Review" or "IN-HOUSE: QC Review" list in Trello.
+    * Vendor: MPC follow up with vendor about errors and resolve before approving shipments. 
+    * In-house: Tag relevant engineer and MPC, and Manager on Trello Card. 
+    
 
 # Quality Control Overview
 Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections.
