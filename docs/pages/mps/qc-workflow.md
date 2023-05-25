@@ -30,7 +30,7 @@ Internal workflow for carrying out QC on digital assets.
 
 * Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-* **Mount drive read-only.**
+* **MOUNT DRIVE READ-ONLY.**
 
 * Validate Packages:
 Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for additional usage)
@@ -76,14 +76,14 @@ path/to/validate_bags.sh
 ```
 * Log destination is home/user directory. Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
-* AUDIO ONLY: Check a selection of FLAC for embedded metadata
+* **AUDIO ONLY**: Check a selection of FLAC for embedded metadata
   * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
 ```
 flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 ```
   * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
 
-* Film PMs only:
+* **FILM PMs ONLY**:
 Check a selection of PMs for RAWCooked reversability:
 ```
 rawcooked /path/to/mkv --check
