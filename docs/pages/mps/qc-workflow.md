@@ -23,10 +23,10 @@ Internal workflow for carrying out QC on digital assets.
 
 * Create an ICC/Logs directory named with the work order ID
 
-* Create a Trello Card on the [Vendor QC Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
+* Create a Trello Card on the [MPS Quality Control Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
 
 * Create a QC log in the Team Drive QC Folder for each hard drive:
-  * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/17VKQiZGwC2JpTYHjHBcdwMBNU29S1_Op6WhP-oUjaxg/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
+  * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
 
 * Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
