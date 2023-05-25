@@ -63,7 +63,7 @@ cd /Volumes/DRIVE-ID/
 ```
   * For FILM:
   ```
-  /path/to/qc_utilities/mediaconch_filmPM.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
+  /path/to/qc_utilities/mediaconch_8-16mm_filmPM.sh && /path/to/qc_utilities/mediaconch_35mm_filmPM.sh && /path/to/qc_utilities/mediaconch_filmMZ.sh && /path/to/qc_utilities/mediaconch_filmSC.sh 
   ```
 
 Note: the video service copy mediaconch policy works for all video/film deliverables.
