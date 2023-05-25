@@ -86,7 +86,6 @@ ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-me
  validate_ami_bags.py --slow -b path/to/bag
  ```
 
-
 ###  Repairing JSON MD5 Checksums
 
 [insert image]
@@ -101,12 +100,12 @@ path/to/ami-tools/bin/fix_baginfo.py -b path/to/bag or -d path/to/drive dependin
 * Once the bag info has been fixed you can generate new MD5 checksums for JSON files.
 
 ```
-repair_ami_json_bag.py -badjson -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory 
+/path/to/ami-tools/bin/repair_ami_json_bag.py -badjson -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory 
 ```
 * After the new checksums have been created, validate the integrity of repaired bag(s) 
 
 ```
-validate_ami_bags.py --slow -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory 
+/path/to/ami-tools/bin/validate_ami_bags.py  --slow -b path/to/bag or -d path/to/drive depending on if you're working on a bag or directory 
 ```
 
 ###  Hidden System Files
@@ -177,7 +176,7 @@ Information about using grep can be found on the NYPL Media Preservation Documen
 cd /path/to/directory
 ```
 
-* Locate string within a directory
+* Locate a string within a directory
 
 ```
 find . -name "*.ext" | xargs grep "string"
