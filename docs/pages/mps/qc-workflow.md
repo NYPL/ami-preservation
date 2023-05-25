@@ -95,22 +95,7 @@ rawcooked /path/to/mkv --check
 
 * After manual QC, **if all bags are valid**...Then:
 
-  * Move JSON to ICC (must be connected to ICC):
-```
-find /Volumes/DRIVE-ID/ -name '*.json' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/VendorJSON ';'
-```
-
-  * Move IMAGES to ICC, if received (must be connected to ICC):
-
-```
-find /Volumes/DRIVE-ID/ -name '*.JPG' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/AssetImages ';'
-```
-&
-```
-find /Volumes/DRIVE-ID/ -name '*.jpg' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/Asset_Images ';'
-```
-
-* Pull MediaInfo & output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC
+  * Pull MediaInfo & output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC
 
 ```
 python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
