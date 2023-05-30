@@ -68,29 +68,17 @@ Project summaries are created by compiling mediainfo manifests and capture issue
 * Import the contents of the CMS batch export into the 'metadataInventory' tab of the project worksheet, ensuring that the data is entered into the correct columns.
 
 ## CMS Export (Metadata Inventory) Cleanup:
-CMS exports often contain characters and values which are incompatible with JSON metadata. After copying the CMS export into the template, **these values and characters must be manually removed / updated before the spreadsheet (the "...metadataInventory.xlsx" sheet) is sent to vendors for database import.**
+CMS exports often contain characters and values which are incompatible with JSON metadata. After copying the CMS export into the template, **these values and characters must be removed using ```clean_cms_excel.py```  before the spreadsheet (the "...metadataInventory.xlsx" sheet) is sent to vendors for database import.**
 
-### Search entire inventory sheet for the described content and make edits as instructed:
-* Remove the default ```source.subobject.faceNumber``` from all non-audio items
-* Remove the contents of ```source.physicalDescription.stockLength.measure``` from all rows
-* **Metadata version**: add current version (per May 2017 = 2.0.0)
-* Update ```source.object.format``` to reflect correct JSON terminology, for example: ```video cassette``` will need to be changed to ```video cassette analog``` or ```video cassette digital```, etc.
-* Add current version of ```asset.schemaVersion``` to all rows (per May 2020 = 2.0.0)
+* Cleanup metadata inventory using ```clean_cms_excel.py```:
 
-### Find & Replace:
-* Select "search using regular expressions"
-  * Select "this sheet" (for the sheet you're working on),
-  * Review the specific ranges mentioned below and find/replace as described:
-* Find the following characters...
-  * double quotations: ```“``` (replace with two single-quotes placed side by side, without spaces (Example: ```Audio Reel 10"``` becomes ```Audio Reel 10''```)
-  * semicolon: ```;``` (replace with```-```)
-  * backslash: ```\``` (replace with ```-```)
-  * new line: ```\n``` (replace with ```-```)
-  * vertical tab: ```\v``` (replace with ```-```)
-  * tab: ```\t``` (replace with ```-```)
-  * carriage return: ```\r``` (replace with ```-```)
+```
+ami-preservation/ami_scripts/clean_cms_excel.py -c ami-preservation/ami_scripts/config.json -v -s path/to/source
+```
+* Double check to make sure the spreadsheet was updated correctly 
+* Send the "clean" metadata inventory to the vendor and have them confirm all fields appear correct **(failture to confirm inventory is formatted correctly will result in invalid JSON)**
 
-* Double check to make sure you replaced all values as needed (sometimes the first one you find is skipped)
+
 
 ### Media Inventory & Physical Preparation
 * Box Check-Out:
