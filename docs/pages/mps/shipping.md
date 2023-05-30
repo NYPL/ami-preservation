@@ -32,7 +32,7 @@ nav_order: 8
   * Pallet count & instructions
   * Loading dock info / requirements
   * Recipient loading dock info / requirements
-  * Receive quotes & select shipper
+  * **Note: multiple quotes are no longer nessisary as NYPL currently has a contract with Clancy Relocation & Logistics**
 * Creation of Shipping SOW
   * Draft a final Shipment SOW (convert any quotes into PDF format)
 * Contact Procurement (2020 contacts: Joel Schlissler & Carey Weiler)
@@ -54,15 +54,19 @@ MPC/MPA emails procurement staff, describing the proposed timeline, shipper info
   * MPC/MPA, Shipper, and Vendor sign document upon pick-up / delivery.
 * **IF SHIPPING TO MULTIPLE VENDORS:** Print paper signs with the destination city tape to top of each pallet to distinguish multiple shipments to different vendors.
 * Shippers arrive, wrap, and take pallets.
+* Send a list of all out-going container barcodes to LSC Collection Manager 
+  * Collection Manager will update location of barcodes in SPEC 
+
 
 ## Return Shipment Procedures
 * MPC/MPA contacts digitization vendor to confirm new shipping dates and pallet count.
 * (follow above workflow for shipping procedures)
 * Boxes are checked-in upon arrival or before migration back to SFP staff.
   * (See [Project Workflow instructions](project-workflow)) for information regarding box check-in.
+* Send a list of all incoming container barcodes to LSC Collection Manager 
+  * Collection Manager will update location of barcodes in SPEC 
 
 ## Considerations
-* A4 & Clancy have off-site storage for layovers
 * Balance LSC storage capacities with incoming and outgoing timelines for all projects
 
 ## Truck and Dock Requirements
@@ -74,4 +78,4 @@ MPC/MPA emails procurement staff, describing the proposed timeline, shipper info
 * Dock is 29" high from the ground, and only 19.5 ft long; outside of loading dock is a steep incline - short truck required.
 
 ## Shipping Vendor Info
-(tbd)
+* Clancy Relocation & Logistics
