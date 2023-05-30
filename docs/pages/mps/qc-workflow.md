@@ -23,14 +23,14 @@ Internal workflow for carrying out QC on digital assets.
 
 * Create an ICC/Logs directory named with the work order ID
 
-* Create a Trello Card on the [Vendor QC Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
+* Create a Trello Card on the [MPS Quality Control Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
 
 * Create a QC log in the Team Drive QC Folder for each hard drive:
-  * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/17VKQiZGwC2JpTYHjHBcdwMBNU29S1_Op6WhP-oUjaxg/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
+  * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
 
 * Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-* **Mount drive read-only.**
+* **MOUNT DRIVE READ-ONLY.**
 
 * Validate Packages:
 Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for additional usage)
@@ -63,7 +63,7 @@ cd /Volumes/DRIVE-ID/
 ```
   * For FILM:
   ```
-  /path/to/qc_utilities/mediaconch_filmPM.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
+  /path/to/qc_utilities/mediaconch_8-16mm_filmPM.sh && /path/to/qc_utilities/mediaconch_35mm_filmPM.sh && /path/to/qc_utilities/mediaconch_filmMZ.sh && /path/to/qc_utilities/mediaconch_filmSC.sh 
   ```
 
 Note: the video service copy mediaconch policy works for all video/film deliverables.
@@ -71,19 +71,18 @@ Note: the video service copy mediaconch policy works for all video/film delivera
 
 * Validate Bags:
 ```
-cd path/to/dir/of/bags
-path/to/validate_bags.sh
+path/to/ami-tools/bin/validate_ami_bags.py --metadata --slow -d /Volumes/driveID/
 ```
 * Log destination is home/user directory. Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
 
-* AUDIO ONLY: Check a selection of FLAC for embedded metadata
+* **AUDIO ONLY**: Check a selection of FLAC for embedded metadata
   * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
 ```
 flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 ```
   * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
 
-* Film PMs only:
+* **FILM PMs ONLY**:
 Check a selection of PMs for RAWCooked reversability:
 ```
 rawcooked /path/to/mkv --check
@@ -95,39 +94,25 @@ rawcooked /path/to/mkv --check
 
 * After manual QC, **if all bags are valid**...Then:
 
-  * Move JSON to ICC (must be connected to ICC):
-```
-find /Volumes/DRIVE-ID/ -name '*.json' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/VendorJSON ';'
-```
-
-  * Move IMAGES to ICC, if received (must be connected to ICC):
+  * Pull MediaInfo & output the resulting mediainfo.csv log to the directory for your project or HD on ICC
 
 ```
-find /Volumes/DRIVE-ID/ -name '*.JPG' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/AssetImages ';'
-```
-&
-```
-find /Volumes/DRIVE-ID/ -name '*.jpg' -exec cp {} /Volumes/video_repository/Working_Storage/JSON_and_Images/Asset_Images ';'
-```
-
-* Pull MediaInfo & output the resulting mediainfo.csv log to the MediaInfo folder for your project on ICC
-
-```
-python3 /path/to/ami-preservation/pami_scripts/pull_mediainfo.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
+python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
 ```
 
 * Wrap Up...
   * Move the Trello Card to the proper list (passed / failed etc.)
   * IF APPROVED:
-    * email vendor to confirm QC approval of designated shipment & invoice number; CC Rebecca to approve invoice
+    * Update QC status and check Due date in Trello Card; Move the Trello Card to the passed list; stage HD for delivery to Digital Preservation
     * Database: update database for approved shipments
 
   * IF NOT APPROVED
     * Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames.
 &
-    * Move Trello card to "Flags & Failures To Review" list in Trello.
-    * MPC: Follow up with vendor about errors and resolve before approving shipments with errors and moving Trello card to the 'Passed QC' list.
-
+    * Move Trello card to "Vendor: QC Review" or "IN-HOUSE: QC Review" list in Trello.
+    * Vendor: MPC follow up with vendor about errors and resolve before approving shipments. 
+    * In-house: Tag relevant engineer and MPC, and Manager on Trello Card. 
+    
 
 # Quality Control Overview
 Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections.
