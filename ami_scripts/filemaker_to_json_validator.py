@@ -153,12 +153,20 @@ def main():
         'source.physicalDescription.properties.stockProductID': object,
         'digitizer.organization.address.postalCode': object,
         'source.physicalDescription.edgeCode': object,
-        'bibliographic.barcode': object,
-        'bibliographic.cmsCollectionID': object,
-        'bibliographic.cmsItemID': object,
         'bibliographic.primaryID': object,
+        'bibliographic.barcode': object,
+        'bibliographic.divisionCode': object,
+        'bibliographic.vernacularDivisionCode': object,
+        'bibliographic.projectCode': object,
+        'bibliographic.cmsCollectionID': object,
+        'bibliographic.title': object,
+        'bibliographic.date': object,
+        'bibliographic.cmsItemID': object,
+        'bibliographic.classmark': object,
         'bibliographic.formerClassmark': object,
-        'bibliographic.classmark': object
+        'bibliographic.nonCMSItemID': object,
+        'bibliographic.catalogBNumber': object,
+        'bibliographic.mssID': object
     })
 
     # Drop empty columns and the 'asset.fileExt' column
