@@ -236,6 +236,18 @@ def get_info(source_directory, metadata_directory):
                     '--all-errors',
                     '--errors=json'
                     ]
+            elif data['source']['object']['type'] == 'data optical disc':
+                ajv_command = [
+                    'ajv',
+                    'validate',
+                    '-s',
+                    '../schema/digitized_dataopticaldisc.json',
+                    '-r',
+                    '../schema/fields.json',
+                    '-d', file,
+                    '--all-errors',
+                    '--errors=json'
+                    ]
             subprocess.call(ajv_command)
 
 def main():
