@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
+#!/usr/bin/env python3
+
 import argparse
 import csv
 import logging
 import re
+import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from pprint import pprint
 from pymediainfo import MediaInfo
@@ -45,10 +49,25 @@ def has_mezzanines(file_path):
             return True
     return False
 
+def extract_iso_file_format(file_path):
+    command = ['isolyzer', str(file_path)]
+    try:
+        process = subprocess.run(command, check=True, capture_output=True, text=True)
+        xml_output = process.stdout
+        root = ET.fromstring(xml_output)
+        file_system_type = root.find(".//{http://kb.nl/ns/isolyzer/v1/}fileSystem").attrib['TYPE']
+        return file_system_type
+    except subprocess.CalledProcessError as e:
+        print(f"Isolyzer failed with error: {e}")
+        return None
 
 def extract_track_info(media_info, path, project_code_pattern, valid_extensions):
     for track in media_info.tracks:
         if track.track_type == "General":
+            file_format = track.format
+            if file_format is None and path.suffix.lower() == '.iso':
+                file_format = extract_iso_file_format(path)
+
             file_data = [
                 path,
                 '.'.join([path.stem, path.suffix[1:]]),
@@ -56,7 +75,7 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
                 path.suffix[1:],
                 track.file_size,
                 track.file_last_modification_date.split()[1],
-                track.format,
+                file_format,
                 track.audio_format_list.split()[0] if track.audio_format_list else None,
                 track.codecs_video,
                 track.duration,
@@ -96,8 +115,15 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
 
     return None
 
+def is_tool(name):
+    # Check whether `name` is on PATH and marked as executable.
+    from shutil import which
+    return which(name) is not None
 
 def main():
+    if not is_tool('isolyzer'):
+        print('Error: Isolyzer is not installed or not found in PATH. Please install (pip3 install isolyzer) before running this script.')
+        return
     parser = make_parser()
     args = parser.parse_args()
 
