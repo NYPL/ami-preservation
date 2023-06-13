@@ -64,6 +64,7 @@ def get_ajv_command(data, file):
         'audio grooved disc': 'digitized_audiogrooveddisc.json',
         'audio grooved cylinder': 'digitized_audiogroovedcylinder.json',
         'audio magnetic wire': 'digitized_audiomagneticwire.json',
+        'data optical disc': 'digitized_dataopticaldisc.json',
     }
 
     film_formats = ('8mm film, silent', '8mm film, optical sound',
