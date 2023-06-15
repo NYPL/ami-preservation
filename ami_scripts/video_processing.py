@@ -33,6 +33,29 @@ def process_mov_files(input_directory):
         convert_mov_file(file, input_directory)
 
 
+def process_dv_files(input_directory):
+    """Process .dv files using dvpackager, creating .mkv files."""
+    dv_files = list(input_directory.glob("*.dv"))  # Store the .dv files in a list
+    processed_directory = input_directory / "ProcessedDV"
+    processed_directory.mkdir(exist_ok=True)
+    for dv_file in dv_files:
+        if not shutil.which("dvpackager"):
+            raise FileNotFoundError("dvpackager is not found, please install dvrescue with Homebrew.")
+        command = ['dvpackager', '-e', 'mkv', str(dv_file)]
+        subprocess.run(command, check=True)
+        # after processing, move the file to the processed directory
+        shutil.move(str(dv_file), processed_directory)
+        
+        # rename files based on count
+        mkv_files = list(input_directory.glob(f"{dv_file.stem}_part*.mkv"))
+        if len(mkv_files) == 1:  # rename the single file to exclude "_part1"
+            mkv_files[0].rename(input_directory / f"{dv_file.stem}.mkv")
+        elif len(mkv_files) > 1:  # rename multiple files with region naming system
+            for i, mkv_file in enumerate(sorted(mkv_files), start=1):
+                mkv_file.rename(input_directory / f"{dv_file.stem}r{i:02}_pm.mkv")
+    return dv_files  # Return the list of .dv files
+
+
 def generate_framemd5_files(input_directory):
     for file in input_directory.glob("*.mkv"):
         output_file = input_directory / f"{file.stem}.framemd5"
@@ -108,7 +131,7 @@ def move_files(input_directory):
             ".framemd5": "PreservationMasters",
             ".vtt": "PreservationMasters",
             ".mp4": "ServiceCopies"
-        }.get(file.suffix)
+            }.get(file.suffix)
 
         shutil.move(file, input_directory / target_dir)
 
@@ -118,6 +141,8 @@ def move_log_files_to_auxiliary_files(input_directory):
         shutil.move(file, input_directory / "AuxiliaryFiles" / file.name)
     for file in input_directory.glob("*.xml.gz"):
         shutil.move(file, input_directory / "PreservationMasters" / file.name)
+    for file in input_directory.glob("*.xml"):
+        shutil.move(file, input_directory / "AuxiliaryFiles" / file.name)        
 
 
 def delete_empty_directories(input_directory, directories):
@@ -129,9 +154,16 @@ def delete_empty_directories(input_directory, directories):
         except FileNotFoundError:
             pass
 
+
 def process_directory(directory):
     valid_extensions = video_extensions.union(audio_extensions)
-    return [path for path in directory.rglob('*') if path.is_file() and path.suffix.lower() in valid_extensions]
+    paths = []
+    for path in directory.rglob('*'):
+        if path.is_file() and path.suffix.lower() in valid_extensions:
+            if "ProcessedDV" not in path.parts and "V210" not in path.parts:
+                paths.append(path)
+    return paths
+
 
 def has_mezzanines(file_path):
     for parent in file_path.parents:
@@ -191,6 +223,7 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
 
     return None
 
+
 def main():
     parser = argparse.ArgumentParser(description="Process video files in a specified directory and optionally extract MediaInfo.")
     parser.add_argument("-d", "--directory", type=str, required=True, help="Input directory containing video files.")
@@ -203,6 +236,9 @@ def main():
     if not input_dir.is_dir():
         print(f"Error: {input_dir} is not a valid directory.")
         exit(1)
+    
+    process_dv_files(input_dir)  
+
 
     create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
     convert_mkv_dv_to_mp4(input_dir)
