@@ -10,6 +10,8 @@ import csv
 import re
 import logging
 from pymediainfo import MediaInfo
+import importlib.util
+
 
 LOGGER = logging.getLogger(__name__)
 video_extensions = {'.mkv', '.mov', '.mp4', '.dv', '.iso'}
@@ -42,7 +44,7 @@ def process_dv_files(input_directory):
         if not shutil.which("dvpackager"):
             raise FileNotFoundError("dvpackager is not found, please install dvrescue with Homebrew.")
         command = ['dvpackager', '-e', 'mkv', str(dv_file)]
-        subprocess.run(command, check=True)
+        subprocess.run(command, check=True, input='y', encoding='ascii')
         # after processing, move the file to the processed directory
         shutil.move(str(dv_file), processed_directory)
         
@@ -68,12 +70,31 @@ def generate_framemd5_files(input_directory):
             subprocess.run(command)
 
 
-def transcribe_files(input_directory):
-    os.chdir(input_directory)
-    for file in input_directory.glob("*.mkv"):
-        print(f"Transcribing file: {file}")
-        command = ['whisper', file, '--model' , 'medium', '--output_format', 'vtt']
-        subprocess.run(command)
+def module_exists(module_name):
+    return importlib.util.find_spec(module_name) is not None
+
+
+def transcribe_directory(input_directory, model, output_format):
+    media_extensions = {'.mkv'}
+
+    input_dir_path = pathlib.Path(input_directory)
+
+    if module_exists("whisper"):
+        import whisper
+    else:
+        print("Error: The module 'whisper' is not installed. Please install it with 'pip3 install -U openai-whisper'")
+        return
+
+    model = whisper.load_model(model)
+
+    for file in input_dir_path.rglob('*'):
+        if file.suffix in media_extensions:
+            print(f"Processing {file}")
+            transcription_response = model.transcribe(str(file), verbose=True)
+                
+            output_filename = file.with_suffix("." + output_format)
+            output_writer = whisper.utils.get_writer(output_format, str(file.parent))
+            output_writer(transcription_response, file.stem)
 
 
 def convert_to_mp4(input_file, input_directory):
@@ -229,6 +250,9 @@ def main():
     parser.add_argument("-d", "--directory", type=str, required=True, help="Input directory containing video files.")
     parser.add_argument("-t", "--transcribe", action="store_true", help="Transcribe the audio of the MKV files to VTT format using the Whisper tool.")
     parser.add_argument("-o", "--output", help="Path to save csv (optional). If provided, MediaInfo extraction will be performed.", required=False)
+    parser.add_argument("-m", "--model", default='medium', choices=['tiny', 'base', 'small', 'medium', 'large'], help='The Whisper model to use')
+    parser.add_argument("-f", "--format", default='vtt', choices=['vtt', 'srt', 'txt', 'json'], help='The subtitle output format to use')
+
     args = parser.parse_args()
 
     input_dir = pathlib.Path(args.directory)
@@ -236,21 +260,36 @@ def main():
     if not input_dir.is_dir():
         print(f"Error: {input_dir} is not a valid directory.")
         exit(1)
-    
-    process_dv_files(input_dir)  
 
+    print("Processing DV files...")
+    process_dv_files(input_dir)
 
+    print("Creating directories...")
     create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
+
+    print("Converting MKV and DV to MP4...")
     convert_mkv_dv_to_mp4(input_dir)
+
+    print("Processing MOV files...")
     process_mov_files(input_dir)
+
+    print("Generating framemd5 files...")
     generate_framemd5_files(input_dir)
+
+    print("Renaming files...")
     rename_files(input_dir, video_extensions.union(audio_extensions))
+
+    print("Moving files...")
     move_files(input_dir)
+
+    print("Moving log files...")
     move_log_files_to_auxiliary_files(input_dir)
 
     if args.transcribe:
-        transcribe_files(input_dir)
+        print("Transcribing directory...")
+        transcribe_directory(input_dir, args.model, args.format)
 
+    print("Deleting empty directories...")
     delete_empty_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
 
     if args.output:
