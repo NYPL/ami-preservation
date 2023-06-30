@@ -74,7 +74,7 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
                 path.stem,
                 path.suffix[1:],
                 track.file_size,
-                track.file_last_modification_date.split()[1],
+                track.file_last_modification_date.split()[0],
                 file_format,
                 track.audio_format_list.split()[0] if track.audio_format_list else None,
                 track.codecs_video,
