@@ -3,9 +3,9 @@
 import argparse
 import json
 import logging
-import subprocess
 from pathlib import Path
 import re
+from pymediainfo import MediaInfo
 
 def get_args():
     parser = argparse.ArgumentParser(description='Update JSON files in a directory')
@@ -21,7 +21,7 @@ def get_media_files(source_directory):
     json_files = []
     
     for item in source_directory.glob('**/*'):
-        if item.is_file() and item.suffix in ('.flac', '.mp4', '.mkv', '.wav', '.mov'):
+        if item.is_file() and item.suffix in ('.flac', '.mp4', '.mkv', '.wav'):
             media_files.append(item)
         elif item.is_file() and item.suffix == '.json':
             json_files.append(item)
@@ -43,18 +43,13 @@ def process_media_files(source_directory):
             logging.warning(f"No media file found for JSON file {json_file}")
             continue
 
-        print(f"Now updating MediaInfo metadata for {media_file.name}")
-
-        media_info = subprocess.run(
-            [
-                'mediainfo', '--Language=raw', '--Full',
-                '--Output=JSON', media_file
-            ],
-            capture_output=True, text=True
-        )
-
-        media_info_data = json.loads(media_info.stdout)
-        general_data = media_info_data['media']['track'][0]
+        media_info = MediaInfo.parse(media_file)
+        general_tracks = [t for t in media_info.tracks if t.track_type == "General"]
+        if general_tracks:
+            general_data = general_tracks[0].to_data()
+        else:
+            logging.warning(f"No general track found for media file {media_file}")
+            continue
 
         with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
@@ -63,28 +58,21 @@ def process_media_files(source_directory):
         data['technical']['filename'] = media_file.stem
         data['technical']['extension'] = media_file.suffix[1:]
 
-        date_created = general_data.get('File_Modified_Date', '')
+        date_created = general_data.get('file_last_modification_date', '')
         date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
         match = date_pattern.search(date_created)
         if match:
             data['technical']['dateCreated'] = match.group(0)
         else:
             data['technical']['dateCreated'] = ''
-        
-        # Regex search for "PCM" or "AAC LC" or "FLAC" in the 'Audio_Codec_List'
-        audio_codec_pattern = re.compile(r'(PCM|AAC LC|FLAC)')
-        audio_codec_list = general_data.get('Audio_Codec_List', '')
-        match = audio_codec_pattern.search(audio_codec_list)
-        if match:
-            data['technical']['audioCodec'] = match.group(0)
-        elif 'Audio_Codec_List' in general_data:
-            data['technical']['audioCodec'] = general_data.get('Audio_Codec_List')
 
-        data['technical']['videoCodec'] = general_data.get('Video_Codec_List')
-        data['technical']['fileFormat'] = general_data.get('Format', '')
-        data['technical']['fileSize']['measure'] = int(general_data.get('FileSize', 0))
-        data['technical']['durationMilli']['measure'] = int(float(general_data.get('Duration', 0)) * 1000)
-        data['technical']['durationHuman'] = general_data.get('Duration_String3', '')
+        data['technical']['fileFormat'] = general_data.get('format', '')
+        data['technical']['audioCodec'] = general_data.get('audio_codecs', '')
+        data['technical']['fileSize']['measure'] = int(general_data.get('file_size', 0))
+        data['technical']['durationMilli']['measure'] = int(general_data.get('duration'))
+        other_duration = general_data.get('other_duration', [])
+        duration_human = other_duration[3] if len(other_duration) > 3 else ''
+        data['technical']['durationHuman'] = duration_human
 
         with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
@@ -99,7 +87,7 @@ def get_nested_values(data, key, parent_keys=None):
         parent_keys = []
 
     def _get_nested_values(data, key, parent_keys):
-        for k, v in data.items():
+          for k, v in data.items():
             if k == key:
                 values.append((tuple(parent_keys), v))
             elif isinstance(v, dict):
@@ -124,6 +112,8 @@ def update_key_in_json_files(source_directory, key):
         logging.info("No JSON files found in the source directory")
         return
 
+    new_value = input(f"Enter the new value for the key '{key}': ")
+
     for json_file in json_files:
         with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
@@ -137,18 +127,9 @@ def update_key_in_json_files(source_directory, key):
 
         if len(unique_values) == 1:
             parent_keys, old_value = unique_values[0]
-            new_value = input(f"Enter the new value for the key '{key}': ")
-            new_value = convert_value_to_type(new_value, type(old_value))
-
-            if type(new_value) != type(old_value):
-                approval = input(f"The new value's data type ({type(new_value).__name__}) differs from the old value's data type ({type(old_value).__name__}). Proceed with the update? (yes/no): ")
-                if approval.lower() not in ['yes', 'y']:
-                    continue
-
             update_nested_key(data, key, old_value, new_value)
         else:
             print(f"\nValues found for key '{key}' in JSON file {json_file}:")
-            unique_values.sort(key=lambda x: x[0])  # Sorting by parent_keys
             for i, (parent_keys, value) in enumerate(unique_values, start=1):
                 parent_key_string = ' > '.join(parent_keys)
                 print(f"{i}. {parent_key_string} > {key}: {value}")
@@ -158,45 +139,12 @@ def update_key_in_json_files(source_directory, key):
                 continue
 
             old_value = unique_values[choice - 1][1]
-            new_value = input(f"Enter the new value for the key '{key}': ")
-            new_value = convert_value_to_type(new_value, type(old_value))
-
-            if type(new_value) != type(old_value):
-                approval = input(f"The new value's data type ({type(new_value).__name__}) differs from the old value's data type ({type(old_value).__name__}). Proceed with the update? (yes/no): ")
-                if approval.lower() not in ['yes', 'y']:
-                    continue
-
             update_nested_key(data, key, old_value, new_value)
 
         with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
     logging.info(f"Key '{key}' updated in selected JSON files")
-
-
-def convert_value_to_type(value, target_type):
-    if target_type == str:
-        return value
-    elif target_type == int:
-        try:
-            return int(value)
-        except ValueError:
-            if is_float(value):
-                return float(value)
-            raise
-    elif target_type == float:
-        return float(value)
-    elif target_type == bool:
-        return value.lower() in ['true', '1', 'yes', 'y']
-    else:
-        return value
-
-def is_float(value):
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
 
 
 def main():
@@ -212,4 +160,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
