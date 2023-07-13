@@ -54,9 +54,16 @@ def copy_to_editmasters(pm_folder, flac_file):
     shutil.copy(str(flac_file), str(em_file))
 
 
+def remove_hidden_files(directory):
+    for item in directory.rglob('.*'):
+        if item.is_file():
+            item.unlink()
+
+
 def process_directory(root_dir):
     for folder in sorted(root_dir.glob('*')):
         if folder.is_dir():
+            remove_hidden_files(folder)
             pm_folder = folder / 'PreservationMasters'
             mz_folder = folder / 'Mezzanines'
 

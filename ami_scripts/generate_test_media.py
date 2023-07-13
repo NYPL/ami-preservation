@@ -62,12 +62,21 @@ def prepare_test_files(args):
             'audio_rate': '96k',
             'channels': 2,
             'ext': '.flac'
+        },
+        {
+            'name': 'mandelbrot_dpx',
+            'video_res': '2048x1556',
+            'frame_rate': '24',
+            'pix_fmt': 'gbrp10le',
+            'frames': 10,
+            'ext': '.dpx'
         }
     ]
     return test_files
 
 def generate_test_files(destination_dir, test_files):
     for test_file in test_files:
+        output_path = os.path.join(destination_dir, test_file['name'])
         if 'video_codec' in test_file:
             # Generate video+audio file
             command = [
@@ -83,6 +92,31 @@ def generate_test_files(destination_dir, test_files):
                 '-t', '10',
                 os.path.join(destination_dir, f"{test_file['name']}{test_file['ext']}")
             ]
+        elif 'pix_fmt' in test_file:
+            # Handle DPX test file
+            os.makedirs(output_path, exist_ok=True)
+            command = [
+                'ffmpeg',
+                '-f', 'lavfi', '-i', f"mandelbrot=size={test_file['video_res']}:rate={test_file['frame_rate']}",
+                '-vframes', str(test_file['frames']),
+                '-pix_fmt', test_file['pix_fmt'],
+                '-y', os.path.join(output_path, f"{test_file['name']}_%06d{test_file['ext']}")
+            ]
+            subprocess.run(command, check=True)
+
+            # Convert DPX frames to FFV1/MKV with rawcooked
+            command = [
+                'rawcooked',
+                '--no-check-padding',
+                output_path
+            ]
+            subprocess.run(command)
+            # Delete DPX frames
+            for dpx_file in os.listdir(output_path):
+                if dpx_file.endswith('.dpx'):
+                    os.remove(os.path.join(output_path, dpx_file))
+            if not os.listdir(output_path):  # If directory is empty, delete it
+                os.rmdir(output_path)                    
         else:
             # Generate audio file
             command = [

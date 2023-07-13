@@ -61,7 +61,9 @@ def extract_iso_file_format(file_path):
         print(f"Isolyzer failed with error: {e}")
         return None
 
-def extract_track_info(media_info, path, project_code_pattern, valid_extensions):
+def extract_track_info(media_info, path, valid_extensions):
+    # the pattern to match YYYY-MM-DD
+    pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
     for track in media_info.tracks:
         if track.track_type == "General":
             file_format = track.format
@@ -74,7 +76,7 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
                 path.stem,
                 path.suffix[1:],
                 track.file_size,
-                track.file_last_modification_date.split()[1],
+                pattern.search(track.file_last_modification_date).group(0) if pattern.search(track.file_last_modification_date) else None,
                 file_format,
                 track.audio_format_list.split()[0] if track.audio_format_list else None,
                 track.codecs_video,
@@ -103,13 +105,6 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
             file_data.extend([role, division, driveID])
             primaryID = path.stem
             file_data.append(primaryID.split('_')[1] if len(primaryID.split('_')) > 1 else None)
-
-            match = project_code_pattern.search(str(path))
-            if match:
-                projectcode = match.group(1)
-                file_data.append(projectcode)
-            else:
-                file_data.append(None)
 
             return file_data
 
@@ -143,7 +138,6 @@ def main():
         print('Error: Please enter a directory or single file')
         return
 
-    project_code_pattern = re.compile(r'(\d\d\d\d\_\d+)')
     all_file_data = []
 
     for path in files_to_examine:
@@ -151,7 +145,7 @@ def main():
             print('RECYCLING BIN WITH MEDIA FILES!!!')
         else:
             media_info = MediaInfo.parse(str(path))
-            file_data = extract_track_info(media_info, path, project_code_pattern, video_extensions.union(audio_extensions))
+            file_data = extract_track_info(media_info, path, video_extensions.union(audio_extensions))
             if file_data:
                 print(file_data)
                 all_file_data.append(file_data)
@@ -174,9 +168,7 @@ def main():
             'role',
             'divisionCode',
             'driveID',
-            'primaryID',
-            'projectID'
-        ])
+            'primaryID'])
         md_csv.writerows(all_file_data)
 
 if __name__ == "__main__":

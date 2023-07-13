@@ -46,10 +46,10 @@ def mount_Image(ISO_Path):
         return mount_point
     except subprocess.CalledProcessError:
         logging.error("Mounting failed due to subprocess error. Try running script in sudo mode")
-        quit()
+        return None
     except Exception as e:
         logging.error(f"Mounting failed. Error: {e}")
-        quit()
+        return None
 
 
 def unmount_Image(mount_point):
@@ -120,6 +120,9 @@ def get_vob_files(mount_point, split=False):
 def transcode_vobs(iso_path, output_directory, split, force_concat):
     logging.info(f"Transcoding VOB files from {iso_path}")
     mount_point = mount_Image(iso_path)
+    if mount_point is None:
+        logging.error(f"Failed to mount {iso_path}, continuing with next ISO.")
+        return
     vob_files = get_vob_files(mount_point, split)
 
     iso_basename = iso_path.stem.replace("_pm", "")
