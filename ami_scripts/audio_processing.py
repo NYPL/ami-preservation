@@ -8,8 +8,10 @@ import os
 import logging
 import bagit
 from pathlib import Path
+import pathlib
 from tqdm import tqdm
 import re
+import importlib
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -26,6 +28,9 @@ def get_args():
                         type=is_directory,
                         metavar='DEST_DIR',
                         required=True)
+    parser.add_argument("-m", "--model", default='medium', choices=['tiny', 'base', 'small', 'medium', 'large'], help='The Whisper model to use')
+    parser.add_argument("-f", "--format", default='vtt', choices=['vtt', 'srt', 'txt', 'json'], help='The subtitle output format to use')
+    parser.add_argument("-t", "--transcribe", action="store_true", help="Transcribe the audio of the MKV files to VTT format using the Whisper tool.")
     return parser.parse_args()
 
 
@@ -61,6 +66,33 @@ def transcode_files(source_directory, destination_directory):
             logging.info(f"Successfully transcoded {file} to {output_file}")
 
 
+def module_exists(module_name):
+    return importlib.util.find_spec(module_name) is not None
+
+
+def transcribe_directory(input_directory, model, output_format):
+    media_extensions = {'.flac'}
+
+    input_dir_path = pathlib.Path(input_directory)
+
+    if module_exists("whisper"):
+        import whisper
+    else:
+        print("Error: The module 'whisper' is not installed. Please install it with 'pip3 install -U openai-whisper'")
+        return
+
+    model = whisper.load_model(model)
+
+    for file in input_dir_path.rglob('*'):
+        if file.suffix in media_extensions and 'em' in file.stem:
+            print(f"Processing {file}")
+            transcription_response = model.transcribe(str(file), verbose=True)
+                
+            output_filename = file.with_suffix("." + output_format)
+            output_writer = whisper.utils.get_writer(output_format, str(file.parent))
+            output_writer(transcription_response, file.stem)
+
+
 def organize_files(source_directory, destination_directory):
     for file in skip_hidden_files(destination_directory.glob("*pm.flac")):
         id_folder = destination_directory / file.stem.split("_")[1]
@@ -91,6 +123,12 @@ def organize_files(source_directory, destination_directory):
             preservation_masters_dir = id_folder / "PreservationMasters"
             preservation_masters_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file, preservation_masters_dir)
+    
+    for file in skip_hidden_files(destination_directory.glob("**/*.vtt")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        edit_masters_dir = id_folder / "EditMasters"
+        edit_masters_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(file, edit_masters_dir)
 
 
 def get_mediainfo(file_path, inform):
@@ -197,6 +235,9 @@ def main():
     args = get_args()
     source_directory = args.source
     destination_directory = args.destination
+    model = args.model
+    output_format = args.format
+    transcribe = args.transcribe
 
     # Create a new directory inside the destination_directory
     new_destination_directory = destination_directory / source_directory.name
@@ -204,12 +245,15 @@ def main():
     
     transcode_files(source_directory, new_destination_directory)
     organize_files(source_directory, new_destination_directory)
+    if transcribe:
+        transcribe_directory(new_destination_directory, model, output_format)
     update_flac_info(new_destination_directory)
     
     create_bag(new_destination_directory)
 
     check_json_exists(new_destination_directory)
     check_pm_em_pairs(new_destination_directory)
+
 
 if __name__ == '__main__':
     main()
