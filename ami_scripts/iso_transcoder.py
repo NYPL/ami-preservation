@@ -189,7 +189,7 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
         if split:
             # Transcode each VOB file separately
             for vob_file in vob_files:  # vob_files is a list of file paths (strings)
-                output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4"
+                output_file = output_directory / f"{iso_basename}f01r{str(disc_count).zfill(2)}_sc.mp4"
                 logging.info(f"Transcoding VOB file {vob_file} to {output_file}")
                 channel_layout = get_channel_layout(vob_file)
                 resolution = get_resolution(tmp_vob_file.name)
@@ -240,7 +240,7 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                             mkvmerge_used = True
                             continue
 
-                    output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4" if len(vob_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
+                    output_file = output_directory / f"{iso_basename}f01r{str(disc_count).zfill(2)}_sc.mp4" if len(vob_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
                     channel_layout = get_channel_layout(tmp_vob_file.name)
                     resolution = get_resolution(tmp_vob_file.name)
 

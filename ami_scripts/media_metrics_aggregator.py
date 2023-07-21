@@ -51,7 +51,8 @@ def analyze_csv(file_path, output_path):
         averages['technical.fileSize.measure'] /= format_counts[format_type]['technical.fileSize.measure']
 
         duration = averages['technical.durationMilli.measure']
-        file_size = averages['technical.fileSize.measure']
+        file_size_base_1024 = averages['technical.fileSize.measure']
+        file_size_base_1000 = averages['technical.fileSize.measure']
 
         # Convert duration to HH:MM:SS format
         hours = duration // 3600000
@@ -60,19 +61,24 @@ def analyze_csv(file_path, output_path):
         milliseconds = duration % 1000
         duration_str = "{:0>2}:{:0>2}:{:0>2}.{:0>3}".format(int(hours), int(minutes), int(seconds), int(milliseconds))
 
-        # Convert file size to human readable format
-        suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+        # Convert file size to human readable format (base 1024)
+        suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
         i = 0
-        while file_size >= 1024 and i < len(suffixes)-1:
-            file_size /= 1024.
+        while file_size_base_1024 >= 1024 and i < len(suffixes)-1:
+            file_size_base_1024 /= 1024.
             i += 1
-        file_size_str = f"{file_size:.2f} {suffixes[i]}"
+        file_size_str_base_1024 = f"{file_size_base_1024:.2f} {suffixes[i]}"
+
+        # Convert file size to human readable format (base 1000)
+        # Convert bytes to GB directly and round to 1 decimal place
+        file_size_base_1000 /= (1000.**3)
+        file_size_str_base_1000 = f"{file_size_base_1000:.1f} GB"
 
         # Add data to output_data
-        output_data.append([format_type, duration_str, file_size_str])
+        output_data.append([format_type, duration_str, file_size_str_base_1024, file_size_str_base_1000])
 
     # Create a DataFrame from output_data and write it to a CSV file
-    output_df = pd.DataFrame(output_data, columns=['Format', 'Average Duration', 'Average File Size'])
+    output_df = pd.DataFrame(output_data, columns=['Format', 'Average Duration', 'Average File Size (Base 1024)', 'Average File Size (Base 1000)'])
     output_df.to_csv(output_path, index=False)
 
 
