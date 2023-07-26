@@ -8,10 +8,12 @@ from hurry.filesize import size
 import datetime
 import numpy as np
 
+
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', None)
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='Generate Production Stats & Cool Visualizations from AMIDB MER file')
@@ -21,6 +23,7 @@ def get_args():
                         help='organize stats and visualizations by fiscal year instead of calendar year')
     args = parser.parse_args()
     return args
+
 
 def get_fiscal_year(date):
     year = date.year
@@ -48,6 +51,7 @@ def process_data(args):
 
     return df
 
+
 # Function to calculate and print summary statistics
 def display_summary_stats(df, groupby_column):
     summary_stats = df.loc[df['asset.fileRole'] == 'pm'].groupby(groupby_column).agg({
@@ -66,6 +70,36 @@ def display_summary_stats(df, groupby_column):
     )
 
     print(summary_stats)
+
+
+def plot_total_digitization_output(df, year_type):
+    # Calculate the monthly digitization output
+    total_output = df.loc[df['asset.fileRole'] == 'pm'].groupby([year_type, 'month']).agg({
+        'bibliographic.primaryID': 'nunique'
+    }).reset_index()
+
+    # Adjust x-axis labels and data based on the year_type
+    if year_type == 'fiscal_year':
+        total_output['month'] = (total_output['month'] + 5) % 12 + 1
+        x_labels = [datetime.date(1900, m, 1).strftime('%b') for m in range(7, 13)] + [datetime.date(1900, m, 1).strftime('%b') for m in range(1, 7)]
+    else:
+        x_labels = [datetime.date(1900, m, 1).strftime('%b') for m in range(1, 13)]
+
+    # Create the line chart with a larger size
+    plt.figure(figsize=(15, 8))
+    sns.lineplot(data=total_output, x='month', y='bibliographic.primaryID', marker='o', linewidth=2)
+
+    # Set title and labels
+    plt.title('Total Monthly Digitization Output')
+    plt.xlabel('Month')
+    plt.ylabel('Number of Objects Transferred')
+
+    # Customize the x-axis ticks
+    plt.xticks(range(1, 13), x_labels)
+
+    # Show the chart
+    plt.show()
+
 
 def display_monthly_output_by_operator(df, year_type):
     # Calculate the monthly digitization output by operator
@@ -86,8 +120,6 @@ def display_monthly_output_by_operator(df, year_type):
 
     print('\nMonthly Digitization Output by Operator:\n')
     print(output_with_totals)
-
-
 
 
 def plot_digitization_output_by_operator(df, year_type):
@@ -128,7 +160,6 @@ def plot_digitization_output_by_operator(df, year_type):
 
     # Show the chart
     plt.show()
-
 
 
 def autopct_generator(limit):
@@ -203,7 +234,9 @@ def plot_object_format_counts(df, year_type, top_n=20):
     plt.ylabel('Count')
     plt.xticks(rotation=90)
     plt.subplots_adjust(bottom=0.3) 
-    
+    plt.show()
+
+
 def display_pivot_table(df, year_type):
     # Drop duplicates based on the unique identifier
     if year_type == 'calendar_year':
@@ -214,8 +247,12 @@ def display_pivot_table(df, year_type):
     # Create a pivot table for objects transferred by media type and year_type (calendar or fiscal year)
     pivot_table = pd.pivot_table(df, index='media_type', columns=year_type, values='bibliographic.primaryID', aggfunc='nunique')
     pivot_table = pivot_table.fillna(0).astype(int)  # Fill NaN with 0 and convert to integers
-    print(f'\nObjects Transferred by Media Type and {year_type.capitalize()}:\n')
+
+    print_title = ' '.join([word.capitalize() for word in year_type.split('_')])  # This will capitalize the first letter of each word and join them with a space
+    
+    print(f'\nObjects Transferred by Media Type and {print_title}:\n')
     print(pivot_table)
+
 
 def compare_monthly_object_counts(df):
     # Filter DataFrame to include only rows with asset.fileRole == 'pm'
@@ -242,9 +279,6 @@ def compare_monthly_object_counts(df):
     print(fiscal_year_pivot)
 
 
-
-
-
 def main():
     args = get_args()
     df = process_data(args)
@@ -253,9 +287,8 @@ def main():
 
     print(f'\nSummary Statistics by {year_type.capitalize()}:\n')
     display_summary_stats(df, year_type)
-    
-    media_type = []
 
+    media_type = []
     for row in df['source.object.type']:
         if row in ['video cassette analog', 'video cassette digital', 'video optical disc', 'video reel']:
             media_type.append('video')
@@ -265,18 +298,16 @@ def main():
             media_type.append('audio')
     df['media_type'] = media_type
 
-    # Display and plot the monthly digitization output by operator
+
+    # Display and plot the monthly digitization output
     display_monthly_output_by_operator(df, year_type)
+    plot_total_digitization_output(df, year_type)
     plot_digitization_output_by_operator(df, year_type)  
 
     plot_objects_by_division_code(df, year_type)
-
     plot_object_format_counts(df, year_type)
-
     display_pivot_table(df, year_type)
-
     compare_monthly_object_counts(df)
-
 
     
 if __name__ == '__main__':
