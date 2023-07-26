@@ -72,9 +72,31 @@ def display_summary_stats(df, groupby_column):
     print(summary_stats)
 
 
-def plot_total_digitization_output(df, year_type):
+def plot_annual_digitization_output(df, year_type):
+    # Calculate the annual digitization output
+    total_output = df.loc[df['asset.fileRole'] == 'pm'].groupby(year_type).agg({
+        'bibliographic.primaryID': 'nunique'
+    }).reset_index()
+
+    # Create the line chart with a larger size
+    plt.figure(figsize=(15, 8))
+    sns.lineplot(data=total_output, x=year_type, y='bibliographic.primaryID', marker='o', linewidth=2)
+
+    # Set title and labels
+    plt.title('Total Annual Digitization Output')
+    plt.xlabel('Year')
+    plt.ylabel('Number of Objects Transferred')
+
+    # Show the chart
+    plt.show()
+
+
+def plot_monthly_digitization_output(df, year_type):
+    # Choose the appropriate column for the year
+    year_column = 'fiscal_year' if year_type == 'fiscal_year' else 'calendar_year'
+
     # Calculate the monthly digitization output
-    total_output = df.loc[df['asset.fileRole'] == 'pm'].groupby([year_type, 'month']).agg({
+    total_output = df.loc[df['asset.fileRole'] == 'pm'].groupby([year_column, 'month']).agg({
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
@@ -90,7 +112,7 @@ def plot_total_digitization_output(df, year_type):
     sns.lineplot(data=total_output, x='month', y='bibliographic.primaryID', marker='o', linewidth=2)
 
     # Set title and labels
-    plt.title('Total Monthly Digitization Output')
+    plt.title('Monthly Digitization Output')
     plt.xlabel('Month')
     plt.ylabel('Number of Objects Transferred')
 
@@ -298,10 +320,16 @@ def main():
             media_type.append('audio')
     df['media_type'] = media_type
 
+    # Debugging code
+    print(f"Unique {year_type}: ", df[year_type].nunique())
+    print(f"Year data range: ", df[year_type].min(), "-", df[year_type].max())
 
     # Display and plot the monthly digitization output
     display_monthly_output_by_operator(df, year_type)
-    plot_total_digitization_output(df, year_type)
+    if df[year_type].nunique() > 1:
+        plot_annual_digitization_output(df, year_type)
+    else:
+        plot_monthly_digitization_output(df, year_type)
     plot_digitization_output_by_operator(df, year_type)  
 
     plot_objects_by_division_code(df, year_type)
@@ -312,3 +340,4 @@ def main():
     
 if __name__ == '__main__':
     main()
+
