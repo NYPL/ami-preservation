@@ -64,6 +64,7 @@ def get_ajv_command(data, file):
         'audio grooved disc': 'digitized_audiogrooveddisc.json',
         'audio grooved cylinder': 'digitized_audiogroovedcylinder.json',
         'audio magnetic wire': 'digitized_audiomagneticwire.json',
+        'data optical disc': 'digitized_dataopticaldisc.json',
     }
 
     film_formats = ('8mm film, silent', '8mm film, optical sound',
@@ -153,12 +154,20 @@ def main():
         'source.physicalDescription.properties.stockProductID': object,
         'digitizer.organization.address.postalCode': object,
         'source.physicalDescription.edgeCode': object,
-        'bibliographic.barcode': object,
-        'bibliographic.cmsCollectionID': object,
-        'bibliographic.cmsItemID': object,
         'bibliographic.primaryID': object,
+        'bibliographic.barcode': object,
+        'bibliographic.divisionCode': object,
+        'bibliographic.vernacularDivisionCode': object,
+        'bibliographic.projectCode': object,
+        'bibliographic.cmsCollectionID': object,
+        'bibliographic.title': object,
+        'bibliographic.date': object,
+        'bibliographic.cmsItemID': object,
+        'bibliographic.classmark': object,
         'bibliographic.formerClassmark': object,
-        'bibliographic.classmark': object
+        'bibliographic.nonCMSItemID': object,
+        'bibliographic.catalogBNumber': object,
+        'bibliographic.mssID': object
     })
 
     # Drop empty columns and the 'asset.fileExt' column

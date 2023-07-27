@@ -8,6 +8,7 @@ import shutil
 import logging
 import tempfile
 import sys
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -41,26 +42,44 @@ def mount_Image(ISO_Path):
     try:
         subprocess.run(mount_command, check=True)
         logging.info(f"Mounted ISO image {ISO_Path} at {mount_point}")
+        time.sleep(3)  # wait for 3 seconds
         return mount_point
     except subprocess.CalledProcessError:
         logging.error("Mounting failed due to subprocess error. Try running script in sudo mode")
-        quit()
+        return None
     except Exception as e:
         logging.error(f"Mounting failed. Error: {e}")
-        quit()
+        return None
 
 
 def unmount_Image(mount_point):
     logging.info(f"Attempting to unmount {mount_point}")
     unmount_command = ["hdiutil", "detach", str(mount_point)]
-    try:
-        subprocess.run(unmount_command, check=True)
-        shutil.rmtree(str(mount_point.parent))
-        logging.info(f"Unmounted and removed mount point: {mount_point}")
-    except subprocess.CalledProcessError:
-        logging.error(f"Unmounting failed due to subprocess error for {mount_point}")
-    except Exception as e:
-        logging.error(f"Unmounting failed for {mount_point}. Error: {e}")
+
+    for attempt in range(5):  # try up to 5 times
+        try:
+            subprocess.run(unmount_command, check=True)
+            # Allow some time for the unmount command to fully complete
+            time.sleep(3)
+
+            # Try to remove the mount point directory, with retry logic
+            for rm_attempt in range(5):
+                try:
+                    shutil.rmtree(str(mount_point.parent))
+                    logging.info(f"Unmounted and removed mount point: {mount_point}")
+                    return True
+                except OSError:
+                    logging.error(f"Failed to remove mount point: {mount_point}. Retrying in 3 seconds...")
+                    time.sleep(3)
+
+            logging.error(f"Failed to remove mount point: {mount_point} after 5 attempts")
+            return False
+        except subprocess.CalledProcessError:
+            logging.error(f"Unmounting failed due to subprocess error for {mount_point}. Retrying in 3 seconds...")
+            time.sleep(3)  # wait for 3 seconds before retrying
+
+    logging.error(f"Failed to unmount {mount_point} after 5 attempts")
+    return False
 
 
 def get_vob_files(mount_point, split=False):
@@ -101,6 +120,9 @@ def get_vob_files(mount_point, split=False):
 def transcode_vobs(iso_path, output_directory, split, force_concat):
     logging.info(f"Transcoding VOB files from {iso_path}")
     mount_point = mount_Image(iso_path)
+    if mount_point is None:
+        logging.error(f"Failed to mount {iso_path}, continuing with next ISO.")
+        return
     vob_files = get_vob_files(mount_point, split)
 
     iso_basename = iso_path.stem.replace("_pm", "")
@@ -167,7 +189,7 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
         if split:
             # Transcode each VOB file separately
             for vob_file in vob_files:  # vob_files is a list of file paths (strings)
-                output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4"
+                output_file = output_directory / f"{iso_basename}f01r{str(disc_count).zfill(2)}_sc.mp4"
                 logging.info(f"Transcoding VOB file {vob_file} to {output_file}")
                 channel_layout = get_channel_layout(vob_file)
                 resolution = get_resolution(tmp_vob_file.name)
@@ -218,7 +240,7 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                             mkvmerge_used = True
                             continue
 
-                    output_file = output_directory / f"{iso_basename}r{str(disc_count).zfill(2)}_sc.mp4" if len(vob_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
+                    output_file = output_directory / f"{iso_basename}f01r{str(disc_count).zfill(2)}_sc.mp4" if len(vob_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
                     channel_layout = get_channel_layout(tmp_vob_file.name)
                     resolution = get_resolution(tmp_vob_file.name)
 
@@ -248,7 +270,10 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                     break  # break the while loop when everything is successful
 
     logging.info(f"Unmounting {mount_point}")
-    unmount_Image(mount_point)
+    if not unmount_Image(mount_point):
+        logging.error(f"Skipping {iso_path} due to unmounting error in previous ISO.")
+        
+        return
 
 
 def get_channel_layout(vob_file):
