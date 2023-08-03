@@ -123,6 +123,12 @@ def organize_files(source_directory, destination_directory):
             preservation_masters_dir = id_folder / "PreservationMasters"
             preservation_masters_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(file, preservation_masters_dir)
+
+    for file in skip_hidden_files(source_directory.glob("**/*.iso")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        preservation_masters_dir = id_folder / "PreservationMasters"
+        preservation_masters_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file, preservation_masters_dir)
     
     for file in skip_hidden_files(destination_directory.glob("**/*.vtt")):
         id_folder = destination_directory / file.stem.split("_")[1]
@@ -149,7 +155,7 @@ def update_flac_info(destination_directory):
         json_file = next(flac_file.parent.glob(f"{flac_file.stem}.json"), None)
 
         if json_file is not None:
-            with open(json_file) as f:
+            with open(json_file, encoding='utf-8-sig') as f:
                 data = json.load(f)
 
             date_output = get_mediainfo(flac_file, "General;%File_Modified_Date%")
@@ -215,7 +221,7 @@ def check_pm_em_pairs(destination_directory):
     missing_em_files = [pm for pm in pm_stems if pm.replace("_pm", "_em") not in em_stems]
 
     if missing_pm_files or missing_em_files:
-        print("Warning: Some PM or EM files are missing:")
+        print("Warning: Some PM or EM flac files are missing:")
         if missing_pm_files:
             print("Missing PM files:")
             for missing_pm in missing_pm_files:
@@ -226,10 +232,27 @@ def check_pm_em_pairs(destination_directory):
                 print(f"  EM: {missing_em.replace('_pm', '_em')}.flac")
         print()
     else:
-        print("All PM and EM file pairs match.\n")
+        print("All PM and EM flac file pairs match.\n")
+
+
+def check_iso_migrations(destination_directory):
+    iso_migrations = []
+    
+    for id_folder in destination_directory.glob("*"):
+        if id_folder.is_dir():
+            iso_files = list(id_folder.glob("**/*.iso"))
+            json_files = list(id_folder.glob("**/*pm.json"))
+            em_dirs = list(id_folder.glob("**/EditMasters"))
+
+            if iso_files and json_files and not em_dirs:
+                iso_migrations.append(id_folder)
+    
+    return iso_migrations
+
 
 def skip_hidden_files(files):
     return [file for file in files if not file.name.startswith("._")]
+
 
 def main():
     args = get_args()
@@ -253,6 +276,13 @@ def main():
 
     check_json_exists(new_destination_directory)
     check_pm_em_pairs(new_destination_directory)
+
+    iso_migrations = check_iso_migrations(new_destination_directory)
+    if iso_migrations:
+        print("The following directories appear to be ISO migrations without Edit Master folders:")
+        for iso_migration in iso_migrations:
+            print(f"  {iso_migration}")
+        print()
 
 
 if __name__ == '__main__':
