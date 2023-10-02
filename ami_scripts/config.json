@@ -1,30 +1,30 @@
 {
-    "replacements": [
-      {
-        "find": ";",
-        "replace": "-"
-      },
-      {
-        "find": "\\\\",
-        "replace": "-"
-      },
-      {
-        "find": "\\n",
-        "replace": "-"
-      },
-      {
-        "find": "\\r",
-        "replace": "-"
-      },
-      {
-        "find": "\\t",
-        "replace": "-"
-      },
-      {
-        "find": "\"",
-        "replace": "''"
-      }
-    ],
+  "replacements": [
+    {
+      "find": ";",
+      "replace": "-"
+    },
+    {
+      "find": "\\\\",
+      "replace": "-"
+    },
+    {
+      "find": "\\n",
+      "replace": "-"
+    },
+    {
+      "find": "\\r",
+      "replace": "-"
+    },
+    {
+      "find": "\\t",
+      "replace": "-"
+    },
+    {
+      "find": "\"",
+      "replace": "''"
+    }
+  ],
   "format_fixes": {
     "video cassette analog": [
       "Betacam",
@@ -97,5 +97,51 @@
       "VHS/PCM",
       "Hi8/PCM"
     ]
+  },
+  "digitizers": {
+    "Media Preserve": {
+      "organization": {
+        "address": {
+          "city": "Cranberry Township",
+          "postalCode": 16066,
+          "state": "PA",
+          "street1": "111 Thomsom Park Drive"
+        },
+        "name": "Preservation Technologies, L.P."
+      }
+    },
+    "Colorlab": {
+      "organization": {
+        "address": {
+          "city": "Rockville",
+          "postalCode": 20852,
+          "state": "MD",
+          "street1": "5708 Arundel Ave"
+        },
+        "name": "Colorlab"
+      }
+    },
+    "NYPL": {
+      "organization": {
+        "address": {
+          "city": "New York",
+          "postalCode": "10023",
+          "state": "NY",
+          "street1": "40 Lincoln Center Plaza"
+        },
+        "name": "New York Public Library"
+      }
+    },
+    "Memnon": {
+      "organization": {
+        "address": {
+          "city": "Bloomington",
+          "postalCode": 47408,
+          "state": "IN",
+          "street1": "2719 E 10th St"
+        },
+        "name": "Memnon Archiving Services"
+      }
+    }
   }
 }

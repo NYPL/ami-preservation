@@ -24,9 +24,11 @@ def get_args():
     parser = argparse.ArgumentParser(description="Create NYPL JSON Files from SPEC Export and user-supplied directory of media files")
     parser.add_argument('-c', '--config', required=True, help='Path to config file')
     parser.add_argument('-s', '--source', help='path to SPEC CSV Export', required=False)
-    parser.add_argument('-d', '--directory', help='path to directory of media files', required=False)
+    parser.add_argument('-m', '--media', help='path to directory of media files', required=False)  # Modified here
+    parser.add_argument('-d', '--digitizer', choices=['Media Preserve', 'NYPL', 'Memnon'], required=False, help='Name of the digitizer')
     parser.add_argument('-o', '--output', help='path to destination for JSON files', required=True)
     return parser.parse_args()
+
 
 
 def load_config(config_file):
@@ -55,15 +57,17 @@ valid_extensions = {".mov", ".wav", ".flac", ".mkv", ".dv", ".mp4"}
 
 def get_media_files(args):
     media_list = []
-    if args.directory:
+    if args.media:
         try:
-            media_dir = os.scandir(args.directory)
+            media_dir = os.scandir(args.media)
             for entry in media_dir:
                 if entry.is_file() and entry.name.lower().endswith(tuple(valid_extensions)):
                     media_list.append(entry.path)
             media_list.sort()
         except OSError as e:
             logger.error(f"Error getting media files: {e}")
+    if media_list:
+        logger.info(f"Found these files: {', '.join(media_list)}")
     return media_list
 
 
@@ -155,6 +159,8 @@ def create_new_json(args, media_data, config):
             'filesize': {'measure': media_data['file_size'], 'unit': 'B'}
         }
     }
+    if args.digitizer:
+        nested_json['digitizer'] = config['digitizers'][args.digitizer]
 
     # Remove any keys in the 'technical' dictionary that have a value of None
     nested_json['technical'] = {k: v for k, v in nested_json['technical'].items() if v is not None}
@@ -174,7 +180,10 @@ def process_media_files(args, data_dict, media_list, config):
             cms_id = media_data['cms_id']
             if cms_id in data_dict:
                 media_data['bibliographic'] = data_dict[cms_id]
-            create_new_json(args, media_data, config)
+                logger.info(f"Now making JSON for {media_data['filename']} file")
+                create_new_json(args, media_data, config)
+            else:
+                logger.warning(f"{media_data['filename']} File not found in SPEC CSV Export (data dict)")
 
 
 def main():
