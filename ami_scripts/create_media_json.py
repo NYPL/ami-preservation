@@ -52,7 +52,7 @@ def load_csv(args):
             logger.error(f"Error loading CSV file: {e}")
     return data_dict
 
-valid_extensions = {".mov", ".wav", ".flac", ".mkv", ".dv", ".mp4"}
+valid_extensions = {".mov", ".wav", ".flac", ".mkv", ".dv", ".mp4", ".iso"}
 
 
 def get_media_files(args):
