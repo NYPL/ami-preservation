@@ -37,7 +37,7 @@ def make_object_dirs(source_directory, file_list):
         new_file_path = source_directory / cms_id / file_path
         new_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if old_file_path.suffix in ('.mkv', '.json', '.mp4', '.dv', '.flac', '.iso', '.cue', '.mov', '.jpg'):
+        if old_file_path.suffix in ('.mkv', '.json', '.mp4', '.dv', '.flac', '.iso', '.cue', '.mov', '.jpg', '.tif'):
             shutil.move(str(old_file_path), str(new_file_path))
         else:
             tags.append(old_file_path)
