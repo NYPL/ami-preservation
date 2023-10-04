@@ -27,10 +27,11 @@ def move_files_to_subfolders(source_directory):
     """Move files to their respective subfolders based on their file extensions."""
 
     file_mappings = [
-        (('.mkv', 'pm.json', '.dv', '.framemd5', '.gz', 'graphs.jpeg', 'timecodes.txt', 'pm.wav', 'pm.flac', '.iso', 'pm.cue'), 'PreservationMasters'),
+        (('.mkv', 'pm.json', '.dv', '.framemd5', '.gz', 'graphs.jpeg', 'timecodes.txt', 'pm.wav', 'pm.flac', '.iso', 'pm.cue', '.scc'), 'PreservationMasters'),
         (('.mp4', 'sc.json'), 'ServiceCopies'),
         (('.mov', 'mz.json'), 'Mezzanines'),
         (('em.wav', 'em.json', 'em.flac'), 'EditMasters'),
+        (('.jpg', '.tif'), 'Images'),
     ]
 
     created_folders = {}
@@ -76,7 +77,6 @@ def clean_up(source_directory, file_mappings):
                 shutil.rmtree(directory)
             else:
                 print(f'Skipping directory with matching files: {directory.name}')
-
 
 
 def main():
