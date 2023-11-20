@@ -37,11 +37,12 @@ def make_object_dirs(source_directory, file_list):
         new_file_path = source_directory / cms_id / file_path
         new_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if old_file_path.suffix in ('.mkv', '.json', '.mp4', '.dv', '.flac', '.iso', '.cue', '.mov'):
+        if old_file_path.suffix in ('.mkv', '.json', '.mp4', '.dv', '.flac', '.iso', '.cue', '.mov', '.jpg', '.tif'):
             shutil.move(str(old_file_path), str(new_file_path))
+            print(f'Moving file: {old_file_path}')
         else:
+            print(f'Adding to tags: {old_file_path}')
             tags.append(old_file_path)
-        print(f'Moving file: {cms_id}')
 
     return cms_ids, unmoved, tags
 
@@ -49,12 +50,15 @@ def make_object_dirs(source_directory, file_list):
 def make_object_bags(source_directory, cms_objects):
     for cms_id in cms_objects:
         bag_path = source_directory / cms_id
+        print(f'Starting bagging for: {cms_id}')
         bagit.make_bag(str(bag_path), checksums=['md5'])
-        print(f'Bagging object: {cms_id}')
+        print(f'Finished bagging object: {cms_id}')
+
 
 
 def move_tag_files(source_directory, tags):
     for tag_file in tags:
+        print(f'Processing tag file: {tag_file}')
         cms_id = re.search(r'_(\d{6})_', str(tag_file)).group(1)
         object_bag = source_directory / cms_id
 
@@ -68,7 +72,7 @@ def move_tag_files(source_directory, tags):
             shutil.move(str(tag_file), str(tag_dir))
 
             bag = bagit.Bag(str(object_bag))
-            bag.save(manifests=True, tagmanifests=True)
+            bag.save(manifests=True)
 
 
 def clean_up(source_directory):

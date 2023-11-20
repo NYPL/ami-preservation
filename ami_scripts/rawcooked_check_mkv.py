@@ -24,6 +24,8 @@ def traverse_directory(directory):
 
 def process_files(files, percentage):
     number_to_process = round(len(files) * (percentage/100))
+    if number_to_process == 0:
+        number_to_process = 1
     print(f"Processing {number_to_process} files ({percentage}% of {len(files)}) with rawcooked...")
     files_to_process = random.sample(files, number_to_process)
     success_count = 0
