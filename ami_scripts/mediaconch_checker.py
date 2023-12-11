@@ -241,7 +241,7 @@ def prepare_mc_commands(eligible, policies_dir):
 def run_command(command):
     """Run a command in subprocess"""
     try:
-        process = subprocess.run(command, check=True, timeout=600, text=True, capture_output=True)
+        process = subprocess.run(command, check=True, timeout=300, text=True, capture_output=True)
         output = process.stdout
     except subprocess.CalledProcessError as e:
         output = str(e)
