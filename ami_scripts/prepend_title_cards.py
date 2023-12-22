@@ -69,12 +69,38 @@ def process_video(video_path, asset_flag):
     video_codec = video_stream['codec_name']
     frame_rate = video_stream['avg_frame_rate']
     interlaced = video_stream['field_order'] in ['tb', 'bt']
-    display_aspect_ratio = video_stream['display_aspect_ratio']
 
+    # Check for display aspect ratio and assign it if present
+    display_aspect_ratio = video_stream.get('display_aspect_ratio', None)
+  
     # Prepare output file path
     base_name, extension = os.path.splitext(video_path)
     output_file = base_name + '_with_title' + extension
 
+        # Check if the video needs transcoding
+    if width == 720 and height == 486 and display_aspect_ratio is None:
+        # Prepare transcoded file path
+        transcoded_video_path = f"{base_name}_transcoded.mp4"
+        
+        # Transcoding command
+        transcode_command = [
+            "ffmpeg",
+            "-i", video_path,
+            "-map", "0:v", "-map", "0:a",
+            "-c:v", "libx264",
+            "-movflags", "faststart",
+            "-pix_fmt", "yuv420p",
+            "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000",
+            "-vf", "setdar=dar=4/3",
+            "-c:a", "aac", "-b:a", "320000", "-ar", "48000", transcoded_video_path
+        ]
+
+        # Execute transcoding
+        subprocess.check_output(transcode_command)
+
+        # Use the transcoded video for further processing
+        video_path = transcoded_video_path
+    
     image_video_files = []
 
     for idx, image in enumerate(title_cards):
