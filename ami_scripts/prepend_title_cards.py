@@ -303,14 +303,17 @@ def process_audio(audio_path, asset_flag):
     ffmpeg_cmd = ['ffmpeg', '-y']
 
     # Add inputs for title card images
-    for image in title_cards:
+    for idx, image in enumerate(title_cards):
         ffmpeg_cmd.extend(['-loop', '1', '-t', '5', '-i', image])
 
     # Add the main audio input
     ffmpeg_cmd.extend(['-i', audio_path])
 
-    # Add silent audio input
-    ffmpeg_cmd.extend(['-f', 'lavfi', '-t', '10', '-i', 'anullsrc'])
+    # Calculate total duration for silent audio based on number of title cards
+    silent_audio_duration = len(title_cards) * 5
+
+    # Add silent audio input with calculated duration
+    ffmpeg_cmd.extend(['-f', 'lavfi', '-t', str(silent_audio_duration), '-i', 'anullsrc'])
 
     # Construct the filter_complex command
     filter_complex_parts = []
@@ -323,6 +326,7 @@ def process_audio(audio_path, asset_flag):
     pad_x = int((1280 - new_width) / 2)
     pad_y = 0  # No padding on top and bottom as the height is already 720
 
+    # Logic for handling single and multiple title cards
     if len(title_cards) == 1:
         # For a single title card
         filter_complex_parts.append(
@@ -336,25 +340,21 @@ def process_audio(audio_path, asset_flag):
                 f"[{idx}:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,"
                 f"fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v{idx}];"
             )
-        # Concatenate title card videos
         concat_v = "[" + "][".join(f"v{idx}" for idx in range(len(title_cards))) + "]"
         filter_complex_parts.append(
             f"{concat_v}concat=n={len(title_cards)}:v=1:a=0,format=yuv420p[v];"
         )
 
-
     # Audio visualization
+    audio_idx = len(title_cards)  # The index of the main audio input
     filter_complex_parts.append(
-        "[2:a]showwaves=s=1280x720:mode=line,format=yuv420p[wave];"
+        f"[{audio_idx}:a]showwaves=s=1280x720:mode=line:colors=blue,format=yuv420p[wave];"
     )
 
     # Apply text and timecode to the audio visualization, if enabled
     if asset_flag:
         title_cards_duration = len(title_cards) * 5  # Assuming each title card is 5 seconds
-
-        # Extract asset ID
-        match = re.search(r'_(\d{6})_', audio_path)
-        asset_id = match.group(1) if match else ''
+        asset_id = re.search(r'_(\d{6})_', audio_path).group(1) if re.search(r'_(\d{6})_', audio_path) else ''
 
         filter_complex_parts.append(
             f"[v][wave]concat=n=2:v=1:a=0,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:fontsize=25:text='{asset_id}':x=10:y=10:fontcolor=white:enable='gte(t,{title_cards_duration})',"
@@ -365,15 +365,13 @@ def process_audio(audio_path, asset_flag):
             "[v][wave]concat=n=2:v=1:a=0[vfinal];"
         )
 
-    # Audio concatenation (silent audio with the main audio)
+    # Audio concatenation
+    silent_audio_idx = audio_idx + 1  # The index of the silent audio input
     filter_complex_parts.append(
-        "[3:a][2:a]concat=n=2:v=0:a=1[audiofinal]"
+        f"[{silent_audio_idx}:a][{audio_idx}:a]concat=n=2:v=0:a=1[audiofinal]"
     )
 
-    # Add the filter_complex command to the FFmpeg command
     ffmpeg_cmd.extend(['-filter_complex', ''.join(filter_complex_parts)])
-
-    # Add output mapping and file
     ffmpeg_cmd.extend(['-map', '[vfinal]', '-map', '[audiofinal]', output_file])
 
     # Execute the ffmpeg command
