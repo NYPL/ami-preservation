@@ -286,6 +286,7 @@ def process_video(video_path, asset_flag):
 
     os.remove(concat_list)
     
+
 def process_audio(audio_path, asset_flag):
     # Extract prefix from filename
     filename = os.path.basename(audio_path)
@@ -322,17 +323,25 @@ def process_audio(audio_path, asset_flag):
     pad_x = int((1280 - new_width) / 2)
     pad_y = 0  # No padding on top and bottom as the height is already 720
 
-    # Add filters for title card images
-    for idx, _ in enumerate(title_cards):
+    if len(title_cards) == 1:
+        # For a single title card
         filter_complex_parts.append(
-            f"[{idx}:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v{idx}];"
+            f"[0:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,"
+            f"fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v];"
+        )
+    else:
+        # For multiple title cards
+        for idx, _ in enumerate(title_cards):
+            filter_complex_parts.append(
+                f"[{idx}:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,"
+                f"fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v{idx}];"
+            )
+        # Concatenate title card videos
+        concat_v = "[" + "][".join(f"v{idx}" for idx in range(len(title_cards))) + "]"
+        filter_complex_parts.append(
+            f"{concat_v}concat=n={len(title_cards)}:v=1:a=0,format=yuv420p[v];"
         )
 
-    # Concatenate title card videos
-    concat_v = "[" + "][".join(f"v{idx}" for idx in range(len(title_cards))) + "]"
-    filter_complex_parts.append(
-        f"{concat_v}concat=n={len(title_cards)}:v=1:a=0,format=yuv420p[v];"
-    )
 
     # Audio visualization
     filter_complex_parts.append(
@@ -368,6 +377,7 @@ def process_audio(audio_path, asset_flag):
     ffmpeg_cmd.extend(['-map', '[vfinal]', '-map', '[audiofinal]', output_file])
 
     # Execute the ffmpeg command
+    print(ffmpeg_cmd)
     returncode, _, stderr = run_ffmpeg_command(ffmpeg_cmd)
     if returncode != 0:
         print(f"Error processing audio: {stderr}")
