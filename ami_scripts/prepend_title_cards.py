@@ -62,6 +62,7 @@ def process_video(video_path, asset_flag):
     assert len(video_streams) > 0, "No video streams found in the input video file."
     video_stream = video_streams[0]
 
+
     audio_streams = [stream for stream in video_info['streams'] if stream['codec_type'] == 'audio']
 
     # Get the video specs
@@ -72,6 +73,9 @@ def process_video(video_path, asset_flag):
     frame_rate = video_stream['avg_frame_rate']
     interlaced = video_stream['field_order'] in ['tb', 'bt']
 
+    # Extract the encoder from the format tags
+    encoder = video_info['format']['tags'].get('encoder', 'Unknown')
+
     # Check for display aspect ratio and assign it if present
     display_aspect_ratio = video_stream.get('display_aspect_ratio', None)
   
@@ -79,7 +83,7 @@ def process_video(video_path, asset_flag):
     base_name, extension = os.path.splitext(video_path)
     output_file = base_name + '_with_title' + extension
 
-        # Check if the video needs transcoding
+    # Check if the video needs transcoding
     if width == 720 and height == 486 and display_aspect_ratio is None:
         # Prepare transcoded file path
         transcoded_video_path = f"{base_name}_transcoded.mp4"
@@ -96,7 +100,6 @@ def process_video(video_path, asset_flag):
             "-vf", "setdar=dar=4/3",
             "-c:a", "aac", "-b:a", "320000", "-ar", "48000", transcoded_video_path
         ]
-
         # Execute transcoding
         subprocess.check_output(transcode_command)
 
@@ -150,6 +153,13 @@ def process_video(video_path, asset_flag):
                     "setsar=1",
                     "setdar=3/2"
                 ])
+            elif video_stream.get('display_aspect_ratio') == '15:11':
+                # Handling for videos with 3:2 aspect ratio
+                filters.extend([
+                    f"scale={width}:{height}",
+                    "setsar=1",
+                    "setdar=15/11"
+                ])            
             else:
                 # For other 720x480 videos, scale as usual
                 filters.extend([
@@ -157,6 +167,19 @@ def process_video(video_path, asset_flag):
                     "setsar=1",
                     "setdar=4/3"
                 ])
+        elif width == 720 and height == 576 and video_stream.get('display_aspect_ratio') == '5:4':
+            # Check if the video is 5:4 PAL
+                filters.extend([
+                    f"scale={width}:{height}",
+                    "setsar=1",
+                    "setdar=5/4"
+                ])
+        elif width == 720 and height == 486 and video_stream.get('display_aspect_ratio') == '400:297':
+            # Check if the video is oddball Telestream DAR video
+            filters.extend([
+                f"scale={width}:{height}",
+                "setsar=10/11",
+            ])
         else:
             # For other resolutions, scale as usual
             filters.extend([
@@ -234,7 +257,7 @@ def process_video(video_path, asset_flag):
         # Finalize the filter_complex command
         alternative_concat_cmd.extend([
             '-filter_complex', ''.join(filter_complex_cmd) + f"concat=n={len(image_video_files) + 1}:v=1:a=1[outv][outa]",
-            '-map', '[outv]', '-map', '[outa]', '-c:v', 'libx264', '-c:a', 'aac', temp_output_path
+            '-map', '[outv]', '-map', '[outa]', '-fps_mode' , 'vfr', '-c:v', 'libx264', '-c:a', 'aac', temp_output_path
         ])
 
         # Run the alternative concatenation command
@@ -280,7 +303,7 @@ def process_video(video_path, asset_flag):
             additional_filters = ""
 
         ffmpeg_drawtext_cmd = [
-            'ffmpeg', '-y', '-i', temp_output_path, '-c:v', 'libx264', '-b:v', video_bitrate, '-bufsize', bufsize, '-maxrate', maxrate, '-vf',
+            'ffmpeg', '-y', '-i', temp_output_path, '-c:v', 'libx264', '-movflags', 'faststart', '-b:v', video_bitrate, '-bufsize', bufsize, '-maxrate', maxrate, '-vf',
             f"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:fontsize=25:text='{asset_id}':x=10:y=10:fontcolor=white:enable='gte(t,{title_cards_duration})'," +
             f"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:fontsize=20:text='%{{pts\\:hms\\: - {title_cards_duration}}}':box=1:boxcolor=black@0.5:boxborderw=5:x=(w-tw)/2:y=h-th-10:fontcolor=white:enable='gte(t,{title_cards_duration})'{additional_filters},format=yuv420p",
             '-c:a', 'copy', output_path
@@ -318,8 +341,8 @@ def process_audio(audio_path, asset_flag):
 
     temp_dir = None
 
-    # Transcode if necessary
-    if sample_fmt == "s16" and sample_rate == "48000":
+    # Transcode digital audiotape files if necessary
+    if sample_fmt == "s16" and (sample_rate == "48000" or sample_rate == "44100" or sample_rate == "44056"):
         temp_dir = tempfile.mkdtemp()
         base_name, _ = os.path.splitext(os.path.basename(audio_path))
         transcoded_audio_path = os.path.join(temp_dir, base_name + '.wav')
@@ -444,24 +467,47 @@ def main():
     parser.add_argument('-a', '--asset', action='store_true', help='Extract and add asset ID from the filename + timdecode.')
     args = parser.parse_args()
 
+    video_count = 0
+    audio_count = 0
+    error_count = 0
+    error_files = []
+
     if args.directory:
-        # Process each video and audio file in the directory
         for media_file in sorted(glob.glob(os.path.join(args.directory, '*'))):
-            if media_file.lower().endswith('.mp4'):
-                process_video(media_file, args.asset)
-            elif media_file.lower().endswith(('.wav', '.flac')):
-                process_audio(media_file, args.asset)
+            try:
+                if media_file.lower().endswith('.mp4'):
+                    process_video(media_file, args.asset)
+                    video_count += 1
+                elif media_file.lower().endswith(('.wav', '.flac')):
+                    process_audio(media_file, args.asset)
+                    audio_count += 1
+            except Exception as e:
+                print(f"Error processing {media_file}: {e}")
+                error_count += 1
+                error_files.append(media_file)
     elif args.file:
-        # Process a single file based on its extension
-        if args.file.lower().endswith('.mp4'):
-            process_video(args.file, args.asset)
-        elif args.file.lower().endswith(('.wav', '.flac')):
-            process_audio(args.file, args.asset)
-        else:
-            print("Error: Unsupported file format.")
+        try:
+            if args.file.lower().endswith('.mp4'):
+                process_video(args.file, args.asset)
+                video_count += 1
+            elif args.file.lower().endswith(('.wav', '.flac')):
+                process_audio(args.file, args.asset)
+                audio_count += 1
+            else:
+                print("Error: Unsupported file format.")
+        except Exception as e:
+            print(f"Error processing {args.file}: {e}")
+            error_count += 1
+            error_files.append(args.file)
     else:
         print("Error: No file or directory specified.")
         parser.print_help()
+
+    print(f"{video_count} video files processed, {audio_count} audio files processed")
+    if error_count > 0:
+        print(f"{error_count} files failed to process. The following files encountered errors:")
+        for file in error_files:
+            print(file)
 
 if __name__ == "__main__":
     main()
