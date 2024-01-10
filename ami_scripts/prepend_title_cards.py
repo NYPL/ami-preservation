@@ -6,6 +6,8 @@ import json
 import os
 import re
 import glob
+import tempfile
+import shutil
 
 
 def run_ffmpeg_command(command):
@@ -60,6 +62,7 @@ def process_video(video_path, asset_flag):
     assert len(video_streams) > 0, "No video streams found in the input video file."
     video_stream = video_streams[0]
 
+
     audio_streams = [stream for stream in video_info['streams'] if stream['codec_type'] == 'audio']
 
     # Get the video specs
@@ -70,6 +73,9 @@ def process_video(video_path, asset_flag):
     frame_rate = video_stream['avg_frame_rate']
     interlaced = video_stream['field_order'] in ['tb', 'bt']
 
+    # Extract the encoder from the format tags
+    encoder = video_info['format']['tags'].get('encoder', 'Unknown')
+
     # Check for display aspect ratio and assign it if present
     display_aspect_ratio = video_stream.get('display_aspect_ratio', None)
   
@@ -77,7 +83,7 @@ def process_video(video_path, asset_flag):
     base_name, extension = os.path.splitext(video_path)
     output_file = base_name + '_with_title' + extension
 
-        # Check if the video needs transcoding
+    # Check if the video needs transcoding
     if width == 720 and height == 486 and display_aspect_ratio is None:
         # Prepare transcoded file path
         transcoded_video_path = f"{base_name}_transcoded.mp4"
@@ -94,7 +100,6 @@ def process_video(video_path, asset_flag):
             "-vf", "setdar=dar=4/3",
             "-c:a", "aac", "-b:a", "320000", "-ar", "48000", transcoded_video_path
         ]
-
         # Execute transcoding
         subprocess.check_output(transcode_command)
 
@@ -148,6 +153,13 @@ def process_video(video_path, asset_flag):
                     "setsar=1",
                     "setdar=3/2"
                 ])
+            elif video_stream.get('display_aspect_ratio') == '15:11':
+                # Handling for videos with 3:2 aspect ratio
+                filters.extend([
+                    f"scale={width}:{height}",
+                    "setsar=1",
+                    "setdar=15/11"
+                ])            
             else:
                 # For other 720x480 videos, scale as usual
                 filters.extend([
@@ -155,6 +167,19 @@ def process_video(video_path, asset_flag):
                     "setsar=1",
                     "setdar=4/3"
                 ])
+        elif width == 720 and height == 576 and video_stream.get('display_aspect_ratio') == '5:4':
+            # Check if the video is 5:4 PAL
+                filters.extend([
+                    f"scale={width}:{height}",
+                    "setsar=1",
+                    "setdar=5/4"
+                ])
+        elif width == 720 and height == 486 and video_stream.get('display_aspect_ratio') == '400:297':
+            # Check if the video is oddball Telestream DAR video
+            filters.extend([
+                f"scale={width}:{height}",
+                "setsar=10/11",
+            ])
         else:
             # For other resolutions, scale as usual
             filters.extend([
@@ -192,8 +217,11 @@ def process_video(video_path, asset_flag):
             subprocess.check_output(ffmpeg_add_audio_cmd)
             os.rename(f"{base_name}_temp_with_audio_{idx}.mp4", image_video_file_name)
     
+    # Get the directory of the video file
+    video_directory = os.path.dirname(video_path)
+
     # Create a list file for concat
-    concat_list = 'concat_list.txt'
+    concat_list = os.path.join(video_directory, 'concat_list.txt')
     with open(concat_list, 'w') as f:
         for file in image_video_files:
             f.write(f"file '{file}'\n")
@@ -229,7 +257,7 @@ def process_video(video_path, asset_flag):
         # Finalize the filter_complex command
         alternative_concat_cmd.extend([
             '-filter_complex', ''.join(filter_complex_cmd) + f"concat=n={len(image_video_files) + 1}:v=1:a=1[outv][outa]",
-            '-map', '[outv]', '-map', '[outa]', '-c:v', 'libx264', '-c:a', 'aac', temp_output_path
+            '-map', '[outv]', '-map', '[outa]', '-fps_mode' , 'vfr', '-c:v', 'libx264', '-c:a', 'aac', temp_output_path
         ])
 
         # Run the alternative concatenation command
@@ -244,9 +272,18 @@ def process_video(video_path, asset_flag):
         title_cards_duration = len(title_cards) * 5  # Assuming each title card is 5 seconds
         output_path = os.path.join(os.path.dirname(video_path), base_name + '_with_title' + extension)
 
-        # Extract asset ID
-        match = re.search(r'_(\d{6})_', video_path)
-        asset_id = match.group(1) if match else ''
+        # First, try to extract a sequence of six digits
+        match_six_digits = re.search(r'_(\d{6})_', video_path)
+        if match_six_digits:
+            asset_id = match_six_digits.group(1)
+        else:
+            # If no six digits found, try to extract text between the first two underscores
+            parts = filename.split('_', 2)
+            if len(parts) > 2:
+                asset_id = parts[1]
+            else:
+                # If neither condition is met, leave the asset_id blank
+                asset_id = ''
 
         # Determine bitrate and aspect ratio based on resolution
         if width == 1920 and height == 1080:  # HD content
@@ -266,7 +303,7 @@ def process_video(video_path, asset_flag):
             additional_filters = ""
 
         ffmpeg_drawtext_cmd = [
-            'ffmpeg', '-i', temp_output_path, '-c:v', 'libx264', '-b:v', video_bitrate, '-bufsize', bufsize, '-maxrate', maxrate, '-vf',
+            'ffmpeg', '-y', '-i', temp_output_path, '-c:v', 'libx264', '-movflags', 'faststart', '-b:v', video_bitrate, '-bufsize', bufsize, '-maxrate', maxrate, '-vf',
             f"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:fontsize=25:text='{asset_id}':x=10:y=10:fontcolor=white:enable='gte(t,{title_cards_duration})'," +
             f"drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:fontsize=20:text='%{{pts\\:hms\\: - {title_cards_duration}}}':box=1:boxcolor=black@0.5:boxborderw=5:x=(w-tw)/2:y=h-th-10:fontcolor=white:enable='gte(t,{title_cards_duration})'{additional_filters},format=yuv420p",
             '-c:a', 'copy', output_path
@@ -284,9 +321,36 @@ def process_video(video_path, asset_flag):
         except OSError as e:
             print(f"Error: {file} : {e.strerror}")
 
-    os.remove(concat_list)
+    # Remove the concat_list.txt file at the end
+    try:
+        os.remove(concat_list)
+    except OSError as e:
+        print(f"Error: {concat_list} : {e.strerror}")
     
+
 def process_audio(audio_path, asset_flag):
+
+    # Prepare output file path before any potential transcoding
+    base_name, _ = os.path.splitext(audio_path)
+    output_file = base_name + '_with_title.mp4'
+
+    # Check audio file characteristics
+    probe_cmd = ['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=sample_fmt,sample_rate', '-of', 'default=noprint_wrappers=1:nokey=1', audio_path]
+    probe_output = subprocess.run(probe_cmd, text=True, capture_output=True)
+    sample_fmt, sample_rate = probe_output.stdout.strip().split('\n')
+
+    temp_dir = None
+
+    # Transcode digital audiotape files if necessary
+    if sample_fmt == "s16" and (sample_rate == "48000" or sample_rate == "44100" or sample_rate == "44056"):
+        temp_dir = tempfile.mkdtemp()
+        base_name, _ = os.path.splitext(os.path.basename(audio_path))
+        transcoded_audio_path = os.path.join(temp_dir, base_name + '.wav')
+        transcode_cmd = ['ffmpeg', '-y', '-i', audio_path, '-c:a', 'pcm_s24le', '-ar', '96k', transcoded_audio_path]
+        subprocess.run(transcode_cmd, check=True)
+        audio_path = transcoded_audio_path
+
+
     # Extract prefix from filename
     filename = os.path.basename(audio_path)
     prefix = filename.split('_')[0]
@@ -294,22 +358,21 @@ def process_audio(audio_path, asset_flag):
     # Get the appropriate title cards based on the group
     title_cards = get_title_cards_for_group(prefix)
 
-    # Prepare output file path
-    base_name, _ = os.path.splitext(audio_path)
-    output_file = base_name + '_with_title.mp4'
-
     # Start constructing the FFmpeg command
     ffmpeg_cmd = ['ffmpeg', '-y']
 
     # Add inputs for title card images
-    for image in title_cards:
+    for idx, image in enumerate(title_cards):
         ffmpeg_cmd.extend(['-loop', '1', '-t', '5', '-i', image])
 
     # Add the main audio input
     ffmpeg_cmd.extend(['-i', audio_path])
 
-    # Add silent audio input
-    ffmpeg_cmd.extend(['-f', 'lavfi', '-t', '10', '-i', 'anullsrc'])
+    # Calculate total duration for silent audio based on number of title cards
+    silent_audio_duration = len(title_cards) * 5
+
+    # Add silent audio input with calculated duration
+    ffmpeg_cmd.extend(['-f', 'lavfi', '-t', str(silent_audio_duration), '-i', 'anullsrc'])
 
     # Construct the filter_complex command
     filter_complex_parts = []
@@ -322,30 +385,48 @@ def process_audio(audio_path, asset_flag):
     pad_x = int((1280 - new_width) / 2)
     pad_y = 0  # No padding on top and bottom as the height is already 720
 
-    # Add filters for title card images
-    for idx, _ in enumerate(title_cards):
+    # Logic for handling single and multiple title cards
+    if len(title_cards) == 1:
+        # For a single title card
         filter_complex_parts.append(
-            f"[{idx}:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v{idx}];"
+            f"[0:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,"
+            f"fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v];"
+        )
+    else:
+        # For multiple title cards
+        for idx, _ in enumerate(title_cards):
+            filter_complex_parts.append(
+                f"[{idx}:v]scale={new_width}:{new_height},pad=1280:720:{pad_x}:{pad_y}:black,"
+                f"fade=t=in:st=0:d=1,fade=t=out:st=4:d=1,setpts=PTS-STARTPTS[v{idx}];"
+            )
+        concat_v = "[" + "][".join(f"v{idx}" for idx in range(len(title_cards))) + "]"
+        filter_complex_parts.append(
+            f"{concat_v}concat=n={len(title_cards)}:v=1:a=0,format=yuv420p[v];"
         )
 
-    # Concatenate title card videos
-    concat_v = "[" + "][".join(f"v{idx}" for idx in range(len(title_cards))) + "]"
-    filter_complex_parts.append(
-        f"{concat_v}concat=n={len(title_cards)}:v=1:a=0,format=yuv420p[v];"
-    )
-
     # Audio visualization
+    audio_idx = len(title_cards)  # The index of the main audio input
     filter_complex_parts.append(
-        "[2:a]showwaves=s=1280x720:mode=line,format=yuv420p[wave];"
+        f"[{audio_idx}:a]showwaves=s=1280x720:mode=line:colors=blue,format=yuv420p[wave];"
     )
 
     # Apply text and timecode to the audio visualization, if enabled
     if asset_flag:
         title_cards_duration = len(title_cards) * 5  # Assuming each title card is 5 seconds
-
-        # Extract asset ID
-        match = re.search(r'_(\d{6})_', audio_path)
-        asset_id = match.group(1) if match else ''
+        
+        # First, try to extract a sequence of six digits
+        match_six_digits = re.search(r'_(\d{6})_', audio_path)
+        if match_six_digits:
+            asset_id = match_six_digits.group(1)
+        else:
+            # If no six digits found, try to extract text between the first two underscores
+            parts = filename.split('_', 2)
+            if len(parts) > 2:
+                asset_id = parts[1]
+                print(asset_id)
+            else:
+                # If neither condition is met, leave the asset_id blank
+                asset_id = ''
 
         filter_complex_parts.append(
             f"[v][wave]concat=n=2:v=1:a=0,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:fontsize=25:text='{asset_id}':x=10:y=10:fontcolor=white:enable='gte(t,{title_cards_duration})',"
@@ -356,46 +437,77 @@ def process_audio(audio_path, asset_flag):
             "[v][wave]concat=n=2:v=1:a=0[vfinal];"
         )
 
-    # Audio concatenation (silent audio with the main audio)
+    # Audio concatenation
+    silent_audio_idx = audio_idx + 1  # The index of the silent audio input
     filter_complex_parts.append(
-        "[3:a][2:a]concat=n=2:v=0:a=1[audiofinal]"
+        f"[{silent_audio_idx}:a][{audio_idx}:a]concat=n=2:v=0:a=1[audiofinal]"
     )
 
-    # Add the filter_complex command to the FFmpeg command
     ffmpeg_cmd.extend(['-filter_complex', ''.join(filter_complex_parts)])
-
-    # Add output mapping and file
     ffmpeg_cmd.extend(['-map', '[vfinal]', '-map', '[audiofinal]', output_file])
 
     # Execute the ffmpeg command
+    print(ffmpeg_cmd)
     returncode, _, stderr = run_ffmpeg_command(ffmpeg_cmd)
     if returncode != 0:
         print(f"Error processing audio: {stderr}")
         return
 
+    # Remove temporary file and directory
+    if temp_dir:
+        shutil.rmtree(temp_dir)
+
     print(f"Processed audio file: {output_file}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prepend title card to a video.")
-    parser.add_argument('-v', '--video', help='Path to the video file.')
-    parser.add_argument('-d', '--directory', help='Path to the directory containing video files.')
-    parser.add_argument('-a', '--asset', action='store_true', help='Extract and add asset ID from the filename.')
+    parser = argparse.ArgumentParser(description="Prepend title card to a media file.")
+    parser.add_argument('-f', '--file', help='Path to the video or audio file.')
+    parser.add_argument('-d', '--directory', help='Path to a directory containing media files.')
+    parser.add_argument('-a', '--asset', action='store_true', help='Extract and add asset ID from the filename + timdecode.')
     args = parser.parse_args()
 
+    video_count = 0
+    audio_count = 0
+    error_count = 0
+    error_files = []
+
     if args.directory:
-        # Process each video and audio file in the directory
         for media_file in sorted(glob.glob(os.path.join(args.directory, '*'))):
-            if media_file.lower().endswith('.mp4'):
-                process_video(media_file, args.asset)
-            elif media_file.lower().endswith(('.wav', '.flac')):
-                process_audio(media_file, args.asset)
-    elif args.video:
-        # Process a single video file
-        process_video(args.video, args.asset)
+            try:
+                if media_file.lower().endswith('.mp4'):
+                    process_video(media_file, args.asset)
+                    video_count += 1
+                elif media_file.lower().endswith(('.wav', '.flac')):
+                    process_audio(media_file, args.asset)
+                    audio_count += 1
+            except Exception as e:
+                print(f"Error processing {media_file}: {e}")
+                error_count += 1
+                error_files.append(media_file)
+    elif args.file:
+        try:
+            if args.file.lower().endswith('.mp4'):
+                process_video(args.file, args.asset)
+                video_count += 1
+            elif args.file.lower().endswith(('.wav', '.flac')):
+                process_audio(args.file, args.asset)
+                audio_count += 1
+            else:
+                print("Error: Unsupported file format.")
+        except Exception as e:
+            print(f"Error processing {args.file}: {e}")
+            error_count += 1
+            error_files.append(args.file)
     else:
-        print("Error: No video file or directory specified.")
+        print("Error: No file or directory specified.")
         parser.print_help()
+
+    print(f"{video_count} video files processed, {audio_count} audio files processed")
+    if error_count > 0:
+        print(f"{error_count} files failed to process. The following files encountered errors:")
+        for file in error_files:
+            print(file)
 
 if __name__ == "__main__":
     main()
