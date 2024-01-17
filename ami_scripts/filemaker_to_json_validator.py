@@ -10,7 +10,10 @@ from collections import Counter
 import glob
 import numpy as np
 
-ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks']
+ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks', 'source.physicalDescription.conditionfading',
+                     'source.physicalDescription.conditionscratches', 'source.physicalDescription.conditionsplices',
+                     'source.physicalDescription.conditionperforationdamage', 'source.physicalDescription.conditiondistortion',
+                     'source.physicalDescription.shrinkage.measure', 'source.physicalDescription.acetateDecayLevel']
 
 def get_info(source_directory, metadata_directory):
     source_path = Path(source_directory)
@@ -173,8 +176,10 @@ def main():
     # Drop empty columns and the 'asset.fileExt' column
     df = df.dropna(axis=1, how="all")
 
-    # Replace NaN values with a default value, e.g., an empty string
-    df.fillna("", inplace=True)
+    # Fill NaN values with an empty string for fields not in ZERO_VALUE_FIELDS
+    for column in df.columns:
+        if column not in ZERO_VALUE_FIELDS:
+            df[column] = df[column].fillna("")
     df = df.drop(['asset.fileExt'], axis=1)
     
     # Set the output directory for JSON files
@@ -190,20 +195,21 @@ def main():
         nested_dict = {}
         json_tree = row.to_dict()
 
-        # Convert the flat dictionary to a nested dictionary
         for key, value in json_tree.items():
-            if value:
-                if pd.isnull(value):
-                    continue
-                if type(value) == pd.Timestamp:
-                    value = value.strftime('%Y-%m-%d')
-                if isinstance(value, np.generic):
-                    value = np.asscalar(value)
-                nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
+            # Skip null values unless the field is in ZERO_VALUE_FIELDS
+            if pd.isnull(value) and key not in ZERO_VALUE_FIELDS:
+                continue
 
-                # 0-value fields get skipped, but some should be allowed
-                if key in ZERO_VALUE_FIELDS and value == 0:
-                    nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
+            # Convert Timestamp to a string in the format 'YYYY-MM-DD'
+            if type(value) == pd.Timestamp:
+                value = value.strftime('%Y-%m-%d')
+
+            # Convert numpy generic types to native Python types
+            if isinstance(value, np.generic):
+                value = np.asscalar(value)
+
+            # Convert the flat dictionary to a nested dictionary
+            nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
 
         # Save the nested dictionary as a JSON file
         json_filename = os.path.splitext(row["asset.referenceFilename"])[0] + ".json"
