@@ -102,23 +102,19 @@ def get_ajv_command(data, file):
     ]
     return ajv_command
 
-def convert_dotKeyToNestedDict(tree: dict, key: str, value: str) -> dict:
+def convert_dotKeyToNestedDict(tree: dict, key: str, value) -> dict:
     """
-    Convert a dot-delimited key and its corresponding value to a nested dictionary.
-
+    Convert a dot-delimited key and its corresponding value to a nested dictionary, excluding keys with empty values.
     Args:
         tree: The dictionary to add the key-value pair to.
         key: The dot-delimited key string.
         value: The value associated with the key.
-
     Returns:
-        The updated dictionary with the key-value pair added.
-
-    Example:
-        >>> d = {}
-        >>> convert_dotKeyToNestedDict(d, 'a.b.c', 'value')
-        {'a': {'b': {'c': 'value'}}}
+        The updated dictionary with the key-value pair added, excluding keys with empty values.
     """
+    # If the value is an empty string or NaN, return the tree without adding the key
+    if pd.isna(value) or value == "":
+        return tree
 
     if "." in key:
         # Split the key by the first dot and recursively call the function
@@ -142,7 +138,7 @@ def main():
     parser.add_argument("-m", "--metadata", help="Path to the directory of JSON schema files", required=True)
     args = parser.parse_args()
 
-    merge_file = args.source
+    merge_file = args.input
     print(f"\nCreating JSON files from MER file: {merge_file}")
 
 
@@ -183,7 +179,7 @@ def main():
     df = df.drop(['asset.fileExt'], axis=1)
     
     # Set the output directory for JSON files
-    json_directory = Path(args.destination).resolve()
+    json_directory = Path(args.output).resolve()
 
     # Create the output directory if it doesn't exist
     json_directory.mkdir(parents=True, exist_ok=True)
@@ -224,9 +220,9 @@ def main():
     print(f"\n{json_count} Total JSON files created from MER file: {merge_file}")
 
 
-    source_directory = args.destination
+    output_directory = args.output
     metadata_directory = args.metadata
-    get_info(source_directory, metadata_directory)
+    get_info(output_directory, metadata_directory)
 
 if __name__ == "__main__":
     main()
