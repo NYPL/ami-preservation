@@ -137,8 +137,8 @@ def convert_dotKeyToNestedDict(tree: dict, key: str, value: str) -> dict:
 def main():
     # Argument parser setup
     parser = argparse.ArgumentParser(description="Convert a FileMaker merge file to JSON files and validate them against JSON schema files")
-    parser.add_argument("-s", "--source", help="The path to the FileMaker merge file", required=True)
-    parser.add_argument("-d", "--destination", help="The directory to save the JSON files to", required=True)
+    parser.add_argument("-i", "--input", help="The path to the input FileMaker merge file", required=True)
+    parser.add_argument("-o", "--output", help="The output directory to save the JSON files to", required=True)
     parser.add_argument("-m", "--metadata", help="Path to the directory of JSON schema files", required=True)
     args = parser.parse_args()
 
