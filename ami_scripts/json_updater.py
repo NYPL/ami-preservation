@@ -68,6 +68,7 @@ def process_media_files(source_directory):
 
         data['technical']['fileFormat'] = general_data.get('format', '')
         data['technical']['audioCodec'] = general_data.get('audio_codecs', '')
+        data['technical']['videoCodec'] = general_data.get('codecs_video', '')
         data['technical']['fileSize']['measure'] = int(general_data.get('file_size', 0))
         data['technical']['durationMilli']['measure'] = int(general_data.get('duration'))
         other_duration = general_data.get('other_duration', [])
