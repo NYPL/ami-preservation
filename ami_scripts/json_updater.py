@@ -65,15 +65,29 @@ def process_media_files(source_directory):
             data['technical']['dateCreated'] = match.group(0)
         else:
             data['technical']['dateCreated'] = ''
-
-        data['technical']['fileFormat'] = general_data.get('format', '')
-        data['technical']['audioCodec'] = general_data.get('audio_codecs', '')
-        data['technical']['videoCodec'] = general_data.get('codecs_video', '')
+        
         data['technical']['fileSize']['measure'] = int(general_data.get('file_size', 0))
-        data['technical']['durationMilli']['measure'] = int(general_data.get('duration'))
+        data['technical']['fileFormat'] = general_data.get('format', '')
+        
+        
+        # Handle missing duration data
+        duration = general_data.get('duration')
+        if duration is not None:
+            data['technical']['durationMilli'] = {'measure': int(duration)}
+
+        # Conditionally add audioCodec, videoCodec, and durationHuman fields
+        audio_codec = general_data.get('audio_codecs', '')
+        if audio_codec:
+            data['technical']['audioCodec'] = audio_codec
+
+        video_codec = general_data.get('codecs_video', '')
+        if video_codec:
+            data['technical']['videoCodec'] = video_codec
+
         other_duration = general_data.get('other_duration', [])
         duration_human = other_duration[3] if len(other_duration) > 3 else ''
-        data['technical']['durationHuman'] = duration_human
+        if duration_human:
+            data['technical']['durationHuman'] = duration_human
 
         with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
