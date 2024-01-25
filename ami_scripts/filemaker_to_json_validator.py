@@ -15,6 +15,16 @@ ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks', 'source.physic
                      'source.physicalDescription.conditionperforationdamage', 'source.physicalDescription.conditiondistortion',
                      'source.physicalDescription.shrinkage.measure', 'source.physicalDescription.acetateDecayLevel']
 
+# Define the convert_mixed_types function
+def convert_mixed_types(value):
+    """
+    Convert value to integer if possible, otherwise return the original string.
+    """
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
 def get_info(source_directory, metadata_directory):
     source_path = Path(source_directory)
     json_list = list(source_path.glob('**/*.json'))
@@ -171,6 +181,11 @@ def main():
 
     # Drop empty columns and the 'asset.fileExt' column
     df = df.dropna(axis=1, how="all")
+
+    # Apply the function to the 'source.physicalDescription.dataCapacity.measure' column
+    column_name = 'source.physicalDescription.dataCapacity.measure'
+    if column_name in df.columns:
+        df[column_name] = df[column_name].apply(convert_mixed_types)
 
     # Fill NaN values with an empty string for fields not in ZERO_VALUE_FIELDS
     for column in df.columns:
