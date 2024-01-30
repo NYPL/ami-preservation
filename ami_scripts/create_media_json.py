@@ -41,8 +41,9 @@ def load_csv(args):
     data_dict = {}
     if args.source:
         try:
-            with open(args.source, 'r', encoding='utf-8', errors='ignore') as file:
-                reader = csv.reader(file)
+            with open(args.source, 'rb') as file:
+                content = file.read().decode('utf-8', 'replace').replace('\x00', '')
+                reader = csv.reader(content.splitlines(), delimiter=',')
                 headers = next(reader)
                 for row in reader:
                     key = row[0]

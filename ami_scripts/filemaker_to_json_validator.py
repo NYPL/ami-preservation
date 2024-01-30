@@ -10,7 +10,20 @@ from collections import Counter
 import glob
 import numpy as np
 
-ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks']
+ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks', 'source.physicalDescription.conditionfading',
+                     'source.physicalDescription.conditionscratches', 'source.physicalDescription.conditionsplices',
+                     'source.physicalDescription.conditionperforationdamage', 'source.physicalDescription.conditiondistortion',
+                     'source.physicalDescription.shrinkage.measure', 'source.physicalDescription.acetateDecayLevel']
+
+# Define the convert_mixed_types function
+def convert_mixed_types(value):
+    """
+    Convert value to integer if possible, otherwise return the original string.
+    """
+    try:
+        return int(value)
+    except ValueError:
+        return value
 
 def get_info(source_directory, metadata_directory):
     source_path = Path(source_directory)
@@ -99,23 +112,19 @@ def get_ajv_command(data, file):
     ]
     return ajv_command
 
-def convert_dotKeyToNestedDict(tree: dict, key: str, value: str) -> dict:
+def convert_dotKeyToNestedDict(tree: dict, key: str, value) -> dict:
     """
-    Convert a dot-delimited key and its corresponding value to a nested dictionary.
-
+    Convert a dot-delimited key and its corresponding value to a nested dictionary, excluding keys with empty values.
     Args:
         tree: The dictionary to add the key-value pair to.
         key: The dot-delimited key string.
         value: The value associated with the key.
-
     Returns:
-        The updated dictionary with the key-value pair added.
-
-    Example:
-        >>> d = {}
-        >>> convert_dotKeyToNestedDict(d, 'a.b.c', 'value')
-        {'a': {'b': {'c': 'value'}}}
+        The updated dictionary with the key-value pair added, excluding keys with empty values.
     """
+    # If the value is an empty string or NaN, return the tree without adding the key
+    if pd.isna(value) or value == "":
+        return tree
 
     if "." in key:
         # Split the key by the first dot and recursively call the function
@@ -134,12 +143,12 @@ def convert_dotKeyToNestedDict(tree: dict, key: str, value: str) -> dict:
 def main():
     # Argument parser setup
     parser = argparse.ArgumentParser(description="Convert a FileMaker merge file to JSON files and validate them against JSON schema files")
-    parser.add_argument("-s", "--source", help="The path to the FileMaker merge file", required=True)
-    parser.add_argument("-d", "--destination", help="The directory to save the JSON files to", required=True)
+    parser.add_argument("-i", "--input", help="The path to the input FileMaker merge file", required=True)
+    parser.add_argument("-o", "--output", help="The output directory to save the JSON files to", required=True)
     parser.add_argument("-m", "--metadata", help="Path to the directory of JSON schema files", required=True)
     args = parser.parse_args()
 
-    merge_file = args.source
+    merge_file = args.input
     print(f"\nCreating JSON files from MER file: {merge_file}")
 
 
@@ -173,12 +182,19 @@ def main():
     # Drop empty columns and the 'asset.fileExt' column
     df = df.dropna(axis=1, how="all")
 
-    # Replace NaN values with a default value, e.g., an empty string
-    df.fillna("", inplace=True)
+    # Apply the function to the 'source.physicalDescription.dataCapacity.measure' column
+    column_name = 'source.physicalDescription.dataCapacity.measure'
+    if column_name in df.columns:
+        df[column_name] = df[column_name].apply(convert_mixed_types)
+
+    # Fill NaN values with an empty string for fields not in ZERO_VALUE_FIELDS
+    for column in df.columns:
+        if column not in ZERO_VALUE_FIELDS:
+            df[column] = df[column].fillna("")
     df = df.drop(['asset.fileExt'], axis=1)
     
     # Set the output directory for JSON files
-    json_directory = Path(args.destination).resolve()
+    json_directory = Path(args.output).resolve()
 
     # Create the output directory if it doesn't exist
     json_directory.mkdir(parents=True, exist_ok=True)
@@ -190,20 +206,21 @@ def main():
         nested_dict = {}
         json_tree = row.to_dict()
 
-        # Convert the flat dictionary to a nested dictionary
         for key, value in json_tree.items():
-            if value:
-                if pd.isnull(value):
-                    continue
-                if type(value) == pd.Timestamp:
-                    value = value.strftime('%Y-%m-%d')
-                if isinstance(value, np.generic):
-                    value = np.asscalar(value)
-                nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
+            # Skip null values unless the field is in ZERO_VALUE_FIELDS
+            if pd.isnull(value) and key not in ZERO_VALUE_FIELDS:
+                continue
 
-                # 0-value fields get skipped, but some should be allowed
-                if key in ZERO_VALUE_FIELDS and value == 0:
-                    nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
+            # Convert Timestamp to a string in the format 'YYYY-MM-DD'
+            if type(value) == pd.Timestamp:
+                value = value.strftime('%Y-%m-%d')
+
+            # Convert numpy generic types to native Python types
+            if isinstance(value, np.generic):
+                value = np.asscalar(value)
+
+            # Convert the flat dictionary to a nested dictionary
+            nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
 
         # Save the nested dictionary as a JSON file
         json_filename = os.path.splitext(row["asset.referenceFilename"])[0] + ".json"
@@ -218,9 +235,9 @@ def main():
     print(f"\n{json_count} Total JSON files created from MER file: {merge_file}")
 
 
-    source_directory = args.destination
+    output_directory = args.output
     metadata_directory = args.metadata
-    get_info(source_directory, metadata_directory)
+    get_info(output_directory, metadata_directory)
 
 if __name__ == "__main__":
     main()

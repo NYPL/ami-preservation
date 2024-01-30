@@ -58,6 +58,11 @@ def process_media_files(source_directory):
         data['technical']['filename'] = media_file.stem
         data['technical']['extension'] = media_file.suffix[1:]
 
+        # Update asset.fileRole based on the media filename
+        file_role = extract_file_role(media_file.stem)
+        if file_role:
+            data['asset']['fileRole'] = file_role
+
         date_created = general_data.get('file_last_modification_date', '')
         date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
         match = date_pattern.search(date_created)
@@ -65,14 +70,29 @@ def process_media_files(source_directory):
             data['technical']['dateCreated'] = match.group(0)
         else:
             data['technical']['dateCreated'] = ''
-
-        data['technical']['fileFormat'] = general_data.get('format', '')
-        data['technical']['audioCodec'] = general_data.get('audio_codecs', '')
+        
         data['technical']['fileSize']['measure'] = int(general_data.get('file_size', 0))
-        data['technical']['durationMilli']['measure'] = int(general_data.get('duration'))
+        data['technical']['fileFormat'] = general_data.get('format', '')
+        
+        
+        # Handle missing duration data
+        duration = general_data.get('duration')
+        if duration is not None:
+            data['technical']['durationMilli'] = {'measure': int(duration)}
+
+        # Conditionally add audioCodec, videoCodec, and durationHuman fields
+        audio_codec = general_data.get('audio_codecs', '')
+        if audio_codec:
+            data['technical']['audioCodec'] = audio_codec
+
+        video_codec = general_data.get('codecs_video', '')
+        if video_codec:
+            data['technical']['videoCodec'] = video_codec
+
         other_duration = general_data.get('other_duration', [])
         duration_human = other_duration[3] if len(other_duration) > 3 else ''
-        data['technical']['durationHuman'] = duration_human
+        if duration_human:
+            data['technical']['durationHuman'] = duration_human
 
         with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
@@ -146,6 +166,15 @@ def update_key_in_json_files(source_directory, key):
 
     logging.info(f"Key '{key}' updated in selected JSON files")
 
+
+def extract_file_role(filename):
+    # Extracting the part after the last underscore and before the extension
+    parts = filename.rsplit('_', 1)
+    if len(parts) > 1:
+        role_with_extension = parts[-1]
+        role = role_with_extension.split('.')[0]
+        return role
+    return ''
 
 def main():
     logging.basicConfig(level=logging.INFO)

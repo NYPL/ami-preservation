@@ -96,6 +96,20 @@
       "U-matic/PCM",
       "VHS/PCM",
       "Hi8/PCM"
+    ],
+    "audio optical disc": [
+      "Audio CD-R",
+      "Audio CD, pressed",
+      "Minidisc"
+    ],
+    "video optical disc": [
+      "Blu-Ray",
+      "Laser Disc",
+      "VCD",
+      "Video DVD-R",
+      "Video DVD, pressed",
+      "Video DVD+R",
+      "Video DVD+RW"
     ]
   },
   "digitizers": {
