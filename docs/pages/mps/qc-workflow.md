@@ -42,7 +42,7 @@ python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metad
 or...
 just validate JSON:
 ```
-"/path/to/ami-preservation/ami-scripts/json_validator.py" -m ""/path/to/ami-metadata" -d ""/Volumes/DRIVE-ID"
+/path/to/ami-preservation/ami-scripts/json_validator.py -m /path/to/ami-metadata -d /Volumes/DRIVE-ID
 
 ```
 or
@@ -91,7 +91,7 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 * **FILM PMs ONLY**:
 Check a selection of PMs for RAWCooked reversability:
 ```
-rawcooked /path/to/mkv --check
+/path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID 
 ```
 
 * Perform Manual QC ...
