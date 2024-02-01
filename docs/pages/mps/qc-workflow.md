@@ -42,6 +42,12 @@ python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metad
 or...
 just validate JSON:
 ```
+"/path/to/ami-preservation/ami-scripts/json_validator.py" -m ""/path/to/ami-metadata" -d ""/Volumes/DRIVE-ID"
+
+```
+or
+
+```
 ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
