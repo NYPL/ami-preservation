@@ -73,10 +73,10 @@ CMS exports often contain characters and values which are incompatible with JSON
 * Cleanup metadata inventory using ```clean_cms_excel.py```:
 
 ```
-ami-preservation/ami_scripts/clean_cms_excel.py -c ami-preservation/ami_scripts/config.json -v -s path/to/source
+ami-preservation/ami_scripts/clean_cms_excel.py -c ami-preservation/ami_scripts/config.json -v -s path/to/source -d path/to/destination 
 ```
 * Double check to make sure the spreadsheet was updated correctly 
-* Send the "clean" metadata inventory to the vendor and have them confirm all fields appear correct **(failture to confirm inventory is formatted correctly will result in invalid JSON)**
+* Send the "clean" metadata inventory to the vendor and have them confirm all fields appear correct **(failure to confirm inventory is formatted correctly will result in invalid JSON)**
 
 
 
