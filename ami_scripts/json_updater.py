@@ -78,7 +78,10 @@ def process_media_files(source_directory):
         # Handle missing duration data
         duration = general_data.get('duration')
         if duration is not None:
-            data['technical']['durationMilli'] = {'measure': int(duration)}
+            data['technical']['durationMilli'] = {
+                'measure': int(duration),
+                'unit': 'ms'
+    }
 
         # Conditionally add audioCodec, videoCodec, and durationHuman fields
         audio_codec = general_data.get('audio_codecs', '')
