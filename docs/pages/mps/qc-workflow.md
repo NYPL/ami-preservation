@@ -54,11 +54,13 @@ The most important step during QC is to mount your drive(s) [Read-Only](https://
    diskutil mount readOnly device name as listed in Disk Utility
    ```
 
-# Validate Packages
+# Bag Validation
 
-  * Use ```validate_ami_bags.py``` in ami-tools to confirm bags comply with NYPL specifications for [digital asset packaging](https://nypl.github.io/ami-preservation/pages/ami-handling.html#digital-asset-packaging).
+  * Use ```validate_ami_bags.py``` in ami-tools to check Check bag Oxums, bag completeness, bag hashes, directory structure, filenames, and metadata. 
+  * Due to the time required to validate a directory of Vendor bags, its best to let validate_ami_bags.py run overnight.  
+
 ```
-python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metadata --quiet
+python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metadata --slow
 ```
   * Review any Bags that report as "not ready for ingest"
 
@@ -67,6 +69,7 @@ or...just validate JSON using one of two options:
 # JSON Validation
 
   * Use ```json_validator.py``` in ami-scripts to confirm JSON files comply with [NYPL metadata specifications](https://nypl.github.io/ami-preservation/pages/ami-metadata.html). 
+
 ```
 /path/to/ami-preservation/ami-scripts/json_validator.py -m /path/to/ami-metadata -d /Volumes/DRIVE-ID
 ```
@@ -75,12 +78,8 @@ or
 ```
 ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
-# Fixity Check 
-**(vendor only)**
 
-  * Use ```validate_bags.sh``` in ami_tools to confirm bags have not been altered or corrupted during transit. 
-
-# Check Digital Asset Specifications 
+# Digital Asset Specification Check
 
   * Use ```mediaconch_checker.py``` in ami_scripts to confirm media files comply with [NYPL digital asset specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html).
 
@@ -88,12 +87,7 @@ The ami-preservation repo contains a directory, [qc_utilities](https://github.co
 ```
 python3 /path/to/ami-preservation/ami-scripts/mediaconch_checker.py -p /path/to/ami-preservation/qc_utilities/MediaconchPolicies -d /Volumes/DRIVE-ID
 ```
-
-# Validate Bags
-```
-path/to/ami-tools/bin/validate_ami_bags.py --metadata --slow -d /Volumes/driveID/
-```
-* Log destination is home/user directory. Check Bag validation logs for errors. Resolve / log any errors (in QC log) and continue.
+# Additional Checks 
 
 * **AUDIO ONLY**: Check a selection of FLAC for embedded metadata
   * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
@@ -150,5 +144,5 @@ Use Terminal to generate a QC list for each drive you are QCing by following the
   * Use the list of files that appears in the Google Sheet QC log (in the QClog tab) as your list of files to check.
   * Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes.
 
-## Tools
+# Tools
 See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
