@@ -29,30 +29,32 @@ The following handbook will provide step-by-step instructions for carrying out o
 
 # Shipment Intake
  **(vendor only)**
-
 * Enter all drives and associated invoice IDs ("shipments" / "work orders") received into the [Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1973090513). Complete all fields (some are formulas - highlighted gray if so).
 
 * Copy the "work order ID" that is automatically generated in the Vendor Project Tracking sheet (column A).
 
-* Create an ICC/Logs directory named with the work order ID
+# Cards & Logs
 
-* Create a Trello Card on the [MPS Quality Control Trello Board](https://trello.com/b/CBLrQvG1/nypl-ami-quality-control-and-ingest) and paste the work order ID into the Title of the card.
+## Trello Card
+* Use the appropriate template (In-House/Vendor) to create a Trello card on the [MPS Quality Control board](https://trello.com/b/CBLrQvG1/mps-quality-control) for each project directory (In-House) or hard drive (Vendor)
 
+## ICA Log
+* Create an ICA Log directory in ica.repo.nypl.org/pami named with the work order ID
+
+## QC Log 
 * Create a QC log in the Team Drive QC Folder for each hard drive:
   * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
+  * Attach QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-* Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
+  * **MOUNT DRIVE READ-ONLY** 
+    * **Be sure to mount your drive [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only) before you begin QC** 
+    * Open Disk Utility and check the Device name listed in the lower right corner
 
-* **Mount Drive Read-Only** 
-**(vendor only)**
+    * Mount drive read-only using the following command: 
 
-The most important step during QC is to mount your drive(s) [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only).
-   * Open Disk Utility and check the Device name listed in the lower right corner
-
-   * Mount a drive read-only using the following command: 
-   ```
-   diskutil mount readOnly device name as listed in Disk Utility
-   ```
+    ```
+      diskutil mount readOnly device name as listed in Disk Utility
+    ```
 
 # Bag Validation
 
@@ -79,7 +81,7 @@ or
 ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
-# Digital Asset Specification Check
+# Digital Asset Conformance
 
   * Use ```mediaconch_checker.py``` in ami_scripts to confirm media files comply with [NYPL digital asset specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html).
 
@@ -88,19 +90,21 @@ The ami-preservation repo contains a directory, [qc_utilities](https://github.co
 python3 /path/to/ami-preservation/ami-scripts/mediaconch_checker.py -p /path/to/ami-preservation/qc_utilities/MediaconchPolicies -d /Volumes/DRIVE-ID
 ```
 # Additional Checks 
-
-* **AUDIO ONLY**: Check a selection of FLAC for embedded metadata
+  
+## BEXT Check
+  * **AUDIO ONLY**: Check a selection of FLAC for embedded metadata
   * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
 ```
 flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 ```
   * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
-
-* **FILM PMs ONLY**:
+  
+## RAWCooked Check
+  * **FILM PMs ONLY**:
   * Check a selection of PMs for RAWCooked reversability:
-```
-/path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID -p 20
-```
+  ```
+  /path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID -p 20
+  ```
 
 # Perform Manual QC 
   * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
@@ -109,20 +113,19 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
   * Content Inspection of In-House deliverables can be completed either on ICC or on the drive by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#content-inspection).  
   * Use a text-editor (Atom / Notepad / Text Edit etc.) to [open and inspect](https://github.com/NYPL/ami-preservation/wiki/Resources#spot-checking-content--json) JSON files.
 
-* After manual QC, **if all bags are valid**...Then:
-
-  * Pull MediaInfo & output the resulting mediainfo.csv log to the directory for your project or HD on ICA
-
-```
-python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
-```
-
 # Wrap Up...
-  * Move the Trello Card to the proper list (passed / failed etc.)
+  
   * **IF APPROVED**:
-    * Update QC status and check Due date in Trello Card; Move the Trello Card to the passed list; stage HD for delivery to Digital Preservation
-    * Database: update database for approved shipments
+    * Move the Trello Card to the proper list (passed / failed etc.)
 
+## Pull MediaInfo
+  * After manual QC is complete and all assets are approved, run mediainfo_extractor.py
+  ```
+  python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
+  ```
+  * For Vendor deliverables, fill out the projectID and workOrderID columns and copy the entire CSV log into the "mediaInfo" tab in the project sheet
+   * Update QC status and check Due date in Trello Card; Move the Trello Card to the passed list
+ 
   * **IF NOT APPROVED**:
     * Mention MPC in Trello card for follow-up OR email vendor with QC feedback / issues (or send feedback to Manager to relay to vendor); include relevant CMS IDs or filenames.
 &
@@ -130,8 +133,18 @@ python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes
     * Vendor: MPC follow up with vendor about errors and resolve before approving shipments. 
     * In-house: Tag relevant engineer and MPC, and Manager on Trello Card. 
 
-  * Media Ingest Preparation
-Follow these [steps](https://github.com/NYPL/ami-preservation/wiki/Resources#media-ingest-preparation) to prepare media for ingest.
+## Media Ingest Preparation
+
+  **Vendor**
+
+  * Once QC is complete and approved, notify Digital Preservation and make arrangements to hand off hard drive(s) for ingest.  
+o prepare media for ingest.
+
+**In-House**
+
+[complete]
+
+
 
   * Generating a QC list
 Use Terminal to generate a QC list for each drive you are QCing by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#generating-a-qc-list).
