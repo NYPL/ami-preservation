@@ -15,6 +15,18 @@ Internal workflow for carrying out QC on digital assets.
 1. TOC
 {:toc}
 
+# Quality Control Overview
+Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections.
+
+Our QC workflow is currently comprised of the following processes:
+
+  * Fixity check: custom scripts that incorporate Bagit.py
+  * JSON validation using ajv
+  * MediaConch specification conformance check
+  * Manual bag, content, & metadata inspection
+
+Our QC workflows vary slightly between Vendor and In-House deliverables, so the following handbook is divided to reflect that. The following sections will provide step-by-step instructions for carrying out our QC processes.
+
 ## Shipment Intake & QC Cheat-Sheet
 
 * Enter all drives and associated invoice IDs ("shipments" / "work orders") received into the [Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1973090513). Complete all fields (some are formulas - highlighted gray if so).
@@ -30,9 +42,18 @@ Internal workflow for carrying out QC on digital assets.
 
 * Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-* **MOUNT DRIVE READ-ONLY.**
+### Mount Drive Read-Only **(vendor only)**
 
-* Validate Packages:
+The most important step during QC is to mount your drive(s) [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only).
+   * Open Disk Utility and check the Device name listed in the lower right corner
+
+   * Mount a drive read-only using the following command: 
+   ```
+   diskutil mount readOnly device name as listed in Disk Utility
+   ```
+
+### Validate Packages
+
 Use ```validate_ami_bags.py``` in ami-tools (Run ```/path/to/validate_ami_bags.py -h``` for additional usage)
 ```
 python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metadata --quiet
@@ -40,6 +61,9 @@ python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metad
 * Review any Bags that report as "not ready for ingest"
 
 or...just validate JSON using one of two options:
+
+### JSON Validation
+
 ```
 /path/to/ami-preservation/ami-scripts/json_validator.py -m /path/to/ami-metadata -d /Volumes/DRIVE-ID
 ```
@@ -49,16 +73,16 @@ or
 ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
 
+### Check File Specifications 
 
-* Run MediaConch:
+Use ```mediaconch_checker.py``` in ami_scripts to test media files against MediaConch polices
+
 The ami-preservation repo contains a directory, [qc_utilities](https://github.com/NYPL/ami-preservation/tree/master/qc_utilities). Within this are various scripts and tools, including the mediaconch scripts listed below which will generate 'pass/fail' logs in your home directory when run against a directory of media files.
 ```
 /path/to/ami-preservation/ami-scripts/mediaconch_checker.py -p /path/to/ami-preservation/qc_utilities/MediaconchPolicies -d /Volumes/DRIVE-ID
 ```
-Note: the video service copy mediaconch policy works for all video/film deliverables.
 
-
-* Validate Bags:
+### Validate Bags
 ```
 path/to/ami-tools/bin/validate_ami_bags.py --metadata --slow -d /Volumes/driveID/
 ```
@@ -72,18 +96,18 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
   * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
 
 * **FILM PMs ONLY**:
-Check a selection of PMs for RAWCooked reversability:
+  * Check a selection of PMs for RAWCooked reversability:
 ```
 /path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID 
 ```
 
-* Perform Manual QC ...
+### Perform Manual QC 
   * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
   * Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
 
 * After manual QC, **if all bags are valid**...Then:
 
-  * Pull MediaInfo & output the resulting mediainfo.csv log to the directory for your project or HD on ICC
+  * Pull MediaInfo & output the resulting mediainfo.csv log to the directory for your project or HD on ICA
 
 ```
 python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
@@ -103,23 +127,8 @@ python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes
     * In-house: Tag relevant engineer and MPC, and Manager on Trello Card. 
     
 
-# Quality Control Overview
-Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections.
-
-Our QC workflow is currently comprised of the following processes:
-
-  * Fixity check: custom scripts that incorporate Bagit.py
-  * JSON validation using ajv
-  * MediaConch specification conformance check
-  * Manual bag, content, & metadata inspection
-
-Our QC workflows vary slightly between Vendor and In-House deliverables, so the following handbook is divided to reflect that. The following sections will provide step-by-step instructions for carrying out our QC processes.
-
 ## Vendor Deliverables
 For Vendor deliverables, QC is primarily performed directly on hard-drives.
-
-### Mounting Drives Read-Only
-   The most important step during QC is to mount your drive(s) [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only).
 
 ### JSON Validation
 Run the following in Terminal to check if JSON is valid against the appropriate schema:
@@ -136,7 +145,7 @@ Use Terminal to generate a QC list for each drive you are QCing by following the
 ### Content Inspection
 Content inspection can be completed either on ICC or on the drive by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#content-inspection).  
 
-#### Locate & Open QC log
+### Locate & Open QC log
 
 **Each QC log should be easily found linked in Google Drive as an** _attachment in the Trello Card for the batch you are inspecting._ **If not, check with MPA.** _Tip: you can search for the drive ID / work order ID in the Trello search box._
 
