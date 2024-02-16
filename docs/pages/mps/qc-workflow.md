@@ -27,7 +27,8 @@ Our QC workflow is currently comprised of the following processes:
 
 The following handbook will provide step-by-step instructions for carrying out our QC processes on Vendor and In-House projects. Our QC workflows vary slightly between Vendor and In-House deliverables, so steps applicable to Vendor projects only are marked **(vendor only)**. Vendor QC is primarily performed directly on hard-drives.
 
-### Shipment Intake & QC Cheat-Sheet **(vendor only)**
+# Shipment Intake
+ **(vendor only)**
 
 * Enter all drives and associated invoice IDs ("shipments" / "work orders") received into the [Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1973090513). Complete all fields (some are formulas - highlighted gray if so).
 
@@ -42,7 +43,8 @@ The following handbook will provide step-by-step instructions for carrying out o
 
 * Attach the QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-### Mount Drive Read-Only **(vendor only)**
+* **Mount Drive Read-Only** 
+**(vendor only)**
 
 The most important step during QC is to mount your drive(s) [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only).
    * Open Disk Utility and check the Device name listed in the lower right corner
@@ -52,7 +54,7 @@ The most important step during QC is to mount your drive(s) [Read-Only](https://
    diskutil mount readOnly device name as listed in Disk Utility
    ```
 
-### Validate Packages
+# Validate Packages
 
   * Use ```validate_ami_bags.py``` in ami-tools to confirm bags comply with NYPL specifications for [digital asset packaging](https://nypl.github.io/ami-preservation/pages/ami-handling.html#digital-asset-packaging).
 ```
@@ -62,7 +64,7 @@ python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metad
 
 or...just validate JSON using one of two options:
 
-### JSON Validation
+# JSON Validation
 
   * Use ```json_validator.py``` in ami-scripts to confirm JSON files comply with [NYPL metadata specifications](https://nypl.github.io/ami-preservation/pages/ami-metadata.html). 
 ```
@@ -73,11 +75,12 @@ or
 ```
 ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-metadata/versions/2.0/schema/digitized.json -r "/path/to/ami-metadata/versions/2.0/schema/*.json" -d "/Volumes/DRIVE-ID/*/*/data/*/*.json"
 ```
-### Fixity Check **(vendor only)**
+# Fixity Check 
+**(vendor only)**
 
   * Use ```validate_bags.sh``` in ami_tools to confirm bags have not been altered or corrupted during transit. 
 
-### Check File Specifications 
+# Check Digital Asset Specifications 
 
   * Use ```mediaconch_checker.py``` in ami_scripts to confirm media files comply with [NYPL digital asset specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html).
 
@@ -86,7 +89,7 @@ The ami-preservation repo contains a directory, [qc_utilities](https://github.co
 python3 /path/to/ami-preservation/ami-scripts/mediaconch_checker.py -p /path/to/ami-preservation/qc_utilities/MediaconchPolicies -d /Volumes/DRIVE-ID
 ```
 
-### Validate Bags
+# Validate Bags
 ```
 path/to/ami-tools/bin/validate_ami_bags.py --metadata --slow -d /Volumes/driveID/
 ```
@@ -105,7 +108,7 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 /path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID -p 20
 ```
 
-### Perform Manual QC 
+# Perform Manual QC 
   * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
   * Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
   * Use [this](https://github.com/NYPL/ami-preservation/wiki/Resources#logging-qc-failures--flags) list of definitions to review and mark-off the items listed in the QC log.
@@ -120,7 +123,7 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
 ```
 
-### Wrap Up...
+# Wrap Up...
   * Move the Trello Card to the proper list (passed / failed etc.)
   * **IF APPROVED**:
     * Update QC status and check Due date in Trello Card; Move the Trello Card to the passed list; stage HD for delivery to Digital Preservation
@@ -133,20 +136,19 @@ python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes
     * Vendor: MPC follow up with vendor about errors and resolve before approving shipments. 
     * In-house: Tag relevant engineer and MPC, and Manager on Trello Card. 
 
-### Generating a QC list
+  * Media Ingest Preparation
+Follow these [steps](https://github.com/NYPL/ami-preservation/wiki/Resources#media-ingest-preparation) to prepare media for ingest.
+
+  * Generating a QC list
 Use Terminal to generate a QC list for each drive you are QCing by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#generating-a-qc-list).
 
 
-### Locate & Open QC log
+  * Locate & Open QC log
 
 **Each QC log should be easily found linked in Google Drive as an** _attachment in the Trello Card for the batch you are inspecting._ **If not, check with MPA.** _Tip: you can search for the drive ID / work order ID in the Trello search box._
 
   * Use the list of files that appears in the Google Sheet QC log (in the QClog tab) as your list of files to check.
   * Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes.
-
-
-#### Media Ingest Preparation
-Follow these [steps](https://github.com/NYPL/ami-preservation/wiki/Resources#media-ingest-preparation) to prepare media for ingest.
 
 ## Tools
 See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
