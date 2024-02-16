@@ -39,11 +39,9 @@ python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metad
 ```
 * Review any Bags that report as "not ready for ingest"
 
-or...
-just validate JSON:
+or...just validate JSON using one of two options:
 ```
 /path/to/ami-preservation/ami-scripts/json_validator.py -m /path/to/ami-metadata -d /Volumes/DRIVE-ID
-
 ```
 or
 
@@ -55,23 +53,8 @@ ajv validate --all-errors --multiple-of-precision=2 --verbose -s /path/to/ami-me
 * Run MediaConch:
 The ami-preservation repo contains a directory, [qc_utilities](https://github.com/NYPL/ami-preservation/tree/master/qc_utilities). Within this are various scripts and tools, including the mediaconch scripts listed below which will generate 'pass/fail' logs in your home directory when run against a directory of media files.
 ```
-cd /Volumes/DRIVE-ID/
+/path/to/ami-preservation/ami-scripts/mediaconch_checker.py -p /path/to/ami-preservation/qc_utilities/MediaconchPolicies -d /Volumes/DRIVE-ID
 ```
-*then...*
-  * For analog VIDEO:
-```
-/path/to/qc_utilities/mediaconch_videoFFv1.sh && /path/to/qc_utilities/mediaconch_videoAnalogSC.sh
-```
-
-  * For analog AUDIO:
-```
-/path/to/qc_utilities/mediaconch_audioAnalog.sh
-```
-  * For FILM:
-  ```
-  /path/to/qc_utilities/mediaconch_8-16mm_filmPM.sh && /path/to/qc_utilities/mediaconch_35mm_filmPM.sh && /path/to/qc_utilities/mediaconch_filmMZ.sh && /path/to/qc_utilities/mediaconch_filmSC.sh 
-  ```
-
 Note: the video service copy mediaconch policy works for all video/film deliverables.
 
 
