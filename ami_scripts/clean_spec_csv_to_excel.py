@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import requests
 import argparse
 import os
 import json
@@ -9,7 +10,7 @@ import chardet
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Prep CMS Excel for Import into AMIDB')
+    parser = argparse.ArgumentParser(description='Prep SPEC CSV for Import into AMIDB')
     parser.add_argument('-s', '--source',
                         help='path to the source XLSX', required=True)
     parser.add_argument('-w', '--workorder',
@@ -23,6 +24,11 @@ def get_args():
     parser.add_argument('-v', '--vendor',
                         help='Use vendor mode (skips certain cleanup steps and uses default Excel writer)',
                         action='store_true') 
+    parser.add_argument('-t', '--trello', help='Create a Trello card for each unique Archival Box Barcode', action='store_true')
+    parser.add_argument('--single-card', help='Create a single Trello card for the batch', action='store_true')
+
+
+
     args = parser.parse_args()
     return args
 
@@ -156,6 +162,7 @@ def read_config(config_path):
         config = json.load(f)
     return config
 
+
 def replace_characters(df, replacements):
     for column in df:
         for replacement in replacements:
@@ -170,6 +177,95 @@ def apply_format_fixes(df, format_fixes):
             df.loc[df['source.object.format'] == fmt, 'source.object.type'] = target_type
 
 
+def get_box_barcode(row, df):
+    """
+    Function to get the correct 'id_barcode' based on its proximity to 'name_d_calc'.
+    """
+    # Placeholder for barcode value
+    barcode_value = None
+    
+    # Iterate through each 'id_barcode' column and check its context
+    for col in df.filter(like='id_barcode').columns:
+        barcode_index = df.columns.get_loc(col)
+        # Check if the previous column is 'name_d_calc'
+        if df.columns[barcode_index - 1] == 'name_d_calc':
+            barcode_value = row[col]
+            break  # Stop after finding the first matching barcode
+    
+    return barcode_value
+
+
+def categorize_and_create_trello_cards(df, single_card=False):
+    api_key = os.getenv('TRELLO_API_KEY')
+    token = os.getenv('TRELLO_TOKEN')
+    list_ids = {
+        'Audio': os.getenv('TRELLO_AUDIO_LIST_ID'),
+        'Video': os.getenv('TRELLO_VIDEO_LIST_ID'),
+        'Film': os.getenv('TRELLO_FILM_LIST_ID')
+    }
+
+    categories = {'Audio': [], 'Video': [], 'Film': []}
+    
+    # Initialize a variable to hold the work order ID, assuming it's consistent across the batch
+    work_order_id = ""
+
+    for index, row in df.iterrows():
+        barcode = get_box_barcode(row, df)
+        if barcode:
+            barcode = str(barcode).strip()
+            format_category = row['format_1'].lower()
+            if 'sound recording' in format_category:
+                category = 'Audio'
+            elif 'video' in format_category:
+                category = 'Video'
+            elif 'film' in format_category:
+                category = 'Film'
+            else:
+                continue
+
+            if barcode not in categories[category]:
+                categories[category].append(barcode)
+                if not work_order_id:  # Only set the work order ID if it hasn't been set yet
+                    work_order_id = str(row.get('WorkOrderId', '')).strip()
+
+    if single_card and work_order_id:
+        # Determine the majority category
+        majority_category = max(categories, key=lambda cat: len(categories[cat]))
+        # Use just the Work Order ID as the card name for single card mode
+        card_name = work_order_id
+        card_desc = f"Batch processing for {work_order_id}. Includes items from {majority_category} category."
+        create_card(api_key, token, list_ids[majority_category], card_name, card_desc)
+    else:
+        for category, barcodes in categories.items():
+            for barcode in barcodes:
+                # Use WorkOrderId_Barcode format for the card name in standard mode
+                card_name = f"{work_order_id}_{barcode}" if work_order_id else barcode
+                create_card(api_key, token, list_ids[category], card_name)
+
+    # Print out the categorized barcodes with counts for verification
+    for category, barcodes in categories.items():
+        print(f"{len(barcodes)} {category} Barcodes: {', '.join(barcodes)}")
+
+
+
+
+def create_card(api_key, token, list_id, card_name, card_desc=""):
+    """Create a card in a specified Trello list"""
+    url = "https://api.trello.com/1/cards"
+    query = {
+        'key': api_key,
+        'token': token,
+        'idList': list_id,
+        'name': card_name,
+        'desc': card_desc
+    }
+    response = requests.post(url, params=query)
+    if response.status_code == 200:
+        print(f"Card '{card_name}' created successfully!")
+    else:
+        print(f"Failed to create card. Status code: {response.status_code}, Response: {response.text}")
+
+
 def cleanup_csv(args):
     if args.source:
         csv_name = os.path.basename(args.source)
@@ -179,6 +275,12 @@ def cleanup_csv(args):
         file_encoding = detect_encoding(args.source)
 
         df = pd.read_csv(args.source, encoding=file_encoding)
+        
+        if args.workorder:
+            df['WorkOrderId'] = args.workorder
+
+        if args.trello:
+            categorize_and_create_trello_cards(df, single_card=args.single_card)
 
         df = map_csv_columns(df)
         config = read_config(args.config)
@@ -190,9 +292,6 @@ def cleanup_csv(args):
 
         # Sort the DataFrame by 'bibliographic.primaryID'
         df.sort_values(by='bibliographic.primaryID', inplace=True)
-
-        if args.workorder:
-            df['WorkOrderId'] = args.workorder
 
         if args.vendor:
             # Convert to string and format for filename construction
@@ -222,6 +321,7 @@ def cleanup_csv(args):
                     writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
                     df.to_excel(writer, sheet_name='Sheet1')
                     writer.close()
+        
 
 def main():
     arguments = get_args()
