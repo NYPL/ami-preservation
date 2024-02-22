@@ -204,48 +204,74 @@ def categorize_and_create_trello_cards(df, single_card=False):
         'Film': os.getenv('TRELLO_FILM_LIST_ID')
     }
 
-    categories = {'Audio': [], 'Video': [], 'Film': []}
-    
-    # Initialize a variable to hold the work order ID, assuming it's consistent across the batch
+    # Correctly initialize box_details here
+    box_details = {}  # Initialize it correctly at the function's start
+
+    total_formats = {}
+    all_titles = set()
+    category_counts = {'Audio': 0, 'Video': 0, 'Film': 0}
+
     work_order_id = ""
 
     for index, row in df.iterrows():
         barcode = get_box_barcode(row, df)
-        if barcode:
-            barcode = str(barcode).strip()
-            format_category = row['format_1'].lower()
-            if 'sound recording' in format_category:
-                category = 'Audio'
-            elif 'video' in format_category:
-                category = 'Video'
-            elif 'film' in format_category:
-                category = 'Film'
-            else:
-                continue
+        format_3 = str(row['format_3']).strip()
+        title = str(row['title']).strip()
+        format_category = row['format_1'].lower()
 
-            if barcode not in categories[category]:
-                categories[category].append(barcode)
-                if not work_order_id:  # Only set the work order ID if it hasn't been set yet
-                    work_order_id = str(row.get('WorkOrderId', '')).strip()
+        # Determine the category and update accordingly
+        if 'sound recording' in format_category:
+            category = 'Audio'
+        elif 'video' in format_category:
+            category = 'Video'
+        elif 'film' in format_category:
+            category = 'Film'
+        else:
+            continue
+
+        # Update box_details, total_formats, all_titles, and category_counts here
+        if barcode not in box_details:
+            box_details[barcode] = {'formats': {}, 'titles': set(), 'category': category}
+        box_details[barcode]['formats'][format_3] = box_details[barcode]['formats'].get(format_3, 0) + 1
+        box_details[barcode]['titles'].add(title)
+        total_formats[format_3] = total_formats.get(format_3, 0) + 1
+        all_titles.add(title)
+        category_counts[category] += 1
+
+        if not work_order_id:
+            work_order_id = str(row.get('WorkOrderId', '')).strip()
+
+    def generate_description(formats, titles):
+        format_desc = "; ".join([f"{count} {f} media objects" for f, count in formats.items()])
+        title_desc = "; ".join(titles)
+        return f"**Box contains:** {format_desc}\n**Collections:** {title_desc}"
 
     if single_card and work_order_id:
-        # Determine the majority category
-        majority_category = max(categories, key=lambda cat: len(categories[cat]))
-        # Use just the Work Order ID as the card name for single card mode
+        # Determine the most represented category
+        most_represented_category = max(category_counts, key=category_counts.get)
         card_name = work_order_id
-        card_desc = f"Batch processing for {work_order_id}. Includes items from {majority_category} category."
-        create_card(api_key, token, list_ids[majority_category], card_name, card_desc)
+        card_desc = f"**Total media objects:** {sum(total_formats.values())}\n{generate_description(total_formats, all_titles)}"
+        create_card(api_key, token, list_ids[most_represented_category], card_name, card_desc)
     else:
-        for category, barcodes in categories.items():
-            for barcode in barcodes:
-                # Use WorkOrderId_Barcode format for the card name in standard mode
-                card_name = f"{work_order_id}_{barcode}" if work_order_id else barcode
-                create_card(api_key, token, list_ids[category], card_name)
+        # Loop for individual cards adjusted to use 'category' correctly
+        for barcode, details in box_details.items():
+            card_name = f"{work_order_id}_{barcode}" if work_order_id else barcode
+            card_desc = generate_description(details['formats'], details['titles'])
+            # Check if category is set and exists in list_ids
+            if details['category'] in list_ids:
+                create_card(api_key, token, list_ids[details['category']], card_name, card_desc)
 
-    # Print out the categorized barcodes with counts for verification
-    for category, barcodes in categories.items():
-        print(f"{len(barcodes)} {category} Barcodes: {', '.join(barcodes)}")
+    # Initialize a dictionary to track barcodes per category
+    barcodes_per_category = {'Audio': set(), 'Video': set(), 'Film': set()}
 
+    # Populate barcodes_per_category based on box_details
+    for barcode, details in box_details.items():
+        if details['category']:
+            barcodes_per_category[details['category']].add(barcode)
+
+    # Now print the summary
+    for category, barcodes in barcodes_per_category.items():
+        print(f"{len(barcodes)} {category} Barcodes: {', '.join(str(barcode) for barcode in barcodes)}")
 
 
 
