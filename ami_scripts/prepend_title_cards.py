@@ -248,7 +248,19 @@ def process_video(video_path, asset_flag):
         if os.path.exists(temp_output_path):
             os.remove(temp_output_path)
 
-        # Construct the alternative concatenation command
+                # After determining the video bitrate and aspect ratio based on resolution
+        if width == 1920 and height == 1080:  # HD content
+            video_bitrate = "8000000"
+            bufsize = "8000000"
+            maxrate = "8000000"
+            additional_filters = ""
+        else:  # Other SD content
+            video_bitrate = "3500000"
+            bufsize = "1750000"
+            maxrate = "3500000"
+            additional_filters = ""
+
+        # Construct the alternative concatenation command with bitrate settings
         alternative_concat_cmd = ['ffmpeg']
         filter_complex_cmd = []
 
@@ -262,10 +274,15 @@ def process_video(video_path, asset_flag):
         filter_complex_cmd.extend([f"[{len(image_video_files)}:v:0][{len(image_video_files)}:a:0]"])
 
         # Finalize the filter_complex command
+        filter_complex_string = ''.join(filter_complex_cmd) + f"concat=n={len(image_video_files) + 1}:v=1:a=1[outv][outa]"
         alternative_concat_cmd.extend([
-            '-filter_complex', ''.join(filter_complex_cmd) + f"concat=n={len(image_video_files) + 1}:v=1:a=1[outv][outa]",
-            '-map', '[outv]', '-map', '[outa]', '-fps_mode' , 'vfr', '-c:v', 'libx264', '-c:a', 'aac', temp_output_path
+            '-filter_complex', filter_complex_string,
+            '-map', '[outv]', '-map', '[outa]', 
+            '-b:v', video_bitrate, '-bufsize', bufsize, '-maxrate', maxrate,
+            '-c:v', 'libx264', '-c:a', 'aac', '-b:a', '320k'
         ])
+
+        alternative_concat_cmd.append(temp_output_path)
 
         # Run the alternative concatenation command
         returncode, stdout, stderr = run_ffmpeg_command(alternative_concat_cmd)
