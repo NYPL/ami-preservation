@@ -51,12 +51,14 @@ def determine_type_format(row):
         return row['format_2'], row['format_3'], '1'  # 1 for sound recordings
     elif format_lower == 'film':
         # Check format_2 for specific audio film formats
-        if row['format_2'] in audio_film_formats:
+        if any(aff.lower() in row['format_2'].lower() for aff in audio_film_formats):
             return row['format_1'], row['format_2'], '1'
         else:
-            return row['format_1'], row['format_2'], ''  # Empty string for other formats
+            # For films, we want to count format_2
+            return row['format_1'], row['format_2'], ''  # Here we can use format_2 for film
     else:
         return None, None, ''
+
     
 
 def map_division_code(vernacular_code):
@@ -204,8 +206,8 @@ def categorize_and_create_trello_cards(df, single_card=False):
         'Film': os.getenv('TRELLO_FILM_LIST_ID')
     }
 
-    # Correctly initialize box_details here
-    box_details = {}  # Initialize it correctly at the function's start
+    # Initialize box_details here
+    box_details = {}
 
     total_formats = {}
     all_titles = set()
@@ -215,9 +217,14 @@ def categorize_and_create_trello_cards(df, single_card=False):
 
     for index, row in df.iterrows():
         barcode = get_box_barcode(row, df)
-        format_3 = str(row['format_3']).strip()
         title = str(row['title']).strip()
         format_category = row['format_1'].lower()
+
+        # For films, use format_2, for others use format_3
+        if 'film' in format_category:
+            format_to_count = str(row['format_2']).strip()
+        else:
+            format_to_count = str(row['format_3']).strip()
 
         # Determine the category and update accordingly
         if 'sound recording' in format_category:
@@ -232,14 +239,15 @@ def categorize_and_create_trello_cards(df, single_card=False):
         # Update box_details, total_formats, all_titles, and category_counts here
         if barcode not in box_details:
             box_details[barcode] = {'formats': {}, 'titles': set(), 'category': category}
-        box_details[barcode]['formats'][format_3] = box_details[barcode]['formats'].get(format_3, 0) + 1
+        box_details[barcode]['formats'][format_to_count] = box_details[barcode]['formats'].get(format_to_count, 0) + 1
         box_details[barcode]['titles'].add(title)
-        total_formats[format_3] = total_formats.get(format_3, 0) + 1
+        total_formats[format_to_count] = total_formats.get(format_to_count, 0) + 1
         all_titles.add(title)
         category_counts[category] += 1
 
         if not work_order_id:
             work_order_id = str(row.get('WorkOrderId', '')).strip()
+
 
     def generate_description(formats, titles):
         format_desc = "; ".join([f"{count} {f} media objects" for f, count in formats.items()])
