@@ -1,15 +1,16 @@
 # ami-preservation
-The Media Preservation teams at the New York Public Library (NYPL) are dedicated to ensuring long-term preservation and access for our audiovisual collections. This repository houses a collection of resources, tools, and internal documentation that underpin our digitization, quality assurance, and quality control efforts within the Audio and Moving Image (AMI) workflow. Explore the repository using the links provided below to access the various tools available:
+The Audio and Moving Image (AMI) Preservation team at the New York Public Library (NYPL) is dedicated to ensuring the long-term preservation and access of the Library's audiovisual collections. This repository houses a collection of resources, tools, and internal documentation that underpin our digitization, quality assurance, and quality control efforts. Explore the repository by using the following links:
 
 ## [AMI Production Scripts](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts)
 ## [AMI QC Scripts](https://github.com/NYPL/ami-preservation/tree/main/qc_utilities)
 ## [AMI Documentation Site](https://nypl.github.io/ami-preservation/)
+
 ### Documentation Site Installation and Development
-Administrators must set up their site development environment before attempting to make changes to any documents, so they can test funcitonality on the live site before releasing it to the public. Below are the installation instructions.
+Administrators should set up their site development environment before attempting to make changes to any documents, so they can test functionality on the live site before releasing it to the public.
 
-#### Installation
+#### Installing a Local Version of the Documentation Site
 
-* See this site for ruby / gem / bundler troubleshooting:
+* For ruby / gem / bundler troubleshooting:
 https://idratherbewriting.com/documentation-theme-jekyll/mydoc_install_jekyll_on_mac.html
 
 * If you don’t have ruby: ```brew install ruby```
