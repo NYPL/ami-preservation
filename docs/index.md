@@ -17,7 +17,7 @@ The AMI Preservation team is composed of Preservation Labs and Preservation Serv
 
 ## Staff
 
-#### Noelle Byer, Media Preservation Engineer - Audio
+#### Noëlle Byer, Media Preservation Engineer - Audio
 {: .no_toc }
 
 #### Rhony Dostaly, Media Preservation Engineer - Moving Image
