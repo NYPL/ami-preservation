@@ -1,4 +1,11 @@
-# AMI Production Scripts
+
+# Table of Contents
+
+1. [Overview](#overview)
+
+
+
+### Overview
 
 This repository contains a set of Python scripts designed to streamline the handling, organization, and preparation of audio and video files for ingest into NYPL's Digital Repository. The primary goal of these scripts is to assist users in efficiently managing their multimedia files, generating accompanying JSON metadata, packaging all assets using the BagIt specification, and transferring access files to Amazon Web Services. The main functionalities of these scripts include:
 
