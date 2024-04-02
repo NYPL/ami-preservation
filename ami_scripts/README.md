@@ -2,18 +2,18 @@
 # AMI Production Scripts
 
 1. [Overview](#overview)
-2. [ami_file_sync.py](#ami_file_sync.py)
-3. [audio_processing.py](#audio_processing.py)
-4. [clean_spec_csv_to_excel.py](#clean_spec_csv_to_excel.py)
-5. [copy_from_s3.py](#copy_from_s3.py)
-6. [copy_to_s3.py](#copy_to_s3.py)
-7. [create_media_json.py](#create_media_json.py)
-8. [create_object_bags.py](#create_object_bags.py)
-9. [filemaker_to_json_validator.py](#filemaker_to_json_validator.py)
-10. [film_processing.py](#film_processing.py)
-11. [fmrest_barcode.py](#fmrest_barcode.py)
-12. [generate_test_media.py](#generate_test_media.py)
-13. [hflip_film_packages.py](#hflip_film_packages.py)
+2. [ami_file_sync.py](#ami_file_syncpy)
+3. [audio_processing.py](#audio_processingpy)
+4. [clean_spec_csv_to_excel.py](#clean_spec_csv_to_excelpy)
+5. [copy_from_s3.py](#copy_from_s3py)
+6. [copy_to_s3.py](#copy_to_s3py)
+7. [create_media_json.py](#create_media_jsonpy)
+8. [create_object_bags.py](#create_object_bagspy)
+9. [filemaker_to_json_validator.py](#filemaker_to_json_validatorpy)
+10. [film_processing.py](#film_processingpy)
+11. [fmrest_barcode.py](#fmrest_barcodepy)
+12. [generate_test_media.py](#generate_test_mediapy)
+13. [hflip_film_packages.py](#hflip_film_packagespy)
 
 
 
