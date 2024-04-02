@@ -6,9 +6,7 @@ nav_order: 13
 
 # AMI Project Administration and Handling
 
-This document outlines vendor requirements for administration, shipping and media handling for contract digitization projects. For corresponding  technical specifications and metadata requirements, please see:
-* [ami-specifications](https://github.com/NYPL/ami-specifications)
-* [ami-metadata](https://github.com/NYPL/ami-metadata)
+This document outlines vendor requirements for administration, shipping and media handling for contract digitization projects. 
 
 ## Table Of Contents
 

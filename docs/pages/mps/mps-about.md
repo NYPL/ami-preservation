@@ -1,10 +1,10 @@
 ---
-title: Media Preservation Services
+title: Preservation Services
 layout: default
 nav_order: 3
 ---
 
-# Media Preservation Services
+# Preservation Services
 {: .no_toc }
 
 ## Table of contents
@@ -13,18 +13,7 @@ nav_order: 3
 1. TOC
 {:toc}
 
-The Media Preservation Services team supports NYPL's preservation activities by managing outsourced digitization logistics, pre-digitization conservation, and digital asset quality control and migration. Our team works closely with Media Preservation Labs, Digital Preservation, Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for reformatting and conservation treatment, and that all deliverables meet standards-based technical requirements prior to long-term preservation and access. Additional services include technical specification development, workflow documentation, and administrative management of grant-funded media preservation projects.
-
-## Staff
-
-
-#### Ryan Marino, Media Preservation Coordinator
-{: .no_toc }
-Coordinates, implements, and documents workflows and specifications for contract digitization, digital asset quality control, and film assessment.
-
-#### Casey McNamara, Media Preservation Coordinator
-{: .no_toc }
-Coordinates film assessment program for the Media Preservation Labs and leads quality control effort for all in-house digitization.
+The Preservation Services team supports NYPL's preservation activities by managing outsourced digitization logistics, pre-digitization conservation, and digital asset quality control and migration. Our team works closely with Media Preservation Labs, Digital Preservation, Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for reformatting and conservation treatment, and that all deliverables meet standards-based technical requirements prior to long-term preservation and access. Additional services include technical specification development, workflow documentation, and administrative management of grant-funded media preservation projects.
 
 ## Services
 

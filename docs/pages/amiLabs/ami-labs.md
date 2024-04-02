@@ -1,14 +1,10 @@
 ---
-title: Media Preservation Labs
+title: Preservation Labs
 layout: default
 nav_order: 2
 has_children: true
 ---
 Quick Resources:
-
-[AMI Labs Scripts](https://github.com/NYPL/ami-preservation/tree/master/pami_scripts){:target="\_blank"}
-
-[AMI Labs Trello](https://trello.com/b/cbbd5QgE/nypl-ami-labs){:target="\_blank"}
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -16,40 +12,18 @@ Quick Resources:
 1. TOC
 {:toc}
 
-# Media Preservtion Labs
-NYPL's in-house media preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Preservation of Audio and Moving Image (PAMI). Today, the AMI Labs are part of Digital Collections, within the Digital Research Division.
+# Preservation Labs
+NYPL's in-house audio and moving image preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Audio and Moving Image Preservation.
 
-The following pages detail workflows, policies, and procedures for audio/video digitization, optical media migration, and born-digital processing, broken into the following categories:
+The following pages detail workflows, policies, and procedures for audio/video/film digitization, optical media migration, and born-digital processing, broken into the following categories:
    * Pre-digitization conservation treatments
    * Set-up and monitoring during transfer
    * Post-digitization editing, spot-checking, and packaging
    * Quality control
    * Safe and secure file transfer
 
-## Staff
-
-#### Rhony Dostaly, Media Preservation Engineer - Moving Image
-{: .no_toc }
-Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections.
-
-#### Fran Dougherty, Media Preservation Engineer - Moving Image
-{: .no_toc }
-Carries out the preservation assessment, treatment, and reformatting of video recordings held in the Library’s permanent research collections. Processes include: media stabilization/cleaning/repair, signal extraction, and creation of high quality digital files.
-
-#### Jeff Willens, Media Preservation Engineer - Audio
-{: .no_toc }
-Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
-
-#### Seth Winner, Media Preservation Engineer - Audio
-{: .no_toc }
-Carries out the preservation assessment, treatment, and reformatting of audio recordings held in the Library’s permanent research collections.
-
-#### Benjamin Turkus,  Manager, Media Preservtion Labs
-{: .no_toc }
-Provides oversight for all in-house media preservation lab operations, and manages Media Preservation Engineers. Develops workflows, documents processes, and pursues open source solutions.
-
 ## Supported Formats & Equipment
-The AMI Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
+The Preservation Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
 
 ### Audio
 {: .no_toc }
@@ -134,19 +108,15 @@ The AMI Labs maintain a variety of playback devices, cleaning machines, and peri
 * Zin VTR Works
   * Ken Zin, 650-465-0441, <kenrzin@gmail.com>
 
-## Capture Specifications
-
-The default position of the AMI Labs is to favor lossless encodings and open formats/standards for all media files. For audio, this means [FLAC](https://xiph.org/flac/){:target="\_blank"}; for video, [FFV1/MKV](https://datatracker.ietf.org/wg/cellar/documents/){:target="\_blank"}. Detailed specifications can be found in the [Digital Asset Specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html) portion of this repository.
-
 ## Software
 
-Whenever possible, workflows have been designed around the use of free/open source software. From capture to quality control, free and open source tools are frequently the best tools for the job, meeting the specific needs of media digitization while offering a high degree of customizability. One sticking point impeding a full embrace of FOSS is the lack of non-linear editing systems capable of accommodating the lossless encodings (FLAC, FFV1) adopted by the AMI Labs.
+Our workflows favor free/open source software (FOSS) for their flexibility and efficiency in media digitization processes.
 
-| **Purpose** | **Software** | **Free/Open Source** |
-|   -----          |     -----      |     -----      |
-|   Audio Digitization      |  [Wavelab](https://new.steinberg.net/wavelab/) | ❌|
-|   Video Digitization      |  [vrecord](https://github.com/amiaopensource/vrecord) | ✅|
-|   Transcoding      |  [FFmpeg](https://www.ffmpeg.org/), [FLAC Utility](https://xiph.org/flac/download.html) | ✅|
-|   Metadata Conformance      |  [MediaConch](https://mediaarea.net/MediaConch) | ✅|
-|   Metadata Extraction      |  [MediaInfo](https://mediaarea.net/MediaInfo), [pymediainfo](https://pypi.org/project/pymediainfo/) | ✅|
-|   Quality Control     |  [QCTools](https://www.bavc.org/preserve-media/preservation-tools/qctools) | ✅|
+| **Purpose** | **Software** |
+|   -----          |     -----      |
+|   Audio Digitization      |  [Wavelab](https://new.steinberg.net/wavelab/) |
+|   Video Digitization      |  [vrecord](https://github.com/amiaopensource/vrecord) |
+|   Transcoding      |  [FFmpeg](https://www.ffmpeg.org/), [FLAC Utility](https://xiph.org/flac/download.html) |
+|   Metadata Conformance      |  [MediaConch](https://mediaarea.net/MediaConch) |
+|   Metadata Extraction      |  [MediaInfo](https://mediaarea.net/MediaInfo), [pymediainfo](https://pypi.org/project/pymediainfo/) |
+|   Quality Control     |  [QCTools](https://www.bavc.org/preserve-media/preservation-tools/qctools) |
