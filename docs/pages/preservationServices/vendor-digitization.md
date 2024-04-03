@@ -1,11 +1,11 @@
 ---
-title: Outsourced Digitization
+title: Vendor Digitization
 layout: default
-nav_order: 5
-has_children: false
+nav_order: 1
+parent: Preservation Services
 ---
 
-# Oursourced Digitization
+# Vendor Digitization
 {: .no_toc }
 
 ## Table of contents

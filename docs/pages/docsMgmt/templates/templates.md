@@ -1,7 +1,7 @@
 ---
 title: Templates
 layout: default
-nav_order: 2
+nav_order: 3
 parent: Documentation Policy and Content Management
 has_children: true
 permalink: /docs/templates/index

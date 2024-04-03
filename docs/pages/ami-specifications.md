@@ -1,7 +1,7 @@
 ---
 title: Digital Asset Specifications
 layout: default
-nav_order: 12
+nav_order: 6
 ---
 
 # AMI Digital Asset Specifications

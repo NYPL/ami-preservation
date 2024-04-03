@@ -1,7 +1,7 @@
 ---
 title: AMI Handling
 layout: default
-nav_order: 13
+nav_order: 7
 ---
 
 # AMI Project Administration and Handling

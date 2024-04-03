@@ -1,7 +1,8 @@
 ---
 title: Shipping
 layout: default
-nav_order: 8
+nav_order: 6
+parent: Preservation Services
 ---
 
 # AMI Shipping
