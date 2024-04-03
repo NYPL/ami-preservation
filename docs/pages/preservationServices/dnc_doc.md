@@ -41,11 +41,11 @@ When digitization fails or is deferred, two fields must be updated in SPEC: **Mi
 1. Follow [steps](#nav_objectrecord) above to open the Object Record
 2. In the main body of the Object Record, look for the "ISSUES" heading; click <ins>View All / Edit / Add</ins> to open Issues tab
 3. At the bottom of the Issues tab, click the `+ ADD ISSUE` button
-4. Choose the appropriate values from the dropdown menus for these fields:
+4. Choose the appropriate values for these fields:
     1. TYPE
     2. ISSUE (a.k.a. subtype)
     3. NOTES
-    * Refer to [Guidelines](#guide_issues) and/or examples in [Use cases table](#table) below
+   * Refer to [Guidelines](#guide_issues) and/or examples in [Use cases table](#table) below
 
 <h2 id="guidelines">Guidelines</h2>
 
@@ -75,7 +75,12 @@ The following statuses will no longer be used:
 
 <h3 id="guide_issues">Issue guidelines:</h3>
 
-Choose an issue TYPE. In most cases, an ISSUE (a.k.a. subtype) will also be required. Last, a NOTE may also be helpful or required. Avoid using issue types and subtypes not listed here:
+There are three Issue fields to complete (in order): 
+1. TYPE (dropdown)
+2. ISSUE a.k.a. subtype (dropdown, dependent on TYPE)
+3. NOTES (free text, when applicable)
+
+Avoid using issue types and subtypes not listed here:
 
 * **Hazard**:
   * for items that present health or safety hazards. Subtype required (see below)
@@ -94,7 +99,7 @@ Choose an issue TYPE. In most cases, an ISSUE (a.k.a. subtype) will also be requ
       * for either consumer home media or off-air recordings
       * NOTES: optional
     * **Condition issue**
-      * *n.b. make sure to use "Condition Issue" as a subtype of "Media Capture", rather than as a type itself*
+      * *n.b.: make sure to use "Condition Issue" as a subtype of "Media Capture", rather than as a type itself*
       * for any type of physical problems impeding preparation or digitization
       * NOTES: specify the exact problem (e.g. "delaminated disc") in the Issue's NOTES field
     * **Did not receive**
@@ -111,44 +116,21 @@ Avoid using "Other" (either as an Issue TYPE or subtype) whenever possible. Cons
 
 <h2 id="table">Use Cases</h2>
 
-| Audio/<br>Video | <br>Film | <br>Scenario | Migration<br>Status | Issue<br>Type | Issue<br>Subtype | Issue<br>Note |
-|:---:|:---:|---|---|---|---|---|
-| x | x | Expected item was not delivered to lab/vendor | `Migration failed (will retry)` | `Media Capture` | `Did not receive` | e.g. "Missing from box 1234" |
-| x | x | Blank media (unused audio/video/film stock) | `Will not migrate` | `Media Capture` | `Blank media` | *No additional note required* |
-| x | x | Tones/bars/video black/film leader only (no meaningful content) | `Will not migrate` | `Media Capture` | `Blank media` | e.g. "bars only" |
-| x |  | Unplayable/inaudible due to recording error | `Will not migrate` | `Media Capture` | `Condition issue` | e.g. "Recording error, tried in multiple machines" |
-| x |  | Commercial media (consumer media or off-air recording) | `Will not migrate` | `Media Capture` | `Commercial media` | e.g. "commercial DVD" |
-| x |  | Unsupported A/V format: in-house equipment limitation | `AMI re-batch: vendor (a/v)` | `Media Capture` | `Unsupported media format` | e.g. "No PAL 8mm equipment available" |
-| x |  | Unsupported A/V format: vendor equipment limitation | `AMI rebatch: in-house (a/v)` | `Media Capture` | `Unsupported media format` | e.g. "No PAL 8mm equipment available" |
-| x |  | Unsupported data format (item may have been inventoried as A/V) | `AMI rebatch: in-house (digital archives)` | `Media Capture` | `Unsupported data format` | e.g. "Digital8 data tape" |
-|  | x | Unsupported film format | `AMI re-batch: special treatment vendor (film)` | `Media Capture` | `Unsupported media format` | e.g. "35mm full-coat mag" |
-|  | x | Unprocessed (exposed) film stock | `AMI re-batch: special treatment vendor (film)` | `Media Capture` | `Condition issue` | e.g. "sealed, appears to be exposed but not processed" |
-| x |  | A/V item needing special treatment | `AMI re-batch: vendor (a/v)` | `Media Capture` | `Condition issue` | e.g. "delaminated disc" |
-|  | x | Film needing special treatment | `AMI re-batch: special treatment vendor (film)` | `Media Capture` | `Condition issue` | e.g. "severe acetate decay, may need replasticizaion", "trims/outs (needs extensive prep)" |
-| x | x | Damaged beyond repair | `Will not migrate` | `Media Capture` | `Condition issue` | e.g. "Multiple transfer attempts, baked and cleaned, still unplayable due to SSS" |
-| x | x | Moldy item | `AMI re-batch: vendor (mold)` | `Hazard` | `Inactive mold` | *No additional note required* |
-|  | x | Nitrate film | `AMI re-batch: special treatment vendor (film)` | `Hazard` | `Nitrate` | *No additional note required* |
-
-<style>
-table th:first-of-type {
-    width: 5%;
-}
-table th:nth-of-type(2) {
-    width: 5%;
-}
-table th:nth-of-type(3) {
-    width: 20%;
-}
-table th:nth-of-type(4) {
-    width: 20%;
-}
-table th:nth-of-type(5) {
-    width: 15%;
-}
-table th:nth-of-type(6) {
-    width: 15%;
-}
-table th:nth-of-type(7) {
-    width: 20%;
-}
-</style>
+| <br>Scenario | Migration<br>Status | Issue<br>Type | Issue<br>Subtype | Issue<br>Note |
+|---|---|---|---|---|
+| A/V, Film: <br>Expected item was not delivered to lab/vendor | `Migration failed (will retry)` | `Media Capture` | `Did not receive` | e.g. "Missing from box 1234" |
+| A/V, Film: <br>Unrecorded/unused stock | `Will not migrate` | `Media Capture` | `Blank media` | *No additional note required* |
+| A/V, Film: <br>No meaningful content (tones/bars/video black/film leader only) | `Will not migrate` | `Media Capture` | `Blank media` | e.g. "bars only" |
+| A/V: <br>Unplayable/inaudible due to recording error -- in-house determination | `Will not migrate` | `Media Capture` | `Condition issue` | e.g. "Recording error, tried in multiple machines" |
+| A/V: <br>Unplayable/inaudible due to recording error -- vendor determination | `AMI rebatch: in-house (a/v)` | `Media Capture` | `Condition issue` | e.g. "Recording error, tried in multiple machines" |
+| A/V: <br>Commercial media (consumer media or off-air recording) | `Will not migrate` | `Media Capture` | `Commercial media` | e.g. "commercial DVD" |
+| A/V: <br>Unsupported format -- in-house equipment limitation | `AMI re-batch: vendor (a/v)` | `Media Capture` | `Unsupported media format` | e.g. "No PAL 8mm equipment available" |
+| A/V: <br>Unsupported format -- vendor equipment limitation | `AMI rebatch: in-house (a/v)` | `Media Capture` | `Unsupported media format` | e.g. "No PAL 8mm equipment available" |
+| Data: <br>Unsupported format (item may have been inventoried as A/V) | `AMI rebatch: in-house (digital archives)` | `Media Capture` | `Unsupported data format` | e.g. "Digital8 data tape" |
+| Film: <br>Unsupported format | `AMI re-batch: special treatment vendor (film)` | `Media Capture` | `Unsupported media format` | e.g. "35mm full-coat mag" |
+| Film: <br>Unprocessed (exposed) stock | `AMI re-batch: special treatment vendor (film)` | `Media Capture` | `Condition issue` | e.g. "sealed, appears to be exposed but not processed" |
+| A/V: <br>Item needing special treatment | `AMI re-batch: vendor (a/v)` | `Media Capture` | `Condition issue` | e.g. "delaminated disc" |
+| Film: <br>Item needing special treatment | `AMI re-batch: special treatment vendor (film)` | `Media Capture` | `Condition issue` | e.g. "severe acetate decay, may need replasticizaion", "trims/outs (needs extensive prep)" |
+| A/V, Film: <br>Item damaged beyond repair | `Will not migrate` | `Media Capture` | `Condition issue` | e.g. "Multiple transfer attempts, baked and cleaned, still unplayable due to SSS" |
+| A/V, Film: <br>Moldy item | `AMI re-batch: vendor (mold)` | `Hazard` | `Inactive mold` | *No additional note required* |
+| Film: <br>Nitrate | `AMI re-batch: special treatment vendor (film)` | `Hazard` | `Nitrate` | *No additional note required* |
