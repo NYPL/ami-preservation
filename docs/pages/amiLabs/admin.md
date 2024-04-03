@@ -2,7 +2,7 @@
 title: Admin
 layout: default
 nav_order: 3
-parent: Media Preservation Labs
+parent: Preservation Labs
 ---
 
 
