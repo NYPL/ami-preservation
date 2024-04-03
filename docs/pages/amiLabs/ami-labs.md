@@ -14,9 +14,8 @@ has_children: true
 1. TOC
 {:toc}
 
-The Preservation Labs serve as NYPL's dedicated unit for digitizing audio and moving image materials, focusing on high-priority tasks such as transferring new acquisitions, cataloged items, labor-intensive media, and fulfilling specific on-demand requests.
+The Preservation Labs serve as NYPL's dedicated unit for digitizing audio and moving image materials, focusing on high-priority tasks such as transferring new acquisitions, cataloged items, labor-intensive media, and fulfilling specific on-demand requests. The following pages detail workflows, policies, and procedures for audio/video/film digitization, and optical media migration, in the following categories:
 
-The following pages detail workflows, policies, and procedures for audio/video/film digitization, and optical media migration, in the following categories:
    * Pre-digitization conservation treatments
    * Set-up and monitoring during transfer
    * Post-digitization editing, spot-checking, and packaging
@@ -102,8 +101,6 @@ The Preservation Labs maintain a variety of playback devices, cleaning machines,
   * Bette Spitz, 717-718-8008, <info@atrtape.com>
 * JRF Magnetic Sciences
   * John and Cookie French, 973-579-5773, <jrf@jrfmagnetics.com> / <cookie@jrfmagnetics.com>
-* The Production People
-  * Nick and Norma Liatsis, 845-201-8063, <nick@ppivideo.com> / <norma@ppivideo.com>
 * Shuster Sound
   * "Midnight Bob" Shuster, 631-258-5441, <bob12am@aol.com>
 * Zin VTR Works

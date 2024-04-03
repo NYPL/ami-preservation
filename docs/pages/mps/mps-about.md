@@ -15,8 +15,6 @@ nav_order: 3
 
 The Preservation Services team facilitates NYPL's preservation efforts through coordination of outsourced digitization, pre-digitization conservation, and the management of digital asset quality and migration. Responsibilities also extend to the creation of technical standards, documenting workflows, and overseeing the administrative aspects of grant-funded preservation projects.
 
-## Services
-
 ### Physical Media Assessment
 In preparation for digitization and long term storage, physical analog media undergo basic conservation and rehousing, carried out by the Media Preservation Services team. Formats currently covered by this team include film and grooved discs.  
 
