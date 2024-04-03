@@ -182,7 +182,9 @@ def main():
         'bibliographic.formerClassmark': object,
         'bibliographic.nonCMSItemID': object,
         'bibliographic.catalogBNumber': object,
-        'bibliographic.mssID': object
+        'bibliographic.mssID': object,
+        'bibliographic.group': object,
+        'bibliographic.sequence': object
     })
 
     # Drop empty columns and the 'asset.fileExt' column
