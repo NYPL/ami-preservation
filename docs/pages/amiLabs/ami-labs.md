@@ -4,7 +4,9 @@ layout: default
 nav_order: 2
 has_children: true
 ---
-Quick Resources:
+
+# Preservation Labs
+{: .no_toc }
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -12,10 +14,9 @@ Quick Resources:
 1. TOC
 {:toc}
 
-# Preservation Labs
-NYPL's in-house audio and moving image preservation unit digitizes thousands of audio and video recordings per year, with a primary focus on performing closely monitored transfers of the following: new Library acquisitions, cataloging priorities, labor-intensive media, and select on-demand requests (for exhibitions and programs, public orders, and special needs). Growing out of the individual preservation units of specific curatorial divisions (the Jerome Robbins Dance Division, the Theatre on Film and Tape Archive, and the Rodgers and Hammerstein Archives of Recorded Sound), in 2009 NYPL consolidated these groups under the banner of Audio and Moving Image Preservation.
+The Preservation Labs serve as NYPL's dedicated unit for digitizing audio and moving image materials, focusing on high-priority tasks such as transferring new acquisitions, cataloged items, labor-intensive media, and fulfilling specific on-demand requests.
 
-The following pages detail workflows, policies, and procedures for audio/video/film digitization, optical media migration, and born-digital processing, broken into the following categories:
+The following pages detail workflows, policies, and procedures for audio/video/film digitization, and optical media migration, in the following categories:
    * Pre-digitization conservation treatments
    * Set-up and monitoring during transfer
    * Post-digitization editing, spot-checking, and packaging
@@ -25,7 +26,7 @@ The following pages detail workflows, policies, and procedures for audio/video/f
 ## Supported Formats & Equipment
 The Preservation Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
 
-### Audio
+## Audio
 {: .no_toc }
 
 | **Format/Equipment** | **Manufacturer/Model** |
@@ -59,7 +60,7 @@ The Preservation Labs maintain a variety of playback devices, cleaning machines,
 |   Fume Extractor      |  Air Impurities Removal Systems Extract-All |
 |   Lab Oven      |  Thermo Scientific 6550 |
 
-### Video
+## Video
 {: .no_toc }
 
 | **Format/Equipment** | **Manufacturer/Model** |
@@ -120,3 +121,5 @@ Our workflows favor free/open source software (FOSS) for their flexibility and e
 |   Metadata Conformance      |  [MediaConch](https://mediaarea.net/MediaConch) |
 |   Metadata Extraction      |  [MediaInfo](https://mediaarea.net/MediaInfo), [pymediainfo](https://pypi.org/project/pymediainfo/) |
 |   Quality Control     |  [QCTools](https://www.bavc.org/preserve-media/preservation-tools/qctools) |
+
+{: .no_toc }

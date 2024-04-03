@@ -13,7 +13,7 @@ nav_order: 3
 1. TOC
 {:toc}
 
-The Preservation Services team supports NYPL's preservation activities by managing outsourced digitization logistics, pre-digitization conservation, and digital asset quality control and migration. Our team works closely with Media Preservation Labs, Digital Preservation, Digital Archives, Preservation and Collections Processing, and Curatorial teams to ensure that media are prioritized for reformatting and conservation treatment, and that all deliverables meet standards-based technical requirements prior to long-term preservation and access. Additional services include technical specification development, workflow documentation, and administrative management of grant-funded media preservation projects.
+The Preservation Services team facilitates NYPL's preservation efforts through coordination of outsourced digitization, pre-digitization conservation, and the management of digital asset quality and migration. Responsibilities also extend to the creation of technical standards, documenting workflows, and overseeing the administrative aspects of grant-funded preservation projects.
 
 ## Services
 
