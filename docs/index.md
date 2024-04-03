@@ -13,7 +13,7 @@ Scripts referenced in the documentation can be found within [AMI Production Scri
 
 ## Overview
 
-The AMI Preservation team is composed of Preservation Labs and Preservation Services. Our mission is to support the preservation and accessibility of AMI collections through a range of focused activities. These efforts include managing digitization projects with external vendors, conducting pre-digitization conservation, maintaining the quality of digital assets, and overseeing the in-house digitization and migration of media. Collaborating closely with NYPL departments such as Digital Preservation, Digital Archives, and various Curatorial teams, Preservation Labs and Preservation Services work in concert to ensure that every media item is expertly preserved, reformatted, and made ready for long-term access and preservation.
+The AMI Preservation team, encompassing Preservation Labs and Services, aims to enhance the preservation and accessibility of AMI collections. Activities include: managing digitization projects with external vendors, conducting pre-digitization conservation, maintaining the quality of digital assets, and overseeing the in-house digitization and migration of media. 
 
 ## Staff
 
