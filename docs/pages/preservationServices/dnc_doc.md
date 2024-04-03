@@ -129,3 +129,26 @@ Avoid using "Other" (either as an Issue TYPE or subtype) whenever possible. Cons
 | x | x | Moldy item | `AMI re-batch: vendor (mold)` | `Hazard` | `Inactive mold` | *No additional note required* |
 |  | x | Nitrate film | `AMI re-batch: special treatment vendor (film)` | `Hazard` | `Nitrate` | *No additional note required* |
 
+<style>
+table th:first-of-type {
+    width: 5%;
+}
+table th:nth-of-type(2) {
+    width: 5%;
+}
+table th:nth-of-type(3) {
+    width: 20%;
+}
+table th:nth-of-type(4) {
+    width: 20%;
+}
+table th:nth-of-type(5) {
+    width: 15%;
+}
+table th:nth-of-type(6) {
+    width: 15%;
+}
+table th:nth-of-type(7) {
+    width: 20%;
+}
+</style>
