@@ -1,29 +1,14 @@
 ---
-title: Preservation Labs
+title: Supported Formats and Equipment
 layout: default
-nav_order: 2
-has_children: true
+nav_order: 4
+parent: Preservation Lab
 ---
 
-# Preservation Labs
+
+# Supported Formats and Equipment
 {: .no_toc }
-
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
-
-The Preservation Labs serve as NYPL's dedicated unit for digitizing audio and moving image materials, focusing on high-priority tasks such as transferring new acquisitions, cataloged items, labor-intensive media, and fulfilling specific on-demand requests. The following pages detail workflows, policies, and procedures for audio/video/film digitization, and optical media migration, in the following categories:
-
-   * Pre-digitization conservation treatments
-   * Set-up and monitoring during transfer
-   * Post-digitization editing, spot-checking, and packaging
-   * Quality control
-   * Safe and secure file transfer
-
-## Supported Formats & Equipment
-The Preservation Labs maintain a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
+The Preservation Lab maintains a variety of playback devices, cleaning machines, and peripheral equipment, allowing for the high-quality digitization of a range of obsolete media formats.
 
 ## Audio
 {: .no_toc }
@@ -93,30 +78,3 @@ The Preservation Labs maintain a variety of playback devices, cleaning machines,
 |   Cleaner: VHS      |  RTI 4905 |
 |   Cleaner: Betacam      |  RTI 4100ME |
 |   Lab Oven      |  Thermo Scientific PR205045M |
-
-
-## Repair Technicians and Equipment Vendors
-
-* ATR Magentics
-  * Bette Spitz, 717-718-8008, <info@atrtape.com>
-* JRF Magnetic Sciences
-  * John and Cookie French, 973-579-5773, <jrf@jrfmagnetics.com> / <cookie@jrfmagnetics.com>
-* Shuster Sound
-  * "Midnight Bob" Shuster, 631-258-5441, <bob12am@aol.com>
-* Zin VTR Works
-  * Ken Zin, 650-465-0441, <kenrzin@gmail.com>
-
-## Software
-
-Our workflows favor free/open source software (FOSS) for their flexibility and efficiency in media digitization processes.
-
-| **Purpose** | **Software** |
-|   -----          |     -----      |
-|   Audio Digitization      |  [Wavelab](https://new.steinberg.net/wavelab/) |
-|   Video Digitization      |  [vrecord](https://github.com/amiaopensource/vrecord) |
-|   Transcoding      |  [FFmpeg](https://www.ffmpeg.org/), [FLAC Utility](https://xiph.org/flac/download.html) |
-|   Metadata Conformance      |  [MediaConch](https://mediaarea.net/MediaConch) |
-|   Metadata Extraction      |  [MediaInfo](https://mediaarea.net/MediaInfo), [pymediainfo](https://pypi.org/project/pymediainfo/) |
-|   Quality Control     |  [QCTools](https://www.bavc.org/preserve-media/preservation-tools/qctools) |
-
-{: .no_toc }

@@ -1,12 +1,12 @@
 ---
 title: Signal Notes / Controlled Vocabularies
 layout: default
-nav_order: 4
-parent: Preservation Labs
+nav_order: 5
+parent: Preservation Lab
 ---
 
 
-#  Preservation Labs Signal Notes, Controlled Vocabularies, and Syntax Guide
+#  Preservation Lab Signal Notes, Controlled Vocabularies, and Syntax Guide
 
 ## Table of contents
 1. [Audio Terms](#audio-terms)

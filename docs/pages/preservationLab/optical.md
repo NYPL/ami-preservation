@@ -2,7 +2,7 @@
 title: Optical
 layout: default
 nav_order: 3
-parent: Preservation Labs
+parent: Preservation Lab
 ---
 
 

@@ -11,9 +11,6 @@ This site provides documentation for the unit's programmatic workflows, includin
 
 Scripts referenced in the documentation can be found within [AMI Production Scripts on GitHub](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts).
 
-## Overview
-
-The AMI Preservation team, encompassing Preservation Labs and Services, aims to enhance the preservation and accessibility of AMI collections. Activities include: managing digitization projects with external vendors, conducting pre-digitization conservation, maintaining the quality of digital assets, and overseeing the in-house digitization and migration of media. 
 
 ## Staff
 
