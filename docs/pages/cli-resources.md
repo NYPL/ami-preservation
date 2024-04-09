@@ -21,7 +21,7 @@ Nearly all macOs software required for AMI Preservation can be installed with th
 
 ### Github Repos
 
-#### **[ami-metadata](https://github.com/NYPL/ami-metadata)**
+#### [ami-metadata](https://github.com/NYPL/ami-metadata)
 * Dependencies:
    * Npm & ajv:
      ```
@@ -32,7 +32,7 @@ Nearly all macOs software required for AMI Preservation can be installed with th
      npm install -g ajv-cli
      ```
 
-#### **[ami-tools](https://github.com/NYPL/ami-tools)**
+#### [ami-tools](https://github.com/NYPL/ami-tools)
    _Many different scripts, mostly for bagit-related repair & validation tasks_
 
    * `pip3 install --user 'ami-tools @ git+https://github.com/NYPL/ami-tools'` 
