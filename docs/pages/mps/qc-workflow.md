@@ -49,8 +49,8 @@ The following handbook will provide step-by-step instructions for carrying out o
 # Content Inspection
 
   * Software requirements:
-    * Text editor
-    * VLC 
+    * Text editor (Atom / Notepad / Text Edit etc.) to open and inspect JSON files. 
+    * VLC to open and inspect media files. 
 
   * Content inspection can be completed either on ICC or on the drive.
     * **On ICC**: make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags.
@@ -100,8 +100,6 @@ The following handbook will provide step-by-step instructions for carrying out o
       * Pass No errors, or any errors listed in the notes are inconsequential, inherent to tape, or only included as supplemental information for future cataloger inquiries.
       * Urgent / Systematic errors
         * If you notice that there is something consistently and terribly wrong with many files in a row, please notify MPA / Asst. Mgr immediately so we can notify vendor and avoid replicating the error in future deliverables ASAP. (e.g. the ’barcode’ field in the JSON files is consistently “000000000”, or the ‘duration’ values are all wrong, or every value for ‘filename’ is the same across an entire batch.)
-
-[QC complete! - if there are failures, all failures in an entire shipment will be combined and sent as a single email; report them to the MPA]
 
 # Bag Validation
 
@@ -153,13 +151,6 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
   /path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID -p 20
   ```
 
-# Perform Manual QC 
-  * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
-  * Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
-  * Use [this](https://github.com/NYPL/ami-preservation/wiki/Resources#logging-qc-failures--flags) list of definitions to review and mark-off the items listed in the QC log.
-  * Content Inspection of In-House deliverables can be completed either on ICC or on the drive by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#content-inspection).  
-  * Use a text-editor (Atom / Notepad / Text Edit etc.) to [open and inspect](https://github.com/NYPL/ami-preservation/wiki/Resources#spot-checking-content--json) JSON files.
-
 # Wrap Up...
   
   * **IF APPROVED**:
@@ -184,13 +175,12 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 
   **Vendor**
 
-  * Once QC is complete and approved, notify Digital Preservation and make arrangements to hand off hard drive(s) for ingest.  
-o prepare media for ingest.
+  * Once QC is complete and approved, notify Digital Preservation and make arrangements to hand off hard drives so media files can be uploaded to EAVie. 
+
 
 **In-House**
 
 [complete]
-
 
 
   * Generating a QC list
