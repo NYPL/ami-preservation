@@ -46,7 +46,7 @@ The following handbook will provide step-by-step instructions for carrying out o
   * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
   * Attach QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-  # Content Inspection
+# Content Inspection
 
   * Software requirements:
     * Text editor
