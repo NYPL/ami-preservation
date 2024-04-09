@@ -190,5 +190,5 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 Use Terminal to generate a QC list for each drive you are QCing by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#generating-a-qc-list).
 
 
-# Tools
+## Tools
 See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
