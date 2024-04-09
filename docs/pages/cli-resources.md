@@ -87,62 +87,6 @@ Nearly all macOs software required for AMI Preservation can be installed with th
 #### Formatting Hard Drives exFAT
 See: https://joshuatj.com/2015/05/13/how-to-format-your-hard-drive-hdd-for-mac-os-x-compatibility-with-the-correct-exfat-allocation-unit-size/
 * allocation unit size: 128kb
-#### Spot Checking Content & JSON
-
-  - Open and inspect JSON file using a text-editor (Atom / Notepad / Text Edit etc.) to ensure that:
-    - There is one JSON file for each digital asset created from a physical object
-    - JSON files are named properly  
-    - All elements are properly structured
-    - All fields contain values (except “bibliographic date”, which is allowed to be left empty).
-    - Technical characteristics/configurations noted in JSON make sense for what you are hearing / seeing. *Note:* if content quality is questionable, make sure to check whether item was cleaned/baked/in poor condition. This will give perspective on the quality of the file.
-
- - Check files for anomalies
-    - Manually check 30sec sections at beginning, middle, end of each file.
-
-        - Things to consider when working with audio files:  
-            - No 5 second overlap between heads and tails of Parts or Regions  
-            - Reversed content that was not transferred as a separate region
-            - Tip: _For a quick check of the entire drive for objects with Regions, grep the directory for “p01” or “r01”_
-
-        - Things to consider when working with video files:
-             - Service Copy plays and does not contain transcoding errors / is not corrupt.
-
-#### Logging QC Failures & Flags
-
-Use the Definitions below to review and mark-off the items listed in the QC log.
-  - **Be as concise as possible when noting questions and errors, so MPA does not have to double-check or clarify with you before compiling notes for Vendors.**
-  - Feel free to add rows for additional assets if you encounter more errors when troubleshooting. Rows are ‘per bag’.  
-  - When QC is complete, send an email to notify MPA / Asst Mgr. that there are some items to review. They will compile all notes for a shipment into a single email and communicate to the vendor. **Note:** Try to troubleshoot errors to make sure you’re not missing something about the nature of the tape that would impact the quality or structure of the file or metadata, e.g. if it was a very poor quality tape and they baked it twice and cleaned it and tried it on multiple machines.
-
-##### Definitions
-
-  - *Question:* A question which will help determine whether an item should be reworked or not. Example:
-    - Freeze frame at the head of the Preservation Master, not noted in the JSON signalNotes. Is this freeze-frame recorded in on-tape?
-
-  - *Flag:* A moderate or minor error that is concerning but that DOES NOT require rework, but does require. Examples:
-    - An audio Edit Master was not levelled-out. The volume level is the same as the Preservation Master, which is lower than the ideal listening volume.
-    - Audio channels in a video Service Copy were not mixed down the audio from the single channel audible in the Preservation Master, so Service Copy only has one channel of audible content.
-
-  - *Fail:* A severe, systematic, or critical error that you think will most likely require retransfer, updating of metadata, and/or rebagging. Examples:  
-    - The metadata for a video asset describes audible content, but the Preservation Master and Service Copy do not have audio.  
-    - An audio asset appears to sound entirely backwards (reversed content on a single face -f01 -was not split out into a separate Face -f02-)
-
-  - *Pass* No errors, or any errors listed in the notes are inconsequential, inherent to tape, or only included as supplemental information for future cataloger inquiries.
-##### Urgent / Systematic errors
-
-- If you notice that there is something consistently and terribly wrong with many files in a row, please notify MPA / Asst. Mgr immediately so we can notify vendor and avoid replicating the error in future deliverables ASAP. _(e.g. the ’barcode’ field in the JSON files is consistently “000000000”, or the ‘duration’ values are all wrong, or every value for ‘filename’ is the same across an entire batch.)_
-
-#### Media Ingest Preparation
-
-- Make sure all logs are stored on ICC
-- Update STATS 3
-- Move Trello card to proper list - Passed QC / Hold for Vendor Response (if flags / fails)
-- Store drive on proper shelf in C10:
-  - Shelf 1 = there is a “Passed QC” level in here
-  - Shelf 9 = there is a “Hold for Vendor response” level in here.  
-  - _Alternatively, give the drive back to the MPA / Asst. Mgr. or leave it on their desk and send an email._
-
-[QC complete! - if there are failures, all failures in an entire shipment will be combined and sent as a single email; report them to the MPA]
 
 
 ## .DS_Store Files
