@@ -81,41 +81,15 @@ See [Shipping](shipping).
 # Quality Control
 See [Quality Control workflow documentation](quality-control)
 
-## Capture issue object management
-* Separate the items by original project fund (pami work orders should at a minimum be separated by project fund). Example: Slifka, Mellon. No need to separate by unit or research center.
-
-* Manager will forward the DNC list separately, and you can review to identify what should be sent to PAMI. Manager will pull objects and box-up according to project fund. On return, media goes back into they're original boxes.
-* For PAMI metadata, pull  item records from the original metadata inventory from initial project and create internal db records (remembering to change the cms project code). CMS:
-  * CMS project code: PAMI
-  * CMS title / description: DNC - [fund name]
-    * EXAMPLE: ```dnc - mellon
-  CMS batch #:... next available sequential ## (can we put a placeholder in PAMI work orders until this is ready?)
-
-
 ## Capture Issue Review
-* **Capture Issues:** Find & delete the following characters in the vendor's DNC reports & HDmanifests
-  - vertical tab ```\v```
-  - tab ```\t```
-  - carriage return ```\r```
-  - new line [similar to carriage return but they both appeared separately] ```\n```
-
-* Separate the items by original project fund (pami work orders should at a minimum be separated by project fund). Example: Slifka, Mellon. No need to separate by unit or research center.
-* Manager will forward the DNC list separately, and you can review to identify what should be sent to PAMI. Manager will pull objects and box-up according to project fund. On return, media goes back into they're original boxes.
-* For PAMI metadata, pull  item records from the original metadata inventory from initial project and create internal db records (remembering to change the cms project code).
-  CMS:
-  * CMS project code: PAMI
-  * CMS title / description: DNC - [fund name]....EXAMPLE: dnc - mellon
-  CMS batch #:... next available sequential ## (can we put a placeholder in PAMI work orders until this is ready?)
-
+* Review vendor's list of capture issues and add the items and notes to the 'captureIssues' tab in the project sheet.
+* Update the SPEC item record for each item on the capture issues list to include an issue and current migration status.
+  * [Updating Migration Status and Adding Issues in SPEC](https://nypl.github.io/ami-preservation/pages/preservationServices/dnc_doc.html)
 
 # Project Close-Out
 ## Project Summaries
 Project summaries are created by compiling mediainfo manifests and capture issue reports.
-* Capture Issues Report Data Cleanup: Find & delete the following characters in the vendor's DNC reports & HDmanifests
-    - vertical tab ```\v```
-    - tab ```\t```
-    - carriage return ```\r```
-    - new line [similar to carriage return but they both appeared separately] ```\n```
+
 
 
                                                                                                                                                                                                                                                                                                                                                         
