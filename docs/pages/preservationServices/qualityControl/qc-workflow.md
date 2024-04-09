@@ -46,6 +46,10 @@ The following handbook will provide step-by-step instructions for carrying out o
   * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
   * Attach QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
+**Each QC log should be easily found linked in Google Drive as an** _attachment in the Trello Card for the batch you are inspecting. _Tip: you can search for the drive ID / work order ID in the Trello search box._
+
+  * Use the list of files that appears in the Google Sheet QC log (in the QClog tab) as your list of files to check.
+  * Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes.
 ## Content Inspection
 
   * Software requirements:
@@ -185,13 +189,6 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
   * Generating a QC list
 Use Terminal to generate a QC list for each drive you are QCing by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#generating-a-qc-list).
 
-
-  * Locate & Open QC log
-
-**Each QC log should be easily found linked in Google Drive as an** _attachment in the Trello Card for the batch you are inspecting._ **If not, check with MPA.** _Tip: you can search for the drive ID / work order ID in the Trello search box._
-
-  * Use the list of files that appears in the Google Sheet QC log (in the QClog tab) as your list of files to check.
-  * Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes.
 
 # Tools
 See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
