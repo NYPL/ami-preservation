@@ -34,7 +34,7 @@ The following pages detail workflows, policies, and procedures for coordinating 
 * [Shipping](https://nypl.github.io/ami-preservation/pages/shipping.html)
 
 ## Project tracking
-  ## [PAMI Database](pami-database)
+  # [PAMI Database](pami-database)
   * The PAMI Database is used to establish project IDs, track deliverables, and generate statistics and metadata for AMI digitization projects.
 
   ## Trello
