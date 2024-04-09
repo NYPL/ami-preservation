@@ -15,7 +15,7 @@ Internal workflow for carrying out QC on digital assets.
 1. TOC
 {:toc}
 
-# Quality Control Overview
+## Quality Control Overview
 Quality control (QC) is conducted in accordance with best practices to ensure that deliverables generated for preservation and access meet our technical specifications, metadata requirements, and adhere to best practices for handling and digitization of NYPL’s audiovisual collections.
 
 Our QC workflow is currently comprised of the following processes:
