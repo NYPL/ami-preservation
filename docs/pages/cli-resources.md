@@ -52,24 +52,6 @@ Nearly all macOs software required for AMI Preservation can be installed with th
        ```
        for file in *wav ; do ffmpeg -i "$file" -c:a aac -b:a 320k -dither_method rectangular -ar 44100 "${file%.*}.mp4" ; done
        ```
-
-### Generating a QC list
-
-  - ```Cd /path/to/Audio``` or Video directory
-  - ```ls Audio/Video &gt; path/to/log/folder/batchID_assetlist.csv```
-  - [Import csv into google sheets qc log created from template:]
-    - The QC template has built-in formulas in the “list” tab.
-        - Navigate to the “asset list” .csv file for the drive you are QCing.
-        - Navigate to the “list” tab in your QC log
-        - **Select the proper cell for either Audio or Video media that you are importing data for (i.e. if you’re importing an AUDIO asset list, select the audio cell as instructed in the log).** _The two cells have different formulas applied for the different quotas we are meeting for audio vs. video data (5% audio vs. 10% video)_
-        - Once you’ve selected the cell, import _assetlist.csv_ into A1 of the “list” tab of the existing Google Sheets QC log (File>Import>Upload a file)  
-            - Select **“Replace contents starting with selected cell”** and **“comma separated”** when the dialog window appears (because you are importing a .csv)
-        - The line items will then be imported into the sheet, and the column next to it will generate a filtered list. This is your spot checking list.  
-        - Copy/Paste Special>”Paste values only” the list of filtered Primary IDs into the “QClog” tab, in the Primary ID column. Do this for one media type at a time. (i.e. if there are both audio and video assets on a single drive, first copy the audio items list, then copy the video items list below it.
-    - Proceed with spot checking.
-
-### Content Inspection
-
 #### General Overview
 
 - Software requirements:
