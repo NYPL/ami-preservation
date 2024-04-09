@@ -48,6 +48,33 @@ The following handbook will provide step-by-step instructions for carrying out o
   * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
   * Attach QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
+# Content Inspection
+
+  * Software requirements:
+    * Text editor
+    * VLC 
+
+  * Content inspection can be completed either on ICC or on the drive.
+    * **On ICC**: make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags.
+    * Locate the directory that contains batch to QC in the 3_Ready_To_QC folder, if assigned by MPA.
+    * Follow the below instructions (skip “Mount Read Only” section)
+    * **On Hard Drive**: Mount Drive Read Only before opening any directories, and follow the below instructions
+
+  * Open and inspect JSON file using a text-editor (Atom / Notepad / Text Edit etc.) to ensure that:
+    * There is one JSON file for each digital asset created from a physical object
+    * JSON files are named properly
+    * All elements are properly structured
+    * All fields contain values (except “bibliographic date”, which is allowed to be left empty).
+    * Technical characteristics/configurations noted in JSON make sense for what you are hearing / seeing. Note: if content quality is questionable, make sure to check whether item was cleaned/baked/in poor condition. This will give perspective on the quality of the file.
+  * Check files for anomalies
+    * Manually check 30sec sections at beginning, middle, end of each file.
+      * Things to consider when working with audio files:
+        * No 5 second overlap between heads and tails of Parts or Regions
+        * Reversed content that was not transferred as a separate region
+        * Tip: For a quick check of the entire drive for objects with Regions, grep the directory for “p01” or “r01”
+      * Things to consider when working with video files:
+        * Service Copy plays and does not contain transcoding errors / is not corrupt.
+
   * **MOUNT DRIVE READ-ONLY** 
     * **Be sure to mount your drive [Read-Only](https://github.com/NYPL/ami-preservation/wiki/Resources#mounting-drives-read-only) before you begin QC** 
     * Open Disk Utility and check the Device name listed in the lower right corner
