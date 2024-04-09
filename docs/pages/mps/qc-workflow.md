@@ -101,8 +101,6 @@ The following handbook will provide step-by-step instructions for carrying out o
       * Urgent / Systematic errors
         * If you notice that there is something consistently and terribly wrong with many files in a row, please notify MPA / Asst. Mgr immediately so we can notify vendor and avoid replicating the error in future deliverables ASAP. (e.g. the ’barcode’ field in the JSON files is consistently “000000000”, or the ‘duration’ values are all wrong, or every value for ‘filename’ is the same across an entire batch.)
 
-[QC complete! - if there are failures, all failures in an entire shipment will be combined and sent as a single email; report them to the MPA]
-
 # Bag Validation
 
   * Use ```validate_ami_bags.py``` in ami-tools to check Check bag Oxums, bag completeness, bag hashes, directory structure, filenames, and metadata. 
@@ -177,13 +175,12 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
 
   **Vendor**
 
-  * Once QC is complete and approved, notify Digital Preservation and make arrangements to hand off hard drive(s) for ingest.  
-o prepare media for ingest.
+  * Once QC is complete and approved, notify Digital Preservation and make arrangements to hand off hard drives so media files can be uploaded to EAVie. 
+
 
 **In-House**
 
 [complete]
-
 
 
   * Generating a QC list
