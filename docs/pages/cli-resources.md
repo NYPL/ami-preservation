@@ -40,7 +40,7 @@ Nearly all macOs software required for AMI Preservation can be installed with th
 
 ### ffmpeg
 
-#### **Audio**
+#### Audio
 
    * In-house Audio Edit Master > AWS Audio Edit Master / Service Copy (audio as mp4):
      * *[individual file version]*:
