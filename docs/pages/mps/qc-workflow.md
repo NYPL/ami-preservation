@@ -49,8 +49,8 @@ The following handbook will provide step-by-step instructions for carrying out o
 # Content Inspection
 
   * Software requirements:
-    * Text editor
-    * VLC 
+    * Text editor (Atom / Notepad / Text Edit etc.) to open and inspect JSON files. 
+    * VLC to open and inspect media files. 
 
   * Content inspection can be completed either on ICC or on the drive.
     * **On ICC**: make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags.
@@ -152,13 +152,6 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
   ```
   /path/to/ami-preservation/ami-scripts/rawcooked_check_mkv.py -d /Volumes/DRIVE-ID -p 20
   ```
-
-# Perform Manual QC 
-  * Perform manual QC using Google Sheet list of Bags to check (in Trello card) (1min @ beginning, middle, end of each file)
-  * Note any errors / observations in the Google Sheet log. Use the categories/menus provided as much as possible.
-  * Use [this](https://github.com/NYPL/ami-preservation/wiki/Resources#logging-qc-failures--flags) list of definitions to review and mark-off the items listed in the QC log.
-  * Content Inspection of In-House deliverables can be completed either on ICC or on the drive by following the steps outlined [here](https://github.com/NYPL/ami-preservation/wiki/Resources#content-inspection).  
-  * Use a text-editor (Atom / Notepad / Text Edit etc.) to [open and inspect](https://github.com/NYPL/ami-preservation/wiki/Resources#spot-checking-content--json) JSON files.
 
 # Wrap Up...
   
