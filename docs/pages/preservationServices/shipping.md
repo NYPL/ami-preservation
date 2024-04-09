@@ -1,5 +1,5 @@
 ---
-title: Vendor Project Shipping
+title: Vendor Shipping
 layout: default
 nav_order: 1
 parent: Preservation Services
