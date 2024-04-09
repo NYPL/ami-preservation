@@ -2,7 +2,7 @@
 title: Vendor Project Shipping
 layout: default
 nav_order: 1
-parent: Vendor Digitization
+parent: Preservation Services
 ---
 
 # Vendor Project Shipping
