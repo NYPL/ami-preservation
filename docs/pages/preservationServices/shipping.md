@@ -1,8 +1,8 @@
 ---
 title: Vendor Shipping
 layout: default
-nav_order: 1
-parent: Preservation Services
+nav_order: 2
+parent: Media Preservation Services
 ---
 
 # Vendor Project Shipping
