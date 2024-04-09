@@ -5,7 +5,7 @@ nav_order: 6
 parent: Preservation Services
 ---
 
-# AMI Shipping
+# Vendor Project Shipping
 {: .no_toc }
 
 ## Table of contents
