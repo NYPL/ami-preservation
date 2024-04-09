@@ -3,6 +3,8 @@ title: QC Workflow
 layout: default
 nav_order: 1
 parent: Quality Control
+grand_parent: Preservation Services
+
 ---
 
 # Quality Control Workflow

@@ -1,8 +1,8 @@
 ---
 title: Video
 layout: default
-nav_order: 5
-parent: Media Preservation Labs
+nav_order: 2
+parent: Preservation Lab
 ---
 
 

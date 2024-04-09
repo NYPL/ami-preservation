@@ -1,15 +1,11 @@
 ---
 title: Digital Asset Specifications
 layout: default
-nav_order: 12
+nav_order: 6
 ---
 
 # AMI Digital Asset Specifications
-**note** this document also exists as a [separate repo.](https://github.com/NYPL/ami-specifications)
-
-This document outlines the technical specifications and requirements for digitization of analog media collections and digital packaging of deliverable files. For corresponding information about metadata; shipping, handling and reporting; and project administration, please see:
-* [ami-handling](https://github.com/NYPL/ami-handling)
-* [ami-metadata](https://github.com/NYPL/ami-metadata)
+This document outlines the technical specifications and requirements for digitization of analog media collections and digital packaging of deliverable files.
 
 ## Table Of Contents
 <!-- MarkdownTOC -->

@@ -180,6 +180,13 @@ def process_video(video_path, asset_flag):
                 f"scale={width}:{height}",
                 "setsar=10/11",
             ])
+        elif width == 654 and height == 480 and video_stream.get('display_aspect_ratio') == '94:69':
+            # Check if the video is oddball Telestream DAR video
+            filters.extend([
+                f"scale={width}:{height}",
+                "setsar=7520/7521",
+                "setdar=94/69"
+            ])
         else:
             # For other resolutions, scale as usual
             filters.extend([
@@ -234,14 +241,26 @@ def process_video(video_path, asset_flag):
     ffmpeg_concat_cmd = ['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', concat_list, '-c', 'copy', temp_output_path]
     returncode, stdout, stderr = run_ffmpeg_command(ffmpeg_concat_cmd)
 
-    if "Non-monotonous DTS in output stream 0:1" in stderr:
-        print("Non-monotonous DTS error detected. Attempting alternative concatenation method.")
+    if "Non-monotonic DTS in output stream 0:1" in stderr or "Non-monotonous DTS in output stream 0:1" in stderr:
+        print("Non-monotonic DTS error detected. Attempting alternative concatenation method.")
 
         # Remove the possibly corrupted file
         if os.path.exists(temp_output_path):
             os.remove(temp_output_path)
 
-        # Construct the alternative concatenation command
+                # After determining the video bitrate and aspect ratio based on resolution
+        if width == 1920 and height == 1080:  # HD content
+            video_bitrate = "8000000"
+            bufsize = "8000000"
+            maxrate = "8000000"
+            additional_filters = ""
+        else:  # Other SD content
+            video_bitrate = "3500000"
+            bufsize = "1750000"
+            maxrate = "3500000"
+            additional_filters = ""
+
+        # Construct the alternative concatenation command with bitrate settings
         alternative_concat_cmd = ['ffmpeg']
         filter_complex_cmd = []
 
@@ -255,10 +274,15 @@ def process_video(video_path, asset_flag):
         filter_complex_cmd.extend([f"[{len(image_video_files)}:v:0][{len(image_video_files)}:a:0]"])
 
         # Finalize the filter_complex command
+        filter_complex_string = ''.join(filter_complex_cmd) + f"concat=n={len(image_video_files) + 1}:v=1:a=1[outv][outa]"
         alternative_concat_cmd.extend([
-            '-filter_complex', ''.join(filter_complex_cmd) + f"concat=n={len(image_video_files) + 1}:v=1:a=1[outv][outa]",
-            '-map', '[outv]', '-map', '[outa]', '-fps_mode' , 'vfr', '-c:v', 'libx264', '-c:a', 'aac', temp_output_path
+            '-filter_complex', filter_complex_string,
+            '-map', '[outv]', '-map', '[outa]', 
+            '-b:v', video_bitrate, '-bufsize', bufsize, '-maxrate', maxrate,
+            '-c:v', 'libx264', '-c:a', 'aac', '-b:a', '320k'
         ])
+
+        alternative_concat_cmd.append(temp_output_path)
 
         # Run the alternative concatenation command
         returncode, stdout, stderr = run_ffmpeg_command(alternative_concat_cmd)

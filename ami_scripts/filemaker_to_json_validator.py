@@ -18,10 +18,16 @@ ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks', 'source.physic
 # Define the convert_mixed_types function
 def convert_mixed_types(value):
     """
-    Convert value to integer if possible, otherwise return the original string.
+    Convert value to a float or integer if possible, otherwise return the original string.
+    Preserve fractional numbers by converting to float and convert to integer only if the number is whole.
     """
     try:
-        return int(value)
+        float_value = float(value)
+        # If the float value is equivalent to an int, return it as int to avoid unnecessary decimal points.
+        if float_value.is_integer():
+            return int(float_value)
+        else:
+            return float_value
     except ValueError:
         return value
 
@@ -176,7 +182,9 @@ def main():
         'bibliographic.formerClassmark': object,
         'bibliographic.nonCMSItemID': object,
         'bibliographic.catalogBNumber': object,
-        'bibliographic.mssID': object
+        'bibliographic.mssID': object,
+        'bibliographic.group': object,
+        'bibliographic.sequence': object
     })
 
     # Drop empty columns and the 'asset.fileExt' column
