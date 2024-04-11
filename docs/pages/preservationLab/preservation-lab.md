@@ -8,12 +8,6 @@ has_children: true
 # Preservation Lab
 {: .no_toc }
 
-## Table of contents
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
-
 The Preservation Lab serves as NYPL's dedicated in-house unit for digitizing audio and moving image materials, focusing on high-priority tasks such as transferring new acquisitions, cataloged items, labor-intensive media, and fulfilling on-demand requests. The following pages detail workflows, policies, and procedures for audio/video/film digitization, and optical media migration, in the following categories:
 
    * Pre-digitization conservation treatments
@@ -23,6 +17,7 @@ The Preservation Lab serves as NYPL's dedicated in-house unit for digitizing aud
    * Safe and secure file transfer
 
 ## Software
+{: .no_toc }
 
 Our workflows favor free/open source software (FOSS) for their flexibility and efficiency in media digitization processes.
 

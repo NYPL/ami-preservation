@@ -1,7 +1,8 @@
 ---
 title: Migration Status and Issues (SPEC) 
 layout: default
-nav_order: 15
+nav_order: 3
+parent: Resources
 ---
 
 # Updating Migration Status and Adding Issues in SPEC

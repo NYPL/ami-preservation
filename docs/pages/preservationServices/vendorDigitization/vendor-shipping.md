@@ -1,11 +1,13 @@
 ---
 title: Vendor Shipping
 layout: default
-nav_order: 3
-parent: Preservation Services
+nav_order: 2
+parent: Vendor Digitization
+grand_parent: Preservation Services
+
 ---
 
-# Vendor Project Shipping
+# Vendor Shipping
 {: .no_toc }
 
 ## Table of contents
