@@ -1,7 +1,9 @@
 ---
 title: Command Line Resources
 layout: default
-nav_order: 4
+nav_order: 2
+parent: Resources
+
 ---
 # Resources
 {: .no_toc }

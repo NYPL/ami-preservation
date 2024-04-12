@@ -1,10 +1,12 @@
 ---
-title: AMI Handling
+title: Vendor AMI Handling
 layout: default
-nav_order: 7
+nav_order: 3
+parent: Vendor Digitization
+grand_parent: Preservation Services
 ---
 
-# AMI Project Administration and Handling
+# Vendor AMI Handling
 
 This document outlines vendor requirements for administration, shipping and media handling for contract digitization projects. 
 
