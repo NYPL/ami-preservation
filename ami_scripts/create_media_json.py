@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
-import csv
 import json
 import logging
 import subprocess
 import os
 from pathlib import Path
 import re
+from fmrest import Server
 
 def setup_logging():
     logger = logging.getLogger(__name__)
@@ -19,16 +19,27 @@ def setup_logging():
     logger.addHandler(console_handler)
     return logger
 
-
 def get_args():
-    parser = argparse.ArgumentParser(description="Create NYPL JSON Files from SPEC Export and user-supplied directory of media files")
-    parser.add_argument('-c', '--config', required=True, help='Path to config file')
-    parser.add_argument('-s', '--source', help='path to SPEC CSV Export', required=False)
-    parser.add_argument('-m', '--media', help='path to directory of media files', required=False)  # Modified here
+    parser = argparse.ArgumentParser(description="Create NYPL JSON Files using media files and FileMaker database")
+    parser.add_argument('-u', '--username', required=True, help='Username for FileMaker database')
+    parser.add_argument('-p', '--password', required=True, help='Password for FileMaker database')
+    parser.add_argument('-m', '--media', required=True, help='Path to directory of media files')
     parser.add_argument('-d', '--digitizer', choices=['Media Preserve', 'NYPL', 'Memnon'], required=False, help='Name of the digitizer')
-    parser.add_argument('-o', '--output', help='path to destination for JSON files', required=True)
+    parser.add_argument('-o', '--output', required=True, help='Path to destination for JSON files')
+    parser.add_argument('-c', '--config', required=True, help='Path to config file')
     return parser.parse_args()
 
+def connect_to_filemaker(server, username, password, database, layout):
+    url = f"https://{server}"
+    api_version = 'v1'
+    fms = Server(url, database=database, layout=layout, user=username, password=password, verify_ssl=True, api_version=api_version)
+    try:
+        fms.login()
+        logger.info("Successfully connected to the FileMaker database.")
+        return fms
+    except Exception as e:
+        logger.error(f"Failed to connect to Filemaker server: {e}")
+        return None
 
 
 def load_config(config_file):
@@ -36,22 +47,6 @@ def load_config(config_file):
         config = json.load(f)
     return config
 
-
-def load_csv(args):
-    data_dict = {}
-    if args.source:
-        try:
-            with open(args.source, 'rb') as file:
-                content = file.read().decode('utf-8', 'replace').replace('\x00', '')
-                reader = csv.reader(content.splitlines(), delimiter=',')
-                headers = next(reader)
-                for row in reader:
-                    key = row[0]
-                    values = row[1:]
-                    data_dict[key] = dict(zip(headers[1:], values))
-        except OSError as e:
-            logger.error(f"Error loading CSV file: {e}")
-    return data_dict
 
 valid_extensions = {".mov", ".wav", ".flac", ".mkv", ".dv", ".mp4", ".iso"}
 
@@ -70,6 +65,65 @@ def get_media_files(args):
     if media_list:
         logger.info(f"Found these files: {', '.join(media_list)}")
     return media_list
+
+
+def get_bibliographic_data(fms, cms_id):
+    query = [{"ref_ami_id": cms_id}]
+    try:
+        found_records = fms.find(query)
+        if found_records:
+            record = found_records[0]
+            vernacular_division_code = getattr(record, 'division', '')  # Assuming 'division' is the vernacular code
+            division_code = map_division_code(vernacular_division_code)
+            biblio_data = {
+                'barcode': str(getattr(record, 'id_barcode', '')),
+                'cmsItemID': cms_id,
+                'divisionCode': division_code,
+                'vernacularDivisionCode': vernacular_division_code,
+                'primaryID': cms_id,
+                'title': getattr(record, 'id_label_text', ''),
+                'format_1': getattr(record, 'format_1', ''),
+                'format_2': getattr(record, 'format_2', ''),
+                'format_3': getattr(record, 'format_3', '')
+            }
+            return biblio_data
+        else:
+            logger.warning(f"No records found for CMS ID {cms_id}.")
+            return None
+    except Exception as e:
+        logger.error(f"An error occurred while retrieving data for CMS ID {cms_id}: {e}")
+        return None
+
+
+def determine_type_format(biblio_data):
+    format_lower = biblio_data['format_1'].lower()
+    if format_lower in ['video', 'sound recording']:
+        # Use format_3 for video and sound recordings and apply format_fixes
+        return biblio_data['format_3'], True, None  # Adding None as the third return value for direct_type
+    elif format_lower == 'film':
+        # For films, directly use 'film' as type and format_2 as format, without applying format_fixes
+        return biblio_data['format_2'], False, 'film'  # Returning 'film' explicitly in lowercase
+    else:
+        return None, False, None  # Ensure three values are returned for any other unexpected case
+
+
+def map_division_code(vernacular_code):
+    mapping = {
+        'SCL': 'scb',
+        'DAN': 'myd',
+        'RHA': 'myh',
+        'MUS': 'mym',
+        'TOFT': 'myt',
+        'THE': 'myt',
+        'MSS': 'mao',
+        'GRD': 'grd',
+        'NYPLarch': 'axv',
+        'MUL': 'mul',
+        'BRG': 'mae',
+        'JWS': 'maf',
+        'LPA': 'myr'
+    }
+    return mapping.get(vernacular_code, '')  # Return empty string if no match
 
 
 def parse_media_file(filepath):
@@ -106,6 +160,16 @@ def parse_media_file(filepath):
 def create_new_json(args, media_data, config):
     if media_data is None:
         return
+    
+    format_name, apply_format_fixes, direct_type = determine_type_format(media_data['bibliographic'])
+    object_type = direct_type if direct_type else ''  # Use direct_type if available
+
+    if apply_format_fixes and format_name:
+        for type, formats in config['format_fixes'].items():
+            if format_name in formats:
+                object_type = type
+                break
+
     filename = media_data['filename']
     basename = filename.rsplit('.', 1)[0]  # filename without extension
     json_dir = Path(args.output)
@@ -117,13 +181,21 @@ def create_new_json(args, media_data, config):
     match = re.search(r"\d{4}-\d{2}-\d{2}", date_created)
     date_created = match.group() if match else ''
 
-    # Determine object type based on object format and config
-    format_name = media_data['bibliographic'].get('format.name', '')
-    object_type = ''
-    for type, formats in config['format_fixes'].items():
-        if format_name in formats:
-            object_type = type
-            break
+    # Initialize bibliographic data
+    biblio_data = {
+        'barcode': media_data['bibliographic'].get('barcode', ''),
+        'cmsCollectionID': media_data['bibliographic'].get('cmsCollectionID', ''),
+        'cmsItemID': media_data['cms_id'],
+        'divisionCode': media_data['bibliographic'].get('divisionCode', ''),
+        'primaryID': media_data['cms_id'],
+        'title': media_data['bibliographic'].get('title', ''),
+        'vernacularDivisionCode': media_data['bibliographic'].get('vernacularDivisionCode', ''),
+    }
+    
+    # Add classmark only if not empty
+    classmark = media_data['bibliographic'].get('classmark', '')
+    if classmark:
+        biblio_data['classmark'] = classmark
 
     nested_json = {
         'asset': {
@@ -131,16 +203,7 @@ def create_new_json(args, media_data, config):
             'referenceFilename': media_data['filename'],  # filename includes the extension
             'schemaVersion': 'x.0'
         },
-        'bibliographic': {
-            'barcode': media_data['bibliographic'].get('barcode', ''),
-            'classmark': media_data['bibliographic'].get('id.classmark', ''),
-            'cmsCollectionID': media_data['bibliographic'].get('c#', ''),
-            'cmsItemID': media_data['cms_id'],
-            'divisionCode': media_data['division'],
-            'primaryID': media_data['cms_id'],
-            'title': media_data['bibliographic'].get('title', ''),
-            'vernacularDivisionCode': media_data['bibliographic'].get('repository', '')
-        },
+        'bibliographic': biblio_data,
         'source': {
             'object': {
                 'format': format_name,
@@ -149,6 +212,7 @@ def create_new_json(args, media_data, config):
             }
         },
         'technical': {
+            # Populate technical details as needed
             'audioCodec': media_data['media_info']['audio'].get('Format', ''),
             'videoCodec': media_data['media_info']['video'].get('Format', None),
             'dateCreated': date_created,  # using the extracted date
@@ -160,41 +224,57 @@ def create_new_json(args, media_data, config):
             'filesize': {'measure': media_data['file_size'], 'unit': 'B'}
         }
     }
+
     if args.digitizer:
         nested_json['digitizer'] = config['digitizers'][args.digitizer]
-
-    # Remove any keys in the 'technical' dictionary that have a value of None
-    nested_json['technical'] = {k: v for k, v in nested_json['technical'].items() if v is not None}
 
     json_filepath = json_dir / f"{basename}.json"  # Use basename for the output JSON filename
     try:
         with open(json_filepath, 'w') as f:
             json.dump(nested_json, f, indent=4)
+        logger.info(f"JSON file created successfully: {json_filepath}")
     except OSError as e:
         logger.error(f"Error creating JSON file for {basename}: {e}")
 
 
-def process_media_files(args, data_dict, media_list, config):
+
+def process_media_files(args, fms, media_list, config):
     for filepath in media_list:
         media_data = parse_media_file(filepath)
-        if media_data is not None:
+        if media_data:
             cms_id = media_data['cms_id']
-            if cms_id in data_dict:
-                media_data['bibliographic'] = data_dict[cms_id]
+            bibliographic_data = get_bibliographic_data(fms, cms_id)
+            if bibliographic_data:
+                media_data['bibliographic'] = bibliographic_data
                 logger.info(f"Now making JSON for {media_data['filename']} file")
                 create_new_json(args, media_data, config)
             else:
-                logger.warning(f"{media_data['filename']} File not found in SPEC CSV Export (data dict)")
+                logger.warning(f"No bibliographic data found for SPEC AMI ID {cms_id}. File will not be processed.")
+
 
 
 def main():
     global logger
     logger = setup_logging()
-    arguments = get_args()
-    config = load_config(arguments.config)
-    csv_data = load_csv(arguments)
-    media_list = get_media_files(arguments)
-    process_media_files(arguments, csv_data, media_list, config)
+    args = get_args()
+    config = load_config(args.config)
+
+    # Setup FileMaker connection
+    server = os.getenv('FM_SERVER')
+    database = os.getenv('FM_DATABASE')
+    layout = os.getenv('FM_LAYOUT')
+    if not all([server, database, layout]):
+        logger.error("Server, database, and layout need to be set as environment variables.")
+        return
+
+    fms = connect_to_filemaker(server, args.username, args.password, database, layout)
+    if not fms:
+        return
+
+    media_list = get_media_files(args)
+    process_media_files(args, fms, media_list, config)
+
+    fms.logout()
 
 if __name__ == '__main__':
     main()
