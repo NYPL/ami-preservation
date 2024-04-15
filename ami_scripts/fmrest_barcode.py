@@ -4,13 +4,14 @@ import argparse
 import csv
 import os
 import re
+import pandas as pd
 from fmrest import Server
 
 # Define command line arguments
-parser = argparse.ArgumentParser(description="Script to read SPEC AMI IDs from a CSV and process them using a Filemaker database.")
+parser = argparse.ArgumentParser(description="Script to read SPEC AMI IDs from a CSV or Excel file and process them using a Filemaker database.")
 parser.add_argument('-u', '--username', help="The username for the Filemaker database.", required=True)
 parser.add_argument('-p', '--password', help="The password for the Filemaker database.", required=True)
-parser.add_argument('-i', '--input', help="The path to the CSV file containing SPEC AMI IDs.", required=True)
+parser.add_argument('-i', '--input', help="The path to the input file containing SPEC AMI IDs.", required=True)
 parser.add_argument('-o', '--output', help="The path to the output CSV file for exporting barcodes.", required=True)
 
 args = parser.parse_args()
@@ -28,7 +29,6 @@ if not all([server, database, layout]):
 def connect_to_filemaker(server, username, password, database, layout):
     url = f"https://{server}"
     api_version = 'v1'
-
     fms = Server(url, database=database, layout=layout, user=username, password=password, verify_ssl=True, api_version=api_version)
     
     try:
@@ -39,25 +39,36 @@ def connect_to_filemaker(server, username, password, database, layout):
         print(f"Failed to connect to Filemaker server: {e}")
         return None
 
-# Function to read SPEC AMI IDs from CSV
-def read_spec_ami_ids(csv_file_path):
+# Function to read SPEC AMI IDs from input file
+def read_spec_ami_ids(file_path):
     ids = []
     try:
-        with open(csv_file_path, mode='r', encoding='utf-8') as file:
-            reader = csv.reader(file)
-            first_row = next(reader, None)  # Read the first row to check if it's a header
-
-            # Check if the first row is a header or a valid ID
-            if first_row and re.match(r"^\d{6}$", first_row[0]):
-                ids.append(first_row[0])  # It's a valid ID, not a header
+        if file_path.endswith('.csv'):
+            with open(file_path, mode='r', encoding='utf-8') as file:
+                reader = csv.reader(file)
+                header = next(reader, None)
+                column_index = header.index('SPEC_AMI_ID') if 'SPEC_AMI_ID' in header else 0
                 for row in reader:
-                    ids.append(row[0])
-            elif first_row:
-                for row in reader:
-                    if re.match(r"^\d{6}$", row[0]):
-                        ids.append(row[0])  # Only add if it's a valid six-digit number
+                    if re.match(r"^\d{6}$", row[column_index]):
+                        ids.append(row[column_index])
+        elif file_path.endswith('.xlsx'):
+            df = pd.read_excel(file_path, sheet_name=None)
+            valid_sheet = None
+            for sheet_name, sheet_df in df.items():
+                if 'SPEC_AMI_IDs' in sheet_name or re.search(r"spec_ami_ids", sheet_name, re.IGNORECASE):
+                    valid_sheet = sheet_df
+                    break
+            if valid_sheet is not None:
+                if 'SPEC_AMI_ID' in valid_sheet.columns:
+                    for id in valid_sheet['SPEC_AMI_ID']:
+                        if re.match(r"^\d{6}$", str(id)):
+                            ids.append(str(id))
+                else:
+                    print("SPEC_AMI_ID column not found. Please check the Excel file.")
+            else:
+                print("Suitable sheet not found. Please check the Excel file.")
     except Exception as e:
-        print(f"Failed to read CSV file: {e}")
+        print(f"Failed to read input file: {e}")
     return ids
 
 if __name__ == "__main__":
@@ -69,11 +80,9 @@ if __name__ == "__main__":
         for ami_id in spec_ami_ids:
             print(f"Attempting to find: {ami_id}")
             query = [{"ref_ami_id": ami_id}]
-
             try:
                 found_records = fms.find(query)
                 found_records_list = list(found_records)
-
                 if found_records_list:
                     barcode = getattr(found_records_list[0], 'id_barcode', None)
                     if barcode:
@@ -86,11 +95,9 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"An error occurred while searching for ID {ami_id}: {e}")
         
-        # Export barcodes sorted by AMI ID to CSV
         with open(args.output, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['AMI ID', 'Barcode'])
-            
             for ami_id, barcode in sorted(ami_id_to_barcode.items()):
                 writer.writerow([ami_id, barcode])
         
