@@ -47,7 +47,7 @@ MPC/MPA emails procurement staff, describing the proposed timeline, shipper info
 
 ## Shipping
 * Boxes are migrated following coordination with SFP:
-  * See [Project Workflow instructions](project-workflow) for information regarding box check-out.
+  * See [Box Check-Out/In Google Sheet Color-Coding Guide](https://nypl.github.io/ami-preservation/pages/preservationServices/vendorDigitization/vendor-project-management.html#box-check-outin-google-sheet-color-coding-guide) for information regarding box check-out.
   * MPC/MPA, Shipper, and Vendor sign document upon pick-up / delivery.
 * **IF SHIPPING TO MULTIPLE VENDORS:** Print paper signs with the destination city tape to top of each pallet to distinguish multiple shipments to different vendors.
 * Shippers arrive, wrap, and take pallets.
@@ -71,7 +71,7 @@ MPC/MPA emails procurement staff, describing the proposed timeline, shipper info
 * Pallets must not be stacked or dismantled; pallets must be wrapped by shipper
 * Delivery must take place MON-WED or FRI, between 8am-5pm (deliveries not accepted SAT/SUN or any day after 5pm)
 * "Straight truck" required, no more than 27" off ground (dock ceiling is short)
-* Lift gate required, ideally ~94" x 70" ("tractor trailer" or “gesticulating” lift gates are preferred to accommodate the incline of the dock floor.
+* Lift gate required, ideally ~94" x 70" "tractor trailer" or “gesticulating” lift gates are preferred to accommodate the incline of the dock floor.
 * Dock is 29" high from the ground, and only 19.5 ft long; outside of loading dock is a steep incline - short truck required.
 
 ## Shipping Vendor Info
