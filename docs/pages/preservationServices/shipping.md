@@ -59,7 +59,7 @@ MPC/MPA emails procurement staff, describing the proposed timeline, shipper info
 * MPC/MPA contacts digitization vendor to confirm new shipping dates and pallet count.
 * (follow above workflow for shipping procedures)
 * Boxes are checked-in upon arrival or before migration back to SFP staff.
-  * (See [Project Workflow instructions](project-workflow)) for information regarding box check-in.
+  * (See [Project Workflow instructions](https://nypl.github.io/ami-preservation/pages/preservationServices/vendorDigitization/vendor-project-management.html)) for information regarding box check-in.
 * Send a list of all incoming container barcodes to LSC Collection Manager 
   * Collection Manager will update location of barcodes in SPEC 
 
