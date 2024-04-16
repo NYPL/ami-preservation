@@ -1,11 +1,12 @@
 ---
-title: Vendor Digitization
+title: Vendor Project Management
 layout: default
 nav_order: 1
-parent: Preservation Services
+parent: Vendor Digitization
+grand_parent: Preservation Services
 ---
 
-# Vendor Digitization
+# Vendor Project Management
 {: .no_toc }
 
 ## Table of contents
@@ -13,14 +14,6 @@ parent: Preservation Services
 
 1. TOC
 {:toc}
-
-The following pages detail workflows, policies, and procedures for coordinating mass audio, video, and film digitization and optical media migration, broken down into the following processes:
-
-* Administration and project management
-* Shipping, logistics
-* Quality control
-* Secure file transfer
-* Project reporting and analysis
 
 ## Project Creation
 * Digitization batch inventories are generated in SPEC Projects by the Manager of Audio and Moving Image Preservation, and shared with the Media Preservation Coordinator.
