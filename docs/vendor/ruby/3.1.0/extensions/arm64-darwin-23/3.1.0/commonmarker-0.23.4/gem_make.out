@@ -1,0 +1,87 @@
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/commonmarker-0.23.4/ext/commonmarker
+/Users/ryanmarino/.rbenv/versions/3.1.0/bin/ruby -I /Users/ryanmarino/.rbenv/versions/3.1.0/lib/ruby/3.1.0 -r ./siteconf20240416-15030-xta8uv.rb extconf.rb
+creating Makefile
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/commonmarker-0.23.4/ext/commonmarker
+make DESTDIR\= clean
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/commonmarker-0.23.4/ext/commonmarker
+make DESTDIR\=
+compiling arena.c
+compiling autolink.c
+compiling blocks.c
+blocks.c:1514:5: warning: 'CMARK_DEBUG_NODES' is not defined, evaluates to 0 [-Wundef]
+#if CMARK_DEBUG_NODES
+    ^
+1 warning generated.
+compiling buffer.c
+compiling cmark.c
+compiling cmark_ctype.c
+compiling commonmark.c
+commonmark.c:420:18: warning: assigning to 'char *' from 'const char[2]' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+      emph_delim = "_";
+                 ^ ~~~
+commonmark.c:422:18: warning: assigning to 'char *' from 'const char[2]' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+      emph_delim = "*";
+                 ^ ~~~
+2 warnings generated.
+compiling commonmarker.c
+In file included from commonmarker.c:3:
+In file included from ./houdini.h:9:
+./config.h:8:9: warning: 'HAVE_STDBOOL_H' macro redefined [-Wmacro-redefined]
+#define HAVE_STDBOOL_H
+        ^
+/Users/ryanmarino/.rbenv/versions/3.1.0/include/ruby-3.1.0/arm64-darwin23/ruby/config.h:27:9: note: previous definition is here
+#define HAVE_STDBOOL_H 1
+        ^
+commonmarker.c:565:20: warning: implicit conversion loses integer precision: 'long' to 'int' [-Wshorten-64-to-32]
+  extensions_len = RARRAY_LEN(rb_extensions);
+                 ~ ^~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/ryanmarino/.rbenv/versions/3.1.0/include/ruby-3.1.0/ruby/internal/core/rarray.h:68:36: note: expanded from macro 'RARRAY_LEN'
+#define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
+                                   ^
+commonmarker.c:1179:27: warning: implicit conversion loses integer precision: 'long' to 'bufsize_t' (aka 'int') [-Wshorten-64-to-32]
+                          RSTRING_LEN(rb_text))) {
+                          ^~~~~~~~~~~~~~~~~~~~
+/Users/ryanmarino/.rbenv/versions/3.1.0/include/ruby-3.1.0/ruby/internal/core/rstring.h:52:27: note: expanded from macro 'RSTRING_LEN'
+#define RSTRING_LEN       RSTRING_LEN
+                          ^
+commonmarker.c:1200:28: warning: implicit conversion loses integer precision: 'long' to 'bufsize_t' (aka 'int') [-Wshorten-64-to-32]
+                           RSTRING_LEN(rb_text), 0)) {
+                           ^~~~~~~~~~~~~~~~~~~~
+/Users/ryanmarino/.rbenv/versions/3.1.0/include/ruby-3.1.0/ruby/internal/core/rstring.h:52:27: note: expanded from macro 'RSTRING_LEN'
+#define RSTRING_LEN       RSTRING_LEN
+                          ^
+4 warnings generated.
+compiling core-extensions.c
+compiling ext_scanners.c
+compiling footnotes.c
+compiling houdini_href_e.c
+compiling houdini_html_e.c
+compiling houdini_html_u.c
+compiling html.c
+compiling inlines.c
+compiling iterator.c
+compiling latex.c
+compiling linked_list.c
+compiling man.c
+compiling map.c
+compiling node.c
+compiling plaintext.c
+compiling plugin.c
+compiling references.c
+compiling registry.c
+compiling render.c
+compiling scanners.c
+compiling strikethrough.c
+compiling syntax_extension.c
+compiling table.c
+compiling tagfilter.c
+compiling tasklist.c
+compiling utf8.c
+compiling xml.c
+linking shared-object commonmarker/commonmarker.bundle
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/commonmarker-0.23.4/ext/commonmarker
+make DESTDIR\= install
+/usr/bin/install -c -m 0755 commonmarker.bundle ./.gem.20240416-15030-gypal4/commonmarker

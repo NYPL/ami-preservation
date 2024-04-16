@@ -1,0 +1,20 @@
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/http_parser.rb-0.8.0/ext/ruby_http_parser
+/Users/ryanmarino/.rbenv/versions/3.1.0/bin/ruby -I /Users/ryanmarino/.rbenv/versions/3.1.0/lib/ruby/3.1.0 -r ./siteconf20240416-15030-m409kd.rb extconf.rb
+creating Makefile
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/http_parser.rb-0.8.0/ext/ruby_http_parser
+make DESTDIR\= clean
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/http_parser.rb-0.8.0/ext/ruby_http_parser
+make DESTDIR\=
+compiling ruby_http_parser.c
+ruby_http_parser.c:365:17: warning: comparison of integers of different signs: 'size_t' (aka 'unsigned long') and 'long' [-Wsign-compare]
+    if (nparsed < len)
+        ~~~~~~~ ^ ~~~
+1 warning generated.
+compiling ryah_http_parser.c
+linking shared-object ruby_http_parser.bundle
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/http_parser.rb-0.8.0/ext/ruby_http_parser
+make DESTDIR\= install
+/usr/bin/install -c -m 0755 ruby_http_parser.bundle ./.gem.20240416-15030-pziwzx

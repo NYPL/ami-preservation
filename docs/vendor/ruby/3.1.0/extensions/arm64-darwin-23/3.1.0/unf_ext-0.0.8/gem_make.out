@@ -1,0 +1,17 @@
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/unf_ext-0.0.8/ext/unf_ext
+/Users/ryanmarino/.rbenv/versions/3.1.0/bin/ruby -I /Users/ryanmarino/.rbenv/versions/3.1.0/lib/ruby/3.1.0 -r ./siteconf20240416-15030-4q3ax3.rb extconf.rb
+checking for -lstdc++... yes
+creating Makefile
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/unf_ext-0.0.8/ext/unf_ext
+make DESTDIR\= clean
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/unf_ext-0.0.8/ext/unf_ext
+make DESTDIR\=
+compiling unf.cc
+linking shared-object unf_ext.bundle
+ld: warning: ignoring duplicate libraries: '-lc++'
+
+current directory: /Users/ryanmarino/ami-preservation/docs/vendor/ruby/3.1.0/gems/unf_ext-0.0.8/ext/unf_ext
+make DESTDIR\= install
+/usr/bin/install -c -m 0755 unf_ext.bundle ./.gem.20240416-15030-2zd0ws

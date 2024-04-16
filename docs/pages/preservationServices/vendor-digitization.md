@@ -73,13 +73,13 @@ The following pages detail workflows, policies, and procedures for coordinating 
 * If Column B returns the same barcode number you just scanned, then all is well. Proceed with barcode-scanning.
 
 ## Shipping Coordination
-See [Shipping](shipping).
+See [Shipping](https://nypl.github.io/ami-preservation/pages/preservationServices/vendorDigitization/vendor-shipping.html).
 
 ## Vendor Shipments
 * Upon arrival, all deliverables (hard drive or network-based shipments) are logged in the [AMI Vendor Project Tracking sheet](https://docs.google.com/spreadsheets/d/1ZeF6vGE1TqLnKaNjZFSIvjyKhYBt38nBcZDHyD_saPo/edit#gid=1908905860) document.
 
 ## Quality Control
-See [Quality Control workflow documentation](quality-control)
+See [Quality Control workflow documentation](https://nypl.github.io/ami-preservation/pages/preservationServices/qualityControl/qc-overview.html)
 
 ## Capture Issue Review
 * Review vendor's list of capture issues and add the items and notes to the 'captureIssues' tab in the project sheet.
