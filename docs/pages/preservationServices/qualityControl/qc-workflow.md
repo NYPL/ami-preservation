@@ -193,4 +193,4 @@ Use Terminal to generate a QC list for each drive you are QCing by following the
 
 
 ## Tools
-See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
+See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources/cli-resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
