@@ -108,9 +108,34 @@ def assign_member(card_id, engineer_name):
     return None
 
 
+def assign_member_to_card(card_id, engineer_name):
+    """Assign a member to the card."""
+    member_id = os.getenv(f'TRELLO_{engineer_name.upper()}_MEMBER_ID')
+    if not member_id:
+        print(f"No member ID found for {engineer_name}")  
+        return False  
+
+    api_key = os.getenv('TRELLO_API_KEY')
+    token = os.getenv('TRELLO_TOKEN')
+    url = f"https://api.trello.com/1/cards/{card_id}/idMembers"
+    payload = {
+        'key': api_key,
+        'token': token,
+        'value': member_id
+    }
+    try:
+        response = requests.post(url, params=payload)
+        response.raise_for_status()
+        response_data = response.json()
+        if response_data:  # Check if the response data is not empty
+            return True  
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+    return False  
+
 
 def main():
-    card_name = args.card  # Assumes the argument is the card name, not the ID.
+    card_name = args.card
     board_id = os.getenv('TRELLO_BOARD_ID')
     if not board_id:
         print("Board ID is not set in the environment variables.")
@@ -123,20 +148,21 @@ def main():
 
     list_id = get_list_id(args.engineer)
     if list_id and card_id:
-        result = move_card(card_id, list_id, 'bottom')  # Move the card and position it at the bottom
+        result = move_card(card_id, list_id, 'bottom')
         if result and 'id' in result:
             print(f"Card successfully moved to {args.engineer}'s list.")
-            # Notify the engineer by adding a comment to the card
             notification_result = assign_member(card_id, args.engineer)
             if 'id' in notification_result:
                 print("Engineer notified successfully.")
+                member_assignment_result = assign_member_to_card(card_id, args.engineer)
+                if member_assignment_result:
+                    print(f"Member {args.engineer} successfully assigned to card.")
+                else:
+                    print("Failed to assign member to the card.")
             else:
                 print("Failed to notify the engineer.")
         else:
             print("Failed to move the card: ", result)
-    else:
-        print("Operation aborted due to missing list ID or card ID.")
-
 
 if __name__ == "__main__":
     main()
