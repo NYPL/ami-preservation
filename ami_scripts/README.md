@@ -1,36 +1,40 @@
 
 # AMI Production Scripts
 
-1. [Overview](#overview)
-2. [ami_file_sync.py](#ami_file_syncpy)
-3. [audio_processing.py](#audio_processingpy)
-4. [clean_spec_csv_to_excel.py](#clean_spec_csv_to_excelpy)
-5. [copy_from_s3.py](#copy_from_s3py)
-6. [copy_to_s3.py](#copy_to_s3py)
-7. [create_media_json.py](#create_media_jsonpy)
-8. [create_object_bags.py](#create_object_bagspy)
-9. [filemaker_to_json_validator.py](#filemaker_to_json_validatorpy)
-10. [film_processing.py](#film_processingpy)
-11. [fmrest_barcode.py](#fmrest_barcodepy)
-12. [generate_test_media.py](#generate_test_mediapy)
-13. [hflip_film_packages.py](#hflip_film_packagespy)
-14. [iso_transcoder.py](#iso_transcoderpy)
-15. [json_to_csv.py](#json_to_csvpy)
-16. [json_updater.py](#json_updaterpy)
-17. [json_validator.py](#json_validatorpy)
-18. [media_metrics_aggregator.py](#media_metrics_aggregatorpy)
-19. [media_production_stats.py](#media_production_statspy)
-20. [mediaconch_checker.py](#mediaconch_checkerpy)
-21. [mediainfo_extractor.py](#mediainfo_extractorpy)
-22. [migrated_media_file_checker.py](#migrated_media_file_checkerpy)
-23. [preprend_title_cards.py](#prepend_title_cardspy)
-24. [rawcooked_check_mkv.py](#rawcooked_check_mkvpy)
-25. [rsync_and_organize_json.py](#rsync_and_organize_jsonpy)
-26. [rsync_validator.py](#rsync_validatorpy)
-27. [spec_csv_summary_to_excel.py](#spec_csv_summary_to_excelpy)
-28. [trim_and_transcode.py](#trim_and_transcodepy)
-29. [unbag_objects.py](#unbag_objectspy)
-30. [video_processing.py](#video_processingpy)
+- [AMI Production Scripts](#ami-production-scripts)
+    - [Overview](#overview)
+    - [ami\_file\_sync.py](#ami_file_syncpy)
+    - [audio\_processing.py](#audio_processingpy)
+    - [clean\_spec\_csv\_to\_excel.py](#clean_spec_csv_to_excelpy)
+    - [copy\_from\_s3.py](#copy_from_s3py)
+    - [copy\_to\_s3.py](#copy_to_s3py)
+    - [create\_media\_json.py](#create_media_jsonpy)
+    - [create\_object\_bags.py](#create_object_bagspy)
+    - [filemaker\_to\_json\_validator.py](#filemaker_to_json_validatorpy)
+    - [film\_processing.py](#film_processingpy)
+    - [fmrest\_barcode.py](#fmrest_barcodepy)
+    - [generate\_test\_media.py](#generate_test_mediapy)
+    - [hflip\_film\_packages.py](#hflip_film_packagespy)
+    - [iso\_transcoder.py](#iso_transcoderpy)
+    - [json\_to\_csv.py](#json_to_csvpy)
+    - [json\_updater.py](#json_updaterpy)
+    - [json\_validator.py](#json_validatorpy)
+    - [media\_metrics\_aggregator.py](#media_metrics_aggregatorpy)
+    - [media\_production\_stats.py](#media_production_statspy)
+    - [mediaconch\_checker.py](#mediaconch_checkerpy)
+    - [mediainfo\_extractor.py](#mediainfo_extractorpy)
+    - [migrated\_media\_file\_checker.py](#migrated_media_file_checkerpy)
+    - [prepend\_title\_cards.py](#prepend_title_cardspy)
+    - [rawcooked\_check\_mkv.py](#rawcooked_check_mkvpy)
+    - [rsync\_and\_organize\_json.py](#rsync_and_organize_jsonpy)
+    - [rsync\_validator.py](#rsync_validatorpy)
+    - [spec\_csv\_summary\_to\_excel.py](#spec_csv_summary_to_excelpy)
+    - [trello\_engineer\_notifier.py](#trello_engineer_notifierpy)
+    - [trello\_list\_ids.py](#trello_list_idspy)
+    - [trello\_qcqueue\_mover.py](#trello_qcqueue_moverpy)
+    - [trim\_and\_transcode.py](#trim_and_transcodepy)
+    - [unbag\_objects.py](#unbag_objectspy)
+    - [video\_processing.py](#video_processingpy)
 
 
 ### Overview
@@ -141,17 +145,16 @@ This script performs the following steps:
 
 ### create_media_json.py
 
-This script automates the creation of NYPL JSON files from a SPEC CSV export alongside a user-supplied directory of media files. It aims to streamline the metadata generation process, ensuring that media files are accurately described and ready for integration into NYPL's digital repository.
+This script automates the creation of NYPL JSON files by fetching metadata from a FileMaker database and analyzing a user-supplied directory of media files. It aims to streamline the metadata generation process, ensuring that media files are accurately described and ready for integration into NYPL's digital repository.
 
-```python3 create_media_json.py -c /path/to/config.json [-s /path/to/spec_csv_export.csv] [-m /path/to/media_files] [-d [Media Preserve|NYPL|etc]] -o /path/to/output_json_files```
+```python3 create_media_json.py -u <username> -p <password> -m /path/to/media_files -c /path/to/config.json -o /path/to/output_json_files [-d [Media Preserve|NYPL|Memnon]]```
 
 This script performs the following steps:
 
-1. Configuration and Input Parsing: Begins by parsing command-line arguments to determine the source CSV, media directory, digitizer information, and output location for the JSON files.
-2. CSV Data Loading: If a source CSV is specified, the script loads this data, mapping each entry to its corresponding media file based on ID.
-3. Media File Analysis: Scans the specified directory for media files (filtering by supported extensions), extracting relevant metadata using the mediainfo tool.
-4. JSON File Creation: For each media file, generates a comprehensive JSON file containing both bibliographic and technical metadata, tailored to NYPL's specifications.
-5. Logging and Feedback: Throughout the process, informative logs are provided to highlight progress, identify potential issues, and ensure transparency.
+1. Configuration and Input Parsing: The script starts by parsing command-line arguments to determine the media directory, FileMaker credentials, digitizer information, and output location for the JSON files.
+2. FileMaker Database Connection: Establishes a connection to the specified FileMaker database to fetch bibliographic metadata associated with each media file based on its unique identifier.
+3. Media File Analysis: Scans the specified directory for media files (filtering by supported extensions such as .mov, .wav, etc.), extracting relevant metadata using the mediainfo tool.
+4. JSON File Creation: For each media file, generates a comprehensive JSON file containing both bibliographic and technical metadata. The JSON structure is tailored to NYPL's specifications, incorporating data from both the FileMaker database and media file analysis.
 
 
 ### create_object_bags.py
@@ -219,16 +222,16 @@ Note: Make sure you have RAWcooked, FFmpeg, and the FLAC command-line tool insta
 
 ### fmrest_barcode.py
 
-This script is designed to automate the retrieval of barcodes from a Filemaker database using SPEC AMI IDs provided through a CSV file. It connects to a specified Filemaker database, queries for records matching each AMI ID, and exports the found barcodes to a new CSV file.
+This script automates the retrieval of barcodes from a FileMaker database using SPEC AMI IDs provided through a CSV or Excel file. It establishes a connection to a specified FileMaker database, queries for records matching each AMI ID, and exports the found barcodes to a new CSV file.
 
-```python3 fmrest_barcode.py -s SERVER_IP -u USERNAME -p PASSWORD -i /path/to/input.csv -o /path/to/output.csv -d DATABASE_NAME -l DATABASE_LAYOUT```
+```python3 fmrest_barcode.py -u USERNAME -p PASSWORD -i /path/to/input_file -o /path/to/output.csv```
+
 
 This script performs the following steps:
 
-1. Database Connection: Initiates a connection to the specified Filemaker server using provided credentials, database name, and layout.
-2. CSV Parsing: Reads AMI IDs from the specified input CSV file, preparing them for database querying.
-3. Query and Export: For each AMI ID, queries the Filemaker database for corresponding records, extracting barcodes where available and exporting these to an output CSV file.
-4. Logging and Output: Provides ongoing feedback regarding the connection status, record retrieval progress, and export completion, ensuring visibility into the script's execution.
+1. Database Connection: Initiates a connection to the FileMaker server using provided credentials. The server address, database name, and layout are retrieved from environment variables (FM_SERVER, FM_DATABASE, FM_LAYOUT).
+2. Input Parsing: Dynamically reads SPEC AMI IDs from the provided input file. The script supports both CSV and Excel formats, detecting and processing based on file extension.
+3. Query and Export: For each valid AMI ID parsed from the input file, the script queries the FileMaker database for corresponding records. It extracts barcodes where available and compiles them into an output CSV file.
 
 
 ### generate_test_media.py
@@ -518,6 +521,53 @@ Constructs a summary DataFrame containing overall statistics such as the total n
 6. Prepares and exports detailed box-related information to the 'Summary' sheet, providing insights into barcode counts per box and their respective locations.
 7. Output Generation: The script then compiles all the gathered information into a well-organized Excel file with two sheets, facilitating easy access and analysis of the data.
 
+### trello_engineer_notifier.py
+
+This script facilitates task management in Trello by automatically moving specified cards to engineer-specific lists, notifying engineers via card comments, and assigning them to the cards. It utilizes Trello's API to interact with cards based on command line inputs and environmental configurations.
+
+```python3 trello_engineer_notifier.py -c CARD_ID -e ENGINEER_NAME```
+
+This script performs the following steps:
+
+1. Card Retrieval: Fetches the specified card from a Trello board using the provided card ID and a board ID sourced from environment variables.
+2. List Assignment: Moves the card to a list specified by the engineer's name, which corresponds to a list ID defined in environment variables.
+3. Notification: Adds a comment tagging the engineer on the moved card to notify them of the new task assignment.
+4. Member Assignment: Assigns the engineer as a member of the card to indicate their responsibility for the task.
+5. Environment Variable Dependencies:
+   
+* TRELLO_API_KEY: Your Trello API key.
+* TRELLO_TOKEN: Your Trello authorization token.
+* NYPL_MPL_BOARD_ID: The ID of the Trello board from which the card will be moved.
+* Engineer-specific variables such as TRELLO_ENGINEERNAME_USERNAME and TRELLO_ENGINEERNAME_LIST_ID for each engineer (replace ENGINEERNAME with the actual engineer's name).
+
+### trello_list_ids.py
+
+This script is designed to provide a quick overview of all the lists and members associated with a specific Trello board. It utilizes the Trello API to fetch and display list names and IDs, as well as member names, usernames, and IDs from a specified board.
+
+```python3 trello_list_ids.py```
+
+You will be prompted to enter the board ID:
+
+```Enter the Trello board ID:```
+
+This script performs the following steps:
+
+1. List Information Retrieval: Fetches and displays all lists from the specified Trello board, including their names and unique IDs.
+2. Member Information Retrieval: Fetches and displays all members of the specified Trello board, including their full names, usernames, and unique IDs.
+
+### trello_qcqueue_mover.py
+
+This script is designed to automate the transfer of Trello cards from one list to another across different boards. It is particularly useful for workflows where tasks need to be moved systematically from one project phase to another, which might be tracked on separate Trello boards.
+
+```python3 trello_qcqueue_mover.py```
+
+Before running the script, ensure that the environment variables for the source list ID, target list ID, and Trello API credentials are set.
+
+Key Functionalities:
+
+1. Card Transfer: Transfers all cards from a specified source list to a target list on potentially different Trello boards.
+2. Dynamic Board Handling: Automatically fetches and uses the correct board ID associated with the target list, ensuring cards are moved accurately across boards.
+3. Error Handling: Provides detailed error responses from the Trello API to assist with troubleshooting issues related to card movements.
 
 ### trim_and_transcode.py
 
