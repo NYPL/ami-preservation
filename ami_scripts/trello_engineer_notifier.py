@@ -136,7 +136,7 @@ def assign_member_to_card(card_id, engineer_name):
 
 def main():
     card_name = args.card
-    board_id = os.getenv('TRELLO_BOARD_ID')
+    board_id = os.getenv('NYPL_MPL_BOARD_ID')
     if not board_id:
         print("Board ID is not set in the environment variables.")
         return
