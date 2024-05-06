@@ -24,7 +24,10 @@ def get_args():
                         help='organize stats and visualizations by fiscal year instead of calendar year')
     parser.add_argument('-e', '--engineer', nargs='+',
                         help='Filter output by specific engineers (last names).')
+    parser.add_argument('-H', '--historical', action='store_true',
+                        help='Analyze data from all years instead of just the current year.')
     return parser.parse_args()
+
 
 
 def fetch_data_from_jdbc():
@@ -107,52 +110,41 @@ def process_data(df, args, fiscal=False):
 
 
 def display_monthly_output_by_operator(df, args, fiscal=False):
-    if 'digitizer.operator.lastName' not in df.columns:
-        print("\nThe 'digitizer.operator.lastName' field is not present in the DataFrame. Skipping the function.\n")
-        return None, None  # Return None for both outputs if the required column is missing
-
-    # Filter the DataFrame for records where asset.fileRole is 'pm'
     df_pm = df[df['asset.fileRole'] == 'pm']
-
-    # Choose the correct year column based on fiscal or calendar year
     year_column = 'fiscal_year' if fiscal else 'calendar_year'
     current_year = get_fiscal_year(datetime.datetime.now()) if fiscal else datetime.datetime.now().year
 
-    # Filter data for the current year
-    df_pm_current_year = df_pm[df_pm[year_column] == current_year]
+    # Filter data based on the historical flag
+    if not args.historical:
+        df_pm = df_pm[df_pm[year_column] == current_year]
 
-    # If engineer filter is specified, filter data for the selected engineers
-    if args.engineer:
-        df_pm_current_year = df_pm_current_year[df_pm_current_year['digitizer.operator.lastName'].isin(args.engineer)]
-
-    # Group by digitizer and month
-    output_by_operator = df_pm_current_year.groupby(['digitizer.operator.lastName', 'month']).agg({
+    output_by_operator = df_pm.groupby(['digitizer.operator.lastName', 'month']).agg({
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
-    # Sum the output for each operator
     output_sum = output_by_operator.groupby('digitizer.operator.lastName')['bibliographic.primaryID'].sum().reset_index()
-    output_sum['month'] = 'Total'  # Assign 'Total' as the month for the sum row
+    output_sum['month'] = 'Total'
     output_by_operator_summed = pd.concat([output_by_operator, output_sum], ignore_index=True)
     print(output_by_operator_summed)
 
-    # Check if there is any data available for the current year
-    if output_by_operator.empty:
-        print(f"No data available for the current {'fiscal' if fiscal else 'calendar'} year.")
+    # Visualize data
+    sns.set_style("whitegrid")
+    plt.figure(figsize=(12, 6) if not args.historical else (18, 6))
+    sns.lineplot(data=output_by_operator, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2)
+    title = f'Monthly Digitization Output by Operator (PM role only) - {"Historical" if args.historical else ("Fiscal" if fiscal else "Calendar")} Year: {current_year if not args.historical else "All Years"}'
+    plt.title(title)
+    plt.xlabel('Month')
+    plt.ylabel('Items Digitized')
+    if args.historical:
+        plt.xticks(rotation=90)  # Rotate ticks for better readability in historical view
     else:
-        # Plotting
-        sns.set_style("whitegrid")
-        plt.figure(figsize=(12, 6))
-        sns.lineplot(data=output_by_operator, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2)
-        plt.title(f'Monthly Digitization Output by Operator (PM role only) - {"Fiscal" if fiscal else "Calendar"} Year: {current_year}')
-        plt.xlabel('Month')
-        plt.ylabel('Items Digitized')
         plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.legend(title='Digitizer')
-        plt.show()
+    plt.tight_layout()
+    plt.legend(title='Digitizer')
+    plt.show()
 
-    return output_by_operator, current_year
+    return output_by_operator, current_year if not args.historical else "All Years"
+
 
 
 def plot_object_format_counts(df, args, fiscal=False, top_n=10):
@@ -161,16 +153,17 @@ def plot_object_format_counts(df, args, fiscal=False, top_n=10):
         return
 
     df_pm = df[df['asset.fileRole'] == 'pm']
-
-    # Determine the current fiscal or calendar year within the function
     year_column = 'fiscal_year' if fiscal else 'calendar_year'
     current_year = get_fiscal_year(datetime.datetime.now()) if fiscal else datetime.datetime.now().year
 
-    df_pm_current_year = df_pm[df_pm[year_column] == current_year]
+    # Apply year filter conditionally based on the historical flag
+    if not args.historical:
+        df_pm = df_pm[df_pm[year_column] == current_year]
+    
     if args.engineer:
-        df_pm_current_year = df_pm_current_year[df_pm_current_year['digitizer.operator.lastName'].isin(args.engineer)]
+        df_pm = df_pm[df_pm['digitizer.operator.lastName'].isin(args.engineer)]
 
-    format_counts = df_pm_current_year.groupby('source.object.format')['bibliographic.primaryID'].nunique().nlargest(top_n).reset_index()
+    format_counts = df_pm.groupby('source.object.format')['bibliographic.primaryID'].nunique().nlargest(top_n).reset_index()
     format_counts.columns = ['Format', 'Count']
 
     # Plotting with annotations
@@ -179,7 +172,7 @@ def plot_object_format_counts(df, args, fiscal=False, top_n=10):
     plt.xticks(rotation=45)
     plt.xlabel('Source Object Format')
     plt.ylabel('Count')
-    plt.title(f'Top {top_n} Counts of Source Object Formats in {current_year}', fontsize=16, fontweight='bold')
+    plt.title(f'Top {top_n} Counts of Source Object Formats in {"All Years" if args.historical else current_year}', fontsize=16, fontweight='bold')
     plt.subplots_adjust(bottom=0.3)
 
     # Adding annotations
@@ -192,54 +185,72 @@ def plot_object_format_counts(df, args, fiscal=False, top_n=10):
     return format_counts
 
 
-def save_plot_to_pdf(data, bar_data, args, current_year):
+def save_plot_to_pdf(data, bar_data, args, year_label):
     engineer_name = "_".join(args.engineer) if args.engineer else ""
-    pdf_filename = f"Digitization_Report_{engineer_name}.pdf" if engineer_name else "Digitization_Report.pdf"
+    pdf_filename = f"Digitization_Report_{engineer_name}_{year_label}.pdf" if engineer_name else f"Digitization_Report_{year_label}.pdf"
     pdf_path = os.path.join(os.path.expanduser("~"), 'Desktop', pdf_filename)
 
     with PdfPages(pdf_path) as pdf:
-        # First chart: Line plot
-        fig, ax = plt.subplots(figsize=(10, 5))
+        # Adjust plot size based on historical flag
+        fig_size = (18, 6) if args.historical else (10, 5)
+        xticks_rotation = 90 if args.historical else 45
+
+        # Plot for line data
+        fig, ax = plt.subplots(figsize=fig_size)
         sns.lineplot(data=data, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2, ax=ax)
-        plt.title('Monthly Digitization Output by Operator (PM role only)')
+        plt.title(f'Monthly Digitization Output by Operator - {year_label}')
         plt.xlabel('Month')
         plt.ylabel('Items Digitized')
-        plt.xticks(rotation=45)
+        plt.xticks(rotation=xticks_rotation)
         plt.legend(title='Digitizer')
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
 
-        # Second chart: Data table with sums by month and year
-        summary_df = data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
-        summary_df.columns = ['Month', 'Total Items Digitized']
+        # Data table for summary by month and year
+        if args.historical:
+            # Additional adjustments for historical data
+            years = data['month'].str[:4].unique()
+            for year in sorted(years):
+                year_data = data[data['month'].str.startswith(year)]
+                summary_df = year_data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
+                summary_df.columns = ['Month', 'Total Items Digitized']
+                yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
+                summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
+
+                fig, ax = plt.subplots(figsize=(12, len(summary_df) * 0.5))  # Dynamic height based on number of rows
+                ax.axis('off')
+                table = ax.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center', cellLoc='center')
+                table.auto_set_font_size(True)
+                table.scale(1.2, 1.5)  # Adjust scaling for better readability
+                pdf.savefig(fig)
+                plt.close(fig)
+        else:
+            # For non-historical data
+            summary_df = data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
+            summary_df.columns = ['Month', 'Total Items Digitized']
+            yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
+            summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
+
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.axis('off')
+            table = ax.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center', cellLoc='center')
+            table.auto_set_font_size(True)
+            table.scale(1.2, 1.2)
+            pdf.savefig(fig)
+            plt.close(fig)
         
-        # Calculate and append yearly total using concat
-        yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
-        summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
-
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.axis('off')
-        table = ax.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center', cellLoc='center')
-        table.auto_set_font_size(True)
-        table.scale(1.2, 1.2)
-        pdf.savefig(fig)
-        plt.close(fig)
-
-        # Third chart: Bar plot with annotations
+        # Bar plot with annotations for object format counts
         fig, ax = plt.subplots(figsize=(12, 6))
         sns.barplot(x='Format', y='Count', data=bar_data, palette='viridis', ax=ax)
         plt.xticks(rotation=45)
         plt.xlabel('Format')
         plt.ylabel('Count')
-        plt.title(f'Top {len(bar_data)} Counts of Source Object Formats in {current_year}', fontsize=16)
+        plt.title(f'Top {len(bar_data)} Counts of Source Object Formats in {year_label}', fontsize=16)
         plt.subplots_adjust(bottom=0.3)
-        
-        # Adding annotations
         for p in ax.patches:
             ax.annotate(f'{int(p.get_height())}', (p.get_x() + p.get_width() / 2., p.get_height()),
                         ha='center', va='bottom', color='black', xytext=(0, 5), textcoords='offset points')
-        
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
@@ -253,12 +264,12 @@ def main():
     args = get_args()
     df = fetch_data_from_jdbc()
     df_processed = process_data(df, args, fiscal=args.fiscal)
-    line_data, current_year = display_monthly_output_by_operator(df_processed, args, fiscal=args.fiscal)
+    line_data, year_label = display_monthly_output_by_operator(df_processed, args, fiscal=args.fiscal)
     if line_data is None:  # Check if line_data is None before proceeding
         print("Error: Missing data. Exiting the program.")
         return
     bar_data = plot_object_format_counts(df_processed, args, fiscal=args.fiscal)
-    save_plot_to_pdf(line_data, bar_data, args, current_year)
+    save_plot_to_pdf(line_data, bar_data, args, year_label)
 
 if __name__ == "__main__":
     main()
