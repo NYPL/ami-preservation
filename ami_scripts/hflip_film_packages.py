@@ -8,6 +8,7 @@ import time
 import shutil
 from pymediainfo import MediaInfo
 import re
+import logging
 
 
 def is_bag(directory):
@@ -58,7 +59,6 @@ def hflip_videos(directory):
             else:
                 print(f"Skipping unknown file type: {filepath}")
 
-
 def modify_json(directory):
     append_text = "Film scanned with incorrect horizontal orientation; FFmpeg hflip filter used to flip Mezzanine and Service Copies (Preservation Master files left untouched)."
     
@@ -107,27 +107,47 @@ def modify_json(directory):
                     json.dump(data, json_file, indent=4)
                     json_file.truncate()
 
-
 def unbag_and_rebag(directory):
-    for item in ['bag-info.txt', 'bagit.txt', 'manifest-md5.txt', 'tagmanifest-md5.txt']:
-        os.remove(os.path.join(directory, item))
-    for subdir in ['Mezzanines', 'PreservationMasters', 'ServiceCopies']:
-        source = os.path.join(directory, 'data', subdir)
-        target = os.path.join(directory, subdir)
-        os.rename(source, target)
+    try:
+        logging.info(f"Starting to unbag and rebag the directory: {directory}")
 
-    # Retry mechanism for removing 'data' directory
-    max_retries = 5
-    for _ in range(max_retries):
-        try:
-            shutil.rmtree(os.path.join(directory, 'data'))
-            break  # if directory removal is successful, break out of the loop
-        except OSError:
-            time.sleep(5)  # wait for 5 seconds before retrying
-    else:  # executed if the loop completed without breaking, indicating max retries hit
-        print(f"Failed to remove 'data' directory in {directory} after {max_retries} attempts.")
+        # Check if 'data' directory exists and is accessible
+        data_dir = os.path.join(directory, 'data')
+        if not os.path.exists(data_dir):
+            logging.error(f"The data directory does not exist: {data_dir}")
+            return
 
-    subprocess.run(["bagit.py", "--md5", directory])
+        for item in ['bag-info.txt', 'bagit.txt', 'manifest-md5.txt', 'tagmanifest-md5.txt']:
+            item_path = os.path.join(directory, item)
+            if os.path.exists(item_path):
+                os.remove(item_path)
+                logging.info(f"Removed file: {item_path}")
+
+        for subdir in ['Mezzanines', 'PreservationMasters', 'ServiceCopies']:
+            source = os.path.join(data_dir, subdir)
+            target = os.path.join(directory, subdir)
+            if os.path.exists(source):
+                os.rename(source, target)
+                logging.info(f"Moved {source} to {target}")
+
+        # Retry mechanism for removing 'data' directory
+        max_retries = 5
+        for i in range(max_retries):
+            try:
+                shutil.rmtree(data_dir)
+                logging.info("Successfully removed the 'data' directory.")
+                break
+            except OSError as e:
+                logging.warning(f"Attempt {i+1}: Failed to remove 'data' directory. Retrying in 5 seconds...")
+                time.sleep(5)
+        else:
+            logging.error(f"Failed to remove 'data' directory in {directory} after {max_retries} attempts.")
+
+        subprocess.run(["bagit.py", "--md5", directory])
+        logging.info("Rebagging completed successfully.")
+    except Exception as e:
+        logging.exception(f"An error occurred while processing the directory: {directory}")
+
 
 def main():
     parser = argparse.ArgumentParser(description='Process BagIt packages.')
