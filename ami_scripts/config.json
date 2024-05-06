@@ -62,6 +62,17 @@
       "MiniDV",
       "MPEG IMX"
     ],
+    "video reel": [
+      "half-inch open-reel video [LEGACY]",
+      "half-inch open-reel video CV",
+      "half-inch open-reel video EIAJ/AV",
+      "half-inch open-reel video other",
+      "one-inch open-reel video [LEGACY]",
+      "one-inch open-reel video Type A",
+      "one-inch open-reel video Type C",
+      "quarter-inch open-reel video",
+      "two-inch open-reel video Quadruplex"
+    ],
     "audio reel analog": [
       "half-inch open-reel audio",
       "one-inch open-reel audio",
@@ -133,6 +144,17 @@
           "street1": "5708 Arundel Ave"
         },
         "name": "Colorlab"
+      }
+    },
+    "DCVideo": {
+      "organization": {
+        "address": {
+          "city": "Burbank",
+          "postalCode": 91504,
+          "state": "CA",
+          "street1": "3071 N. Lima Street"
+        },
+        "name": "DCVideo"
       }
     },
     "NYPL": {

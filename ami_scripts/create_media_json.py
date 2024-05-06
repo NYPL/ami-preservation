@@ -24,7 +24,7 @@ def get_args():
     parser.add_argument('-u', '--username', required=True, help='Username for FileMaker database')
     parser.add_argument('-p', '--password', required=True, help='Password for FileMaker database')
     parser.add_argument('-m', '--media', required=True, help='Path to directory of media files')
-    parser.add_argument('-d', '--digitizer', choices=['Media Preserve', 'NYPL', 'Memnon'], required=False, help='Name of the digitizer')
+    parser.add_argument('-d', '--digitizer', choices=['Media Preserve', 'NYPL', 'Memnon', 'DCVideo'], required=False, help='Name of the digitizer')
     parser.add_argument('-o', '--output', required=True, help='Path to destination for JSON files')
     parser.add_argument('-c', '--config', required=True, help='Path to config file')
     return parser.parse_args()
@@ -220,7 +220,7 @@ def create_new_json(args, media_data, config):
             'durationMilli': {'measure': int(float(media_data['media_info']['general'].get('Duration', 0)) * 1000), 'unit': 'ms'},
             'extension': media_data['extension'],
             'fileFormat': media_data['media_info']['general'].get('Format', ''),
-            'filename': media_data['filename'],
+            'filename': basename,
             'filesize': {'measure': media_data['file_size'], 'unit': 'B'}
         }
     }
