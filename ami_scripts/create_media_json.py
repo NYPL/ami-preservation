@@ -73,7 +73,7 @@ def get_bibliographic_data(fms, cms_id):
         found_records = fms.find(query)
         if found_records:
             record = found_records[0]
-            vernacular_division_code = getattr(record, 'division', '')  # Assuming 'division' is the vernacular code
+            vernacular_division_code = getattr(record, 'division', '')
             division_code = map_division_code(vernacular_division_code)
             biblio_data = {
                 'barcode': str(getattr(record, 'id_barcode', '')),
@@ -84,14 +84,16 @@ def get_bibliographic_data(fms, cms_id):
                 'title': getattr(record, 'id_label_text', ''),
                 'format_1': getattr(record, 'format_1', ''),
                 'format_2': getattr(record, 'format_2', ''),
-                'format_3': getattr(record, 'format_3', '')
+                'format_3': getattr(record, 'format_3', ''),
+                'cmsCollectionID': str(getattr(record, 'ref_collection_id', ''))  # Convert to string here
             }
+            logger.debug(f"Bibliographic data retrieved: {biblio_data}")  # Log the complete data for debugging
             return biblio_data
         else:
-            logger.warning(f"No records found for CMS ID {cms_id}.")
+            logger.warning(f"No records found for AMI ID {cms_id}.")
             return None
     except Exception as e:
-        logger.error(f"An error occurred while retrieving data for CMS ID {cms_id}: {e}")
+        logger.error(f"An error occurred while retrieving data for AMI ID {cms_id}: {e}")
         return None
 
 
