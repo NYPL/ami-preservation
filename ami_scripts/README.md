@@ -10,6 +10,7 @@
     - [copy\_to\_s3.py](#copy_to_s3py)
     - [create\_media\_json.py](#create_media_jsonpy)
     - [create\_object\_bags.py](#create_object_bagspy)
+    - [digitization\_performance\_tracker.py](#digitization_performance_trackerpy)
     - [filemaker\_to\_json\_validator.py](#filemaker_to_json_validatorpy)
     - [film\_processing.py](#film_processingpy)
     - [fmrest\_barcode.py](#fmrest_barcodepy)
@@ -176,6 +177,39 @@ This script performs the following steps:
 9. Print any files that were not moved during the process.
 
 
+### digitization_performance_tracker.py
+
+This script is designed to fetch and visualize digitization performance statistics from the AMIDB (Asset Management Information Database). It allows users to generate detailed reports and visualizations by fiscal or calendar year, and can filter results based on specific digitization engineers.
+
+```python3 digitization_performance_tracker.py -s <source_directory> [-f] [-e <engineer_names>] [-H]```
+
+Options:
+
+* -f, --fiscal: Optional. Organize statistics and visualizations by fiscal year instead of the default calendar year.
+* -e, --engineer: Optional. Filter the output to include only specific engineers. This should be followed by one or more last names.
+* -H, --historical: Optional. Analyze data from all available years instead of just the current year.
+
+This script performs the following steps:
+
+1. Command-Line Argument Parsing: The script uses argparse to handle command-line options. Each option adjusts the scope and output of the data processing.
+2. Database Connection and Data Fetching:
+* Establishes a JDBC connection to the AMIDB using credentials stored in environment variables.
+* Executes a SQL query to fetch relevant digitization data, including details like the primary ID, file format, file size, and engineer details.
+3. Data Processing:
+* Converts date strings to datetime objects for better manipulation.
+* Filters data based on user input for specific engineers and/or date ranges (fiscal/calendar year).
+* Prepares the data for visualization by aggregating unique digitization entries per month and engineer.
+4. Data Visualization:
+* Generates line plots to display monthly output by each specified engineer, using Seaborn and Matplotlib for plotting.
+* Optionally adjusts the display settings for historical data to ensure clarity and readability.
+5. PDF Report Generation:
+* Compiles all visualizations and summaries into a single PDF report.
+* Dynamically adjusts plot sizes and layout based on the amount of historical data.
+* Includes detailed annotations and formatting to enhance report utility.
+6. Error Handling and Logging:
+* Provides feedback on the success of data fetching and connection issues.
+* Logs and displays errors related to data processing or file generation.
+
 ### filemaker_to_json_validator.py
 
 This script converts a FileMaker merge file to JSON files and validates them against JSON schema files.
@@ -184,7 +218,7 @@ This script converts a FileMaker merge file to JSON files and validates them aga
 
 Upon completion, the script will generate JSON files in the specified output directory, count the JSON files by type, and validate the JSON files against the schema files, printing the validation results.
 
-Steps performed by the script:
+This script performs the following steps:
 
 1. The script reads command line arguments for the source FileMaker merge file, destination directory for JSON files, and the directory of JSON schema files.
 2. The FileMaker merge file is read using pandas, and empty columns and the 'asset.fileExt' column are dropped.
@@ -306,25 +340,34 @@ JSON to DataFrame Conversion: Each JSON file is read and converted into a pandas
 
 ### json_updater.py
 
-This script allows you to update JSON files within a specified directory. It has the ability to update media information using MediaInfo and change specific key values within the JSON files.
+This script provides functionalities to update JSON files within a specified directory, update media information using MediaInfo, change specific key values within the JSON files, and maintain checksums for BagIt compliance.
 
-```python3 json_updater_new.py -s <source_directory> [-m] [-k <key_to_update>]```
+```python3 json_updater.py -s <source_directory> [-m] [-k <key_to_update>] [-c]```
 
+Options
+
+* -s, --source: Required. The path to the source directory containing JSON files.
+* -m, --mediainfo: Optional. Update JSON files with media information extracted using MediaInfo.
+* -k, --key: Optional. The dot-separated path to a specific key within the JSON files that should be updated.
+* -c, --checksum: Optional. Update the checksums in the manifest file and payload oxum for BagIt compliance.
+  
 This script performs the following steps:
 
-1. Parse command-line arguments using argparse.
-2. Validate and process the provided source directory path.
-3. If the -m flag is provided, the script will:
-* a. Get a list of media files and JSON files within the source directory.
-* b. Run MediaInfo on each media file and extract relevant information.
-* c. Update the corresponding JSON files with the extracted media information.
-4. If the -k flag is provided along with a specific key, the script will:
-* a. Get a list of JSON files within the source directory.
-* b. For each JSON file, search for the specified key and retrieve its current value(s).
-* c. If there's only one occurrence of the key within the JSON file, update the value without user input.
-* d. If there are multiple occurrences of the key, prompt the user to choose the value they want to update and provide a new value.
-* e. Update the selected JSON files with the new value.
-5. Log the results of the process, including any warnings or errors encountered.
+1. Parse Command-Line Arguments: The script uses argparse to handle command-line inputs.
+2. Process Source Directory:
+* Validate and process the provided source directory path.
+* Remove unwanted files like .DS_Store and others starting with ._.
+3. Media Information Update (-m flag):
+* Retrieve a list of media and JSON files within the source directory.
+* Use MediaInfo to extract media information from each media file.
+* Update the corresponding JSON files with the extracted information, such as filename, fileSize, and videoCodec.
+4. JSON Key Value Update (-k flag):
+* Retrieve the list of JSON files within the source directory.
+* For each JSON file, search for the specified nested key using a dot-separated path (e.g., digitizationProcess.playbackDevice.speed.unit) and retrieve its current value.
+5. Checksum Update (-c flag):
+* After updating JSON files or if the -c flag is used independently, the script updates the checksums in the manifest and tag manifest files.
+6. Logging:
+* The script logs all significant actions, warnings, or errors encountered during execution.
 
 
 ### json_validator.py

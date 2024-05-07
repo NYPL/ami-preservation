@@ -111,71 +111,43 @@ def process_media_files(source_directory):
     logging.info("Media information updated in all JSON files")
 
 
-def get_nested_values(data, key, parent_keys=None):
-    values = []
-
-    if parent_keys is None:
-        parent_keys = []
-
-    def _get_nested_values(data, key, parent_keys):
-          for k, v in data.items():
-            if k == key:
-                values.append((tuple(parent_keys), v))
-            elif isinstance(v, dict):
-                _get_nested_values(v, key, parent_keys + [k])
-
-    _get_nested_values(data, key, parent_keys)
-    return values
+def get_nested_values(data, path):
+    """Retrieve value from a nested dictionary using a path (dot-separated keys)."""
+    keys = path.split('.')
+    for key in keys[:-1]:
+        data = data.get(key, {})
+    return data.get(keys[-1], None), data, keys[-1]  # Return the value, parent dict, and last key
 
 
-def update_nested_key(data, key, old_value, new_value):
-    for k, v in data.items():
-        if k == key and v == old_value:
-            data[k] = new_value
-        elif isinstance(v, dict):
-            update_nested_key(v, key, old_value, new_value)
+def update_nested_key(parent_data, last_key, new_value):
+    """Update a value in a nested dictionary based on the last key in the path."""
+    parent_data[last_key] = new_value
 
 
-def update_key_in_json_files(source_directory, key):
+def update_key_in_json_files(source_directory, path):
     _, json_files = get_media_files(source_directory)
 
     if not json_files:
         logging.info("No JSON files found in the source directory")
         return
 
-    new_value = input(f"Enter the new value for the key '{key}': ")
+    new_value = input(f"Enter the new value for the key '{path}': ")
 
     for json_file in json_files:
         with open(json_file, "r", encoding="utf-8-sig") as jsonFile:
             data = json.load(jsonFile)
 
-        values = get_nested_values(data, key)
-        unique_values = list(set(values))
-
-        if not unique_values:
-            logging.warning(f"Key '{key}' not found in JSON file {json_file}")
+        old_value, parent_data, last_key = get_nested_values(data, path)
+        if old_value is None:
+            logging.warning(f"Key '{path}' not found in JSON file {json_file}")
             continue
 
-        if len(unique_values) == 1:
-            parent_keys, old_value = unique_values[0]
-            update_nested_key(data, key, old_value, new_value)
-        else:
-            print(f"\nValues found for key '{key}' in JSON file {json_file}:")
-            for i, (parent_keys, value) in enumerate(unique_values, start=1):
-                parent_key_string = ' > '.join(parent_keys)
-                print(f"{i}. {parent_key_string} > {key}: {value}")
-
-            choice = int(input("Enter the number of the value you want to update (0 to skip): "))
-            if choice == 0:
-                continue
-
-            old_value = unique_values[choice - 1][1]
-            update_nested_key(data, key, old_value, new_value)
+        update_nested_key(parent_data, last_key, new_value)
 
         with open(json_file, "w", encoding="utf-8-sig") as jsonFile:
             json.dump(data, jsonFile, indent=4)
 
-    logging.info(f"Key '{key}' updated in selected JSON files")
+    logging.info(f"Key '{path}' updated in selected JSON files")
 
 
 def extract_file_role(filename):
