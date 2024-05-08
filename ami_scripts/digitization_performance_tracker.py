@@ -11,7 +11,6 @@ import numpy as np
 import datetime
 from matplotlib.backends.backend_pdf import PdfPages
 
-
 # Setup display options for better readability in the output
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -27,8 +26,6 @@ def get_args():
     parser.add_argument('-H', '--historical', action='store_true',
                         help='Analyze data from all years instead of just the current year.')
     return parser.parse_args()
-
-
 
 def fetch_data_from_jdbc():
     # Load environment variables
@@ -73,7 +70,6 @@ def fetch_data_from_jdbc():
     
     return df
 
-
 def get_fiscal_year(date):
     year = date.year
     month = date.month
@@ -108,7 +104,6 @@ def process_data(df, args, fiscal=False):
 
     return df
 
-
 def display_monthly_output_by_operator(df, args, fiscal=False):
     df_pm = df[df['asset.fileRole'] == 'pm']
     year_column = 'fiscal_year' if fiscal else 'calendar_year'
@@ -122,6 +117,10 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
+    # Convert month to datetime and sort
+    output_by_operator['month'] = pd.to_datetime(output_by_operator['month'])
+    output_by_operator = output_by_operator.sort_values('month')
+
     output_sum = output_by_operator.groupby('digitizer.operator.lastName')['bibliographic.primaryID'].sum().reset_index()
     output_sum['month'] = 'Total'
     output_by_operator_summed = pd.concat([output_by_operator, output_sum], ignore_index=True)
@@ -133,7 +132,7 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     sns.lineplot(data=output_by_operator, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2)
     title = f'Monthly Digitization Output by Operator (PM role only) - {"Historical" if args.historical else ("Fiscal" if fiscal else "Calendar")} Year: {current_year if not args.historical else "All Years"}'
     plt.title(title)
-    plt.xlabel('Month')
+    plt.xlabel('')
     plt.ylabel('Items Digitized')
     if args.historical:
         plt.xticks(rotation=90)  # Rotate ticks for better readability in historical view
@@ -144,8 +143,6 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     plt.show()
 
     return output_by_operator, current_year if not args.historical else "All Years"
-
-
 
 def plot_object_format_counts(df, args, fiscal=False, top_n=10):
     if 'digitizer.operator.lastName' not in df.columns:
@@ -170,7 +167,7 @@ def plot_object_format_counts(df, args, fiscal=False, top_n=10):
     fig, ax = plt.subplots(figsize=(15, 6))
     sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis', ax=ax)
     plt.xticks(rotation=45)
-    plt.xlabel('Source Object Format')
+    plt.xlabel('Format')
     plt.ylabel('Count')
     plt.title(f'Top {top_n} Counts of Source Object Formats in {"All Years" if args.historical else current_year}', fontsize=16, fontweight='bold')
     plt.subplots_adjust(bottom=0.3)
@@ -183,7 +180,6 @@ def plot_object_format_counts(df, args, fiscal=False, top_n=10):
     plt.show()
 
     return format_counts
-
 
 def save_plot_to_pdf(data, bar_data, args, year_label):
     engineer_name = "_".join(args.engineer) if args.engineer else ""
@@ -199,7 +195,7 @@ def save_plot_to_pdf(data, bar_data, args, year_label):
         fig, ax = plt.subplots(figsize=fig_size)
         sns.lineplot(data=data, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2, ax=ax)
         plt.title(f'Monthly Digitization Output by Operator - {year_label}')
-        plt.xlabel('Month')
+        plt.xlabel('')
         plt.ylabel('Items Digitized')
         plt.xticks(rotation=xticks_rotation)
         plt.legend(title='Digitizer')
@@ -210,11 +206,12 @@ def save_plot_to_pdf(data, bar_data, args, year_label):
         # Data table for summary by month and year
         if args.historical:
             # Additional adjustments for historical data
-            years = data['month'].str[:4].unique()
+            years = data['month'].dt.year.unique()
             for year in sorted(years):
-                year_data = data[data['month'].str.startswith(year)]
+                year_data = data[data['month'].dt.year == year]
                 summary_df = year_data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
                 summary_df.columns = ['Month', 'Total Items Digitized']
+                summary_df['Month'] = summary_df['Month'].dt.strftime('%Y-%m')  # Format month
                 yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
                 summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
 
@@ -229,6 +226,7 @@ def save_plot_to_pdf(data, bar_data, args, year_label):
             # For non-historical data
             summary_df = data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
             summary_df.columns = ['Month', 'Total Items Digitized']
+            summary_df['Month'] = summary_df['Month'].dt.strftime('%Y-%m')  # Format month
             yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
             summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
 
@@ -257,9 +255,6 @@ def save_plot_to_pdf(data, bar_data, args, year_label):
 
     print(f"PDF report has been saved to {pdf_path}.")
 
-
-
-
 def main():
     args = get_args()
     df = fetch_data_from_jdbc()
@@ -273,4 +268,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
