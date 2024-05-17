@@ -113,17 +113,30 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     if not args.historical:
         df_pm = df_pm[df_pm[year_column] == current_year]
 
+    # Grouping data by operator and month, and aggregating unique IDs and average duration
     output_by_operator = df_pm.groupby(['digitizer.operator.lastName', 'month']).agg({
-        'bibliographic.primaryID': 'nunique'
+        'bibliographic.primaryID': 'nunique',
+        'technical.durationMilli.measure': 'mean'  # Calculate average duration
     }).reset_index()
 
     # Convert month to datetime and sort
     output_by_operator['month'] = pd.to_datetime(output_by_operator['month'])
     output_by_operator = output_by_operator.sort_values('month')
 
-    output_sum = output_by_operator.groupby('digitizer.operator.lastName')['bibliographic.primaryID'].sum().reset_index()
+    # Calculating total items and average duration per operator
+    output_sum = output_by_operator.groupby('digitizer.operator.lastName').agg({
+        'bibliographic.primaryID': 'sum',
+        'technical.durationMilli.measure': 'mean'  # Average of monthly averages
+    }).reset_index()
     output_sum['month'] = 'Total'
+
+    # Concatenating monthly data with summary data
     output_by_operator_summed = pd.concat([output_by_operator, output_sum], ignore_index=True)
+
+    # Adding a new column for formatted average duration
+    output_by_operator_summed['formatted_avg_duration'] = pd.to_timedelta(output_by_operator_summed['technical.durationMilli.measure'], unit='ms').dt.components.apply(
+        lambda x: f"{int(x['hours']):02}:{int(x['minutes']):02}:{int(x['seconds']):02}", axis=1)
+
     print(output_by_operator_summed)
 
     # Visualize data
@@ -143,6 +156,7 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     plt.show()
 
     return output_by_operator, current_year if not args.historical else "All Years"
+
 
 def plot_object_format_counts(df, args, fiscal=False, top_n=10):
     if 'digitizer.operator.lastName' not in df.columns:
