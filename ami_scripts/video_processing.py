@@ -195,6 +195,8 @@ def has_mezzanines(file_path):
 
 
 def extract_track_info(media_info, path, project_code_pattern, valid_extensions):
+    # the pattern to match YYYY-MM-DD
+    pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
     for track in media_info.tracks:
         if track.track_type == "General":
             file_data = [
@@ -203,7 +205,7 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
                 path.stem,
                 path.suffix[1:],
                 track.file_size,
-                track.file_last_modification_date.split()[1],
+                pattern.search(track.file_last_modification_date).group(0) if pattern.search(track.file_last_modification_date) else None,
                 track.format,
                 track.audio_format_list.split()[0] if track.audio_format_list else None,
                 track.codecs_video,
