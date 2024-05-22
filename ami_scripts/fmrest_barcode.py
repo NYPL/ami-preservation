@@ -46,11 +46,22 @@ def read_spec_ami_ids(file_path):
         if file_path.endswith('.csv'):
             with open(file_path, mode='r', encoding='utf-8') as file:
                 reader = csv.reader(file)
-                header = next(reader, None)
-                column_index = header.index('SPEC_AMI_ID') if 'SPEC_AMI_ID' in header else 0
-                for row in reader:
-                    if re.match(r"^\d{6}$", row[column_index]):
-                        ids.append(row[column_index])
+                # Attempt to read the first row
+                first_row = next(reader, None)
+                if first_row:
+                    # Check if the first row is likely a header by checking for non-digit entries
+                    if any(not item.isdigit() for item in first_row):
+                        # It's a header, determine the index of the 'SPEC_AMI_ID' column
+                        column_index = first_row.index('SPEC_AMI_ID') if 'SPEC_AMI_ID' in first_row else 0
+                    else:
+                        # It's not a header, treat this as data
+                        if re.match(r"^\d{6}$", first_row[0]):
+                            ids.append(first_row[0])
+                        column_index = 0  # Assume the ID is in the first column
+                    # Process the rest of the rows
+                    for row in reader:
+                        if re.match(r"^\d{6}$", row[column_index]):
+                            ids.append(row[column_index])
         elif file_path.endswith('.xlsx'):
             df = pd.read_excel(file_path, sheet_name=None)
             valid_sheet = None
