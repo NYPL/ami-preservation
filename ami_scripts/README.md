@@ -4,6 +4,7 @@
 - [AMI Production Scripts](#ami-production-scripts)
     - [Overview](#overview)
     - [ami\_file\_sync.py](#ami_file_syncpy)
+    - [ami\_record\_exporter\_and\_analyzer.py](#ami_record_exporter_and_analyzerpy)
     - [audio\_processing.py](#audio_processingpy)
     - [clean\_spec\_csv\_to\_excel.py](#clean_spec_csv_to_excelpy)
     - [copy\_from\_s3.py](#copy_from_s3py)
@@ -13,7 +14,6 @@
     - [digitization\_performance\_tracker.py](#digitization_performance_trackerpy)
     - [filemaker\_to\_json\_validator.py](#filemaker_to_json_validatorpy)
     - [film\_processing.py](#film_processingpy)
-    - [fmrest\_barcode.py](#fmrest_barcodepy)
     - [generate\_test\_media.py](#generate_test_mediapy)
     - [hflip\_film\_packages.py](#hflip_film_packagespy)
     - [iso\_transcoder.py](#iso_transcoderpy)
@@ -63,6 +63,30 @@ The script performs the following steps:
 3. Search for AMI IDs in File Paths: Utilizes regular expressions to identify files in the provided list of paths that correspond to the AMI IDs.
 4. Rsync Files (if in 'rsync' mode): For files ending with '.em.flac' or '.pm.iso', rsyncs the files to the specified destination directory, preserving timestamps and showing progress.
 5. Check Mode: If in 'check' mode, the script outputs the number of found and not found AMI IDs, listing any AMI IDs that were not found in the file paths.
+
+### ami_record_exporter_and_analyzer.py
+
+This script extracts and exports details and summary information about AMI IDs from a FileMaker database, using input data provided in CSV or Excel format. It generates two primary outputs: a detailed list of AMI IDs with associated data and a summarized view of box information with a breakdown of formats.
+
+```python3 ami_record_exporter_and_analyzer.py -u USERNAME -p PASSWORD -i /path/to/input_file -o /path/to/output.xlsx```
+
+This script performs the following steps:
+
+1. Connect to FileMaker Database: Utilizes environment variables to configure the connection to the FileMaker database. It attempts to log in using the provided credentials and prints the connection status.
+2. Read AMI IDs: Depending on the file type (.csv or .xlsx), the script parses the input file to extract AMI IDs. It skips headers and checks for numeric values in the designated 'SPEC_AMI_ID' column.
+3. Query Database: For each AMI ID, the script queries the FileMaker database to retrieve associated data such as barcode, migration status, item location, box name, box barcode, box location, and format type.
+4. Data Organization: Organizes retrieved data into two structures:
+* AMI ID Details: Contains detailed information per AMI ID.
+* Box Summary: Aggregates data by box name, counting items and categorizing them by format type.
+5. Export to Excel: Outputs the organized data into an Excel file with two sheets:
+* 'AMI ID Details': Detailed view for each AMI ID.
+* 'Box Summary': Summarized box information and format breakdown, presented in two sections within the same sheet.
+
+The script requires the following environment variables to be set:
+
+* FM_SERVER: URL of the FileMaker server.
+* FM_DATABASE: Name of the FileMaker database.
+* FM_LAYOUT: Database layout to be used for queries.
 
 
 ### audio_processing.py
@@ -252,20 +276,6 @@ This script performs the following steps:
 5. If an error occurs or required folders are missing, the script will print an error message describing the issue.
 
 Note: Make sure you have RAWcooked, FFmpeg, and the FLAC command-line tool installed on your system and available in your PATH before running the script.
-
-
-### fmrest_barcode.py
-
-This script automates the retrieval of barcodes from a FileMaker database using SPEC AMI IDs provided through a CSV or Excel file. It establishes a connection to a specified FileMaker database, queries for records matching each AMI ID, and exports the found barcodes to a new CSV file.
-
-```python3 fmrest_barcode.py -u USERNAME -p PASSWORD -i /path/to/input_file -o /path/to/output.csv```
-
-
-This script performs the following steps:
-
-1. Database Connection: Initiates a connection to the FileMaker server using provided credentials. The server address, database name, and layout are retrieved from environment variables (FM_SERVER, FM_DATABASE, FM_LAYOUT).
-2. Input Parsing: Dynamically reads SPEC AMI IDs from the provided input file. The script supports both CSV and Excel formats, detecting and processing based on file extension.
-3. Query and Export: For each valid AMI ID parsed from the input file, the script queries the FileMaker database for corresponding records. It extracts barcodes where available and compiles them into an output CSV file.
 
 
 ### generate_test_media.py
