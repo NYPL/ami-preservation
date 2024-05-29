@@ -81,10 +81,10 @@ This document outlines vendor requirements for administration, shipping and medi
 
 All tasks must comply with NYPL specifications, which are maintained in publically available GitHub pages. Actions to resolve unforeseen issues must be approved in writing by NYPL. The winning vendor(s) is expected to subscribe and refer to (“watch”) updates to the following GitHub repositories or pages:
 
-  * ami-handling: (https://github.com/NYPL/ami-handling)
-  * ami-specifications: (https://github.com/NYPL/ami-specifications)
-  * ami-metadata: (https://github.com/NYPL/ami-metadata)
-  * external-storage: (https://github.com/NYPL/digpres-policies/blob/master/external_storage.md)
+  * [ami-handling:] (https://github.com/NYPL/ami-handling)
+  * [ami-specifications:] (https://github.com/NYPL/ami-specifications)
+  * [ami-metadata:] (https://github.com/NYPL/ami-metadata)
+  * [external-storage:] (https://github.com/NYPL/digpres-policies/blob/master/external_storage.md)
 
 <a name="documentation"></a>
 ## Documentation
