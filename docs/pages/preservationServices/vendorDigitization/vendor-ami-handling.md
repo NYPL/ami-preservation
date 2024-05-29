@@ -111,8 +111,10 @@ All tasks must comply with NYPL specifications, which are maintained in publical
       * Special treatment
       * Hard drive shipping fees
       * Hard drives storage
+      
 <a name="original-media-shipping-document"></a>
 ## Original Media Shipping Document
+
   * Produced by: Sender
   * Scope: Box-level inventory of physical media objects in shipment.
   * Format: PDF
