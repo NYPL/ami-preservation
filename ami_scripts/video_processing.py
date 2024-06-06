@@ -17,6 +17,13 @@ LOGGER = logging.getLogger(__name__)
 video_extensions = {'.mkv', '.mov', '.mp4', '.dv', '.iso'}
 audio_extensions = {'.wav', '.flac'}
 
+# Function to remove hidden files
+def remove_hidden_files(directory):
+    for item in directory.rglob('.*'):
+        if item.is_file():
+            item.unlink()
+            print(f"Removed hidden file: {item}")
+
 def rename_files(input_directory, extensions):
     files = set(itertools.chain.from_iterable(input_directory.glob(ext) for ext in extensions))
     for file in files:
@@ -262,6 +269,10 @@ def main():
     if not input_dir.is_dir():
         print(f"Error: {input_dir} is not a valid directory.")
         exit(1)
+
+    # Remove hidden files before processing
+    print("Removing hidden files...")
+    remove_hidden_files(input_dir)
 
     print("Processing DV files...")
     process_dv_files(input_dir)
