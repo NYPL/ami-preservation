@@ -310,6 +310,9 @@ def cleanup_csv(args):
 
         df = pd.read_csv(args.source, encoding=file_encoding)
         
+        # Convert 'format_1' to lowercase to ensure consistency in processing
+        df['format_1'] = df['format_1'].str.lower()
+
         if args.workorder:
             df['WorkOrderId'] = args.workorder
 
@@ -355,6 +358,7 @@ def cleanup_csv(args):
                     writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
                     df.to_excel(writer, sheet_name='Sheet1')
                     writer.close()
+
         
 
 def main():
