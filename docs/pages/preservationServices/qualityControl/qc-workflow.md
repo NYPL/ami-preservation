@@ -48,7 +48,7 @@ The following handbook will provide step-by-step instructions for carrying out o
   * make a copy of the [QC Log Template](https://docs.google.com/spreadsheets/d/1OKlFNGR27H6Ey9v2EyAjqe6MzOsPrVl_5X4PDV-elsU/edit?usp=sharing) & rename the copy using the same work order ID, (follow the QC log template naming convention).
   * Attach QC log to the associated Trello card (using the Attachments button in the card, drop in the URL of the QC log).
 
-**Each QC log should be easily found linked in Google Drive as an** _attachment in the Trello Card for the batch you are inspecting. _Tip: you can search for the drive ID / work order ID in the Trello search box._
+**Each QC log should be easily found linked in Google Drive as an attachment in the Trello Card for the batch you are inspecting.** _Tip: you can search for the drive ID / work order ID in the Trello search box._
 
   * Use the list of files that appears in the Google Sheet QC log (in the QClog tab) as your list of files to check.
   * Drop down menus are available for noting specific identifiable errors, and there is a free-text field for general notes.
