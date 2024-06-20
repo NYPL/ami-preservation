@@ -166,6 +166,7 @@ def main():
         'digitizationProcess.timeBaseCorrector.serialNumber': object,
         'digitizationProcess.phonoPreamp.serialNumber': object,
         'digitizationProcess.playbackDevice.phonoCartridge.stylusSize.measure': object,
+        'digitizationProcess.playbackDevice.phonoCartridge.model': object,
         'source.physicalDescription.properties.stockProductID': object,
         'digitizer.organization.address.postalCode': object,
         'source.physicalDescription.edgeCode': object,
