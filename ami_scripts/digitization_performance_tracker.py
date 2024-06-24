@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from hurry.filesize import size
+from hurry.filesize import size, si
 import numpy as np
 import datetime
 from matplotlib.backends.backend_pdf import PdfPages
@@ -109,9 +109,12 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     year_column = 'fiscal_year' if fiscal else 'calendar_year'
     current_year = get_fiscal_year(datetime.datetime.now()) if fiscal else datetime.datetime.now().year
 
-    # Filter data based on the historical flag
+    # Always define df_filtered. If not historical, filter by current year.
     if not args.historical:
+        df_filtered = df[df[year_column] == current_year]
         df_pm = df_pm[df_pm[year_column] == current_year]
+    else:
+        df_filtered = df  # Use the whole dataset if historical is True
 
     # Grouping data by operator and month, and aggregating unique IDs and average duration
     output_by_operator = df_pm.groupby(['digitizer.operator.lastName', 'month']).agg({
@@ -137,7 +140,13 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     output_by_operator_summed['formatted_avg_duration'] = pd.to_timedelta(output_by_operator_summed['technical.durationMilli.measure'], unit='ms').dt.components.apply(
         lambda x: f"{int(x['hours']):02}:{int(x['minutes']):02}:{int(x['seconds']):02}", axis=1)
 
+    # Convert fileSize to numeric and compute the total
+    df_filtered['technical.fileSize.measure'] = pd.to_numeric(df_filtered['technical.fileSize.measure'], errors='coerce')
+    total_file_size = df_filtered['technical.fileSize.measure'].sum()
+
     print(output_by_operator_summed)
+    print('\nTotal file size from all records: {}'.format(size(total_file_size, system=si)))
+
 
     # Visualize data
     sns.set_style("whitegrid")
