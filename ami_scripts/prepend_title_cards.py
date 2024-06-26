@@ -178,6 +178,7 @@ def process_video(video_path, asset_flag):
             # Check if the video is oddball Telestream DAR video
             filters.extend([
                 f"scale={width}:{height}",
+                
                 "setsar=10/11",
             ])
         elif width == 654 and height == 480 and video_stream.get('display_aspect_ratio') == '94:69':
@@ -241,7 +242,7 @@ def process_video(video_path, asset_flag):
     ffmpeg_concat_cmd = ['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', concat_list, '-c', 'copy', temp_output_path]
     returncode, stdout, stderr = run_ffmpeg_command(ffmpeg_concat_cmd)
 
-    if "Non-monotonic DTS in output stream 0:1" in stderr or "Non-monotonous DTS in output stream 0:1" in stderr:
+    if "Non-monotonic DTS in output stream 0:1" in stderr or "Non-monotonous DTS in output stream 0:1" in stderr or "Non-monotonic DTS" in stderr:
         print("Non-monotonic DTS error detected. Attempting alternative concatenation method.")
 
         # Remove the possibly corrupted file

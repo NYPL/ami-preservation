@@ -215,7 +215,7 @@ def plot_object_format_counts(df, args, fiscal=False, top_n=10, formatted_file_s
                     ha='center', va='bottom', color='black', xytext=(0, 5), textcoords='offset points')
 
     # Display total count of all objects digitized in the top right corner or another suitable location
-    plt.text(0.95, 0.95, f'Total Items Digitized: {total_items_per_month_summed}\nTotal File Size: {formatted_file_size}', transform=ax.transAxes, horizontalalignment='right',
+    plt.text(0.95, 0.95, f'Total Items Digitized: {total_items_per_month_summed}\nTotal Data Generated: {formatted_file_size}', transform=ax.transAxes, horizontalalignment='right',
              verticalalignment='top', fontsize=14, color='black', bbox=dict(facecolor='white', alpha=0.5))
 
     plt.tight_layout()
@@ -296,7 +296,7 @@ def save_plot_to_pdf(line_data, bar_data, total_items_per_month_summed, formatte
                         ha='center', va='bottom', color='black', xytext=(0, 5), textcoords='offset points')
 
         # Display total count of all objects digitized, not just those in the chart
-        plt.text(0.95, 0.95, f'Total Items Digitized: {total_items_per_month_summed}\nTotal File Size: {formatted_file_size}', transform=ax.transAxes, horizontalalignment='right',
+        plt.text(0.95, 0.95, f'Total Items Digitized: {total_items_per_month_summed}\nTotal Data Generated: {formatted_file_size}', transform=ax.transAxes, horizontalalignment='right',
                  verticalalignment='top', fontsize=14, color='black', bbox=dict(facecolor='white', alpha=0.5))
 
         plt.tight_layout()
