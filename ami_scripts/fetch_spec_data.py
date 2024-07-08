@@ -7,8 +7,7 @@ import pandas as pd
 import logging
 import re
 from fmrest import Server
-from fmrest.exceptions import FileMakerError 
-
+from fmrest.exceptions import FileMakerError
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,7 +17,7 @@ def parse_arguments():
     parser.add_argument('-u', '--username', required=True, help="The username for the Filemaker database.")
     parser.add_argument('-p', '--password', required=True, help="The password for the Filemaker database.")
     parser.add_argument('-i', '--input', required=True, help="The path to the input file containing SPEC AMI IDs.")
-    parser.add_argument('-o', '--output', required=True, help="The path to the output CSV file for exporting barcodes.")
+    parser.add_argument('-o', '--output', required=True, help="The path to the output Excel file for exporting data.")
     return parser.parse_args()
 
 # Environment variables
@@ -60,9 +59,8 @@ def read_spec_ami_ids(file_path):
                         ids.append(row[column_index])
         elif file_path.endswith('.xlsx'):
             df = pd.read_excel(file_path, dtype=str)
-            for sheet_name, sheet_df in df.items():
-                if 'SPEC_AMI_ID' in sheet_df.columns:
-                    ids.extend(sheet_df['SPEC_AMI_ID'].dropna().tolist())
+            if 'SPEC_AMI_ID' in df.columns:
+                ids.extend(df['SPEC_AMI_ID'].dropna().tolist())
     except Exception as e:
         logging.error(f"Failed to read input file: {e}")
     return ids
@@ -77,14 +75,13 @@ def process_records(fms, spec_ami_ids, output_path):
             found_records = fms.find([{"ref_ami_id": ami_id}])
             for record in found_records:
                 record_data = record.to_dict()
-                print(record_data)  # Debug print to check data structure
 
                 # Extract format types
                 format_1 = record_data.get('format_1', '')
                 format_2 = record_data.get('format_2', '')
                 format_3 = record_data.get('format_3', '')
 
-                # Append the formats instead of the barcode
+                # Append the formats
                 output_data.append([ami_id, format_1, format_2, format_3])
         except FileMakerError as e:
             if "No records match the request" in str(e):
@@ -93,22 +90,16 @@ def process_records(fms, spec_ami_ids, output_path):
             else:
                 logging.error(f"An error occurred while searching for ID {ami_id}: {e}")
 
-    # Write the output to a CSV file
-    with open(output_path, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(['SPEC_AMI_ID', 'Format 1', 'Format 2', 'Format 3'])  # Adjust the header
-        writer.writerows(output_data)
+    # Create DataFrames
+    formats_df = pd.DataFrame(output_data, columns=['SPEC_AMI_ID', 'Format 1', 'Format 2', 'Format 3'])
+    not_found_df = pd.DataFrame(not_found_ids, columns=['Not Found SPEC_AMI_IDs'])
 
-    if not_found_ids:
-        logging.info(f"IDs not found: {not_found_ids}")
-        with open('not_found_ids.csv', 'w', newline='', encoding='utf-8') as nf_file:
-            writer = csv.writer(nf_file)
-            writer.writerow(['Not Found SPEC_AMI_IDs'])
-            writer.writerows([[id] for id in not_found_ids])
+    # Write to Excel
+    with pd.ExcelWriter(output_path, engine='xlsxwriter') as writer:
+        formats_df.to_excel(writer, sheet_name='Formats', index=False)
+        not_found_df.to_excel(writer, sheet_name='Not Found IDs', index=False)
 
     return not_found_ids  # Optionally return the list of not found IDs
-
-
 
 def main():
     args = parse_arguments()
