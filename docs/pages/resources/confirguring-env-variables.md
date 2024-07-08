@@ -7,7 +7,7 @@ parent: Resources
 
 # Configuring Environmental Variables for Scripts
 
-Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py` and `fmrest_barcode`, require specific environmental variables to be set in your `.zshrc` file to function correctly. These variables typically include API keys, tokens, and configuration settings necessary for the scripts to interact with external services like Trello and FileMaker.
+Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py`, `fmrest_barcode`, and `digitization_performance_tracker.py`, require specific environmental variables to be set in your `.zshrc` file to function correctly. These variables typically include API keys, tokens, configuration settings, and database credentials necessary for the scripts to interact with external services like Trello, FileMaker, and AMI Database.
 
 **Setting up Environmental Variables:**
 
@@ -32,6 +32,13 @@ Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py` 
      export FILEMAKER_DATABASE='your_filemaker_database'
      export FILEMAKER_LAYOUT='your_filemaker_layout'
      ```
+  - For `digitization_performance_tracker.py`, which requires AMI Database connection details:
+     ```bash
+    export FM_SERVER='<server_ip>'
+    export AMI_DATABASE='<database_name>'
+    export AMI_DATABASE_USERNAME='<username>'
+    export AMI_DATABASE_PASSWORD='<password>'
+     ```
 
 4. **Save and close TextEdit.** After adding your variables, save the changes and close the editor.
 
@@ -40,6 +47,27 @@ Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py` 
    source ~/.zshrc
    ```
    This command reloads your `.zshrc`, applying the new environmental settings.
+
+**Installing and Configuring Java (OpenJDK 11)**
+
+1. **Install OpenJDK 11 using Homebrew**
+   ```bash
+   brew install openjdk@11
+   ```
+2. **Add OpenJDK 11 to your environment**
+   ```bash
+  echo 'export PATH="/usr/local/opt/openjdk@11/bin:$PATH"' >> ~/.zshrc
+  echo 'export JAVA_HOME="/usr/local/opt/openjdk@11"' >> ~/.zshrc
+   ```
+
+3. **Reload your .zshrc file**
+   ```bash
+   source ~/.zshrc
+   ```
+4. **Verify the Java installation**
+   ```bash
+   java -version
+   ```
 
 **Verification:**
 
