@@ -69,9 +69,12 @@ def fetch_data_from_jdbc(args):
             columns = [desc[0] for desc in curs.description]
             data2 = [dict(zip(columns, row)) for row in curs.fetchall()]
             df2 = pd.DataFrame(data2)
+            df1['source'] = 'Vendor'  
+            df2['source'] = 'In-House'  
             df = pd.concat([df1, df2], ignore_index=True)
         else:
             df = df1
+            df['source'] = 'Vendor'  # Default to Vendor if not combined
 
         print("Data fetched successfully!")
         print(f"Total records fetched: {len(df)}")  
@@ -192,13 +195,14 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
         year_label = str(current_date.year)
 
 
-    output = df_pm.groupby(['month']).agg({
+    # Group by both month and source to differentiate the data
+    output = df_pm.groupby(['month', 'source']).agg({
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
-    # Convert month to datetime and sort
+    # Convert 'month' to datetime and sort
     output['month'] = pd.to_datetime(output['month'])
-    output = output.sort_values('month')
+    output = output.sort_values(['month', 'source'])
 
     # Group by media type and month, count unique IDs
     monthly_media_counts = df_pm.groupby(['media_type', 'month']).agg({
@@ -240,11 +244,12 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     # Visualize data
     sns.set_style("whitegrid")
     plt.figure(figsize=(12, 6) if not args.historical else (18, 6))
-    sns.lineplot(data=output, x='month', y='bibliographic.primaryID', marker='o', linewidth=2)
+    sns.lineplot(data=output, x='month', y='bibliographic.primaryID', hue='source', marker='o', linewidth=2)
     title = f'Monthly Output - (PM role only) - {year_label}'
     plt.title(title)
     plt.xlabel('')
     plt.ylabel('Items Digitized')
+    plt.legend(title='Source')
     if args.historical:
         plt.xticks(rotation=90)  # Rotate ticks for better readability in historical view
     else:
@@ -380,7 +385,7 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
     with PdfPages(pdf_path) as pdf:
         # Plot for line data
         fig, ax = plt.subplots(figsize=(18, 6) if args.historical else (10, 5))
-        sns.lineplot(data=line_data, x='month', y='bibliographic.primaryID', marker='o', linewidth=2, ax=ax)
+        sns.lineplot(data=line_data, x='month', y='bibliographic.primaryID', hue='source', marker='o', linewidth=2, ax=ax)
         plt.title(f'Monthly AMI Digitization Output - {year_label}')
         plt.xlabel('')
         plt.ylabel('Items Digitized')
