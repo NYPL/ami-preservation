@@ -53,8 +53,8 @@ def fetch_data_from_jdbc(args):
         print("Now Fetching Data (Expect 2-3 minutes)")
 
         # Define your queries
-        query1 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "mediaType", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type" FROM tbl_vendor_mediainfo'
-        query2 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type" FROM tbl_metadata'
+        query1 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "mediaType", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "bibliographic.cmsCollectionID" FROM tbl_vendor_mediainfo'
+        query2 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "bibliographic.cmsCollectionID" FROM tbl_metadata'
 
         # Execute the first query always
         curs = conn.cursor()
@@ -222,6 +222,11 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     print(total_media_counts)
     print(f"Total of all media types: {total_unique_items}")
 
+    # Calculate unique items per SPEC Collection ID
+    spec_collection_usage = df_pm.groupby('bibliographic.cmsCollectionID')['bibliographic.primaryID'].nunique().reset_index()
+    spec_collection_usage.columns = ['SPEC Collection ID', 'Unique Items']
+    spec_collection_usage = spec_collection_usage.sort_values(by='Unique Items', ascending=False)    
+
     # Calculate yearly totals
     total_pm_summed = df_pm['bibliographic.primaryID'].nunique()
     print(f"Total digitized items (unique pm across all years): {total_pm_summed}")
@@ -257,7 +262,7 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     plt.tight_layout()
     plt.show()
 
-    return output, year_label, total_items_per_month_summed, total_file_size, total_media_counts
+    return output, year_label, total_items_per_month_summed, total_file_size, total_media_counts, spec_collection_usage
 
 def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None):
     df_pm = df[df['asset.fileRole'] == 'pm']
@@ -364,7 +369,7 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
 
     return objects_by_division_code
 
-def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts):    
+def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage):    
     # Determine the report type based on the args
     if args.historical:
         report_type = "Historical"
@@ -466,6 +471,17 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
         pdf.savefig(fig)
         plt.close(fig)
 
+        #Items Digitized Per SPEC Collection ID
+        top_collections = spec_collection_usage.sort_values(by='Unique Items', ascending=False).head(15)  # Display top 15 collections
+        fig, ax = plt.subplots(figsize=(12, 8))
+        sns.barplot(x='Unique Items', y='SPEC Collection ID', data=top_collections, palette='muted', ax=ax)
+        plt.title('Top SPEC Collections Digitized', fontsize=16)
+        plt.xlabel('Number of Unique Items')
+        plt.ylabel('Collection ID')
+        plt.tight_layout()
+        pdf.savefig(fig)
+        plt.close(fig)
+
     print(f"PDF report has been saved to {pdf_path}.")
 
 
@@ -473,7 +489,7 @@ def main():
     args = get_args()
     df = fetch_data_from_jdbc(args)
     df_processed = process_data(df, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
-    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts = display_monthly_output(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
+    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, spec_collection_usage = display_monthly_output(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
     if line_data is None:
         print("Error: Missing data. Exiting the program.")
         return
@@ -490,7 +506,7 @@ def main():
         return
 
     # Also pass formatted_file_size to save_plot_to_pdf
-    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts)
+    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage)
 
 if __name__ == "__main__":
     main()

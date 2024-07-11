@@ -52,7 +52,7 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
-        query = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "digitizationProcess.playbackDevice.model", "digitizationProcess.playbackDevice.serialNumber", "bibliographic.cmsCollectionID" FROM tbl_metadata'
+        query = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "digitizationProcess.playbackDevice.model", "digitizationProcess.playbackDevice.serialNumber", "cmsCollectionTitle" FROM tbl_metadata'
         curs = conn.cursor()
         curs.execute(query)
 
@@ -199,14 +199,15 @@ def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=F
     print(total_media_counts)
     print(f"Total of all media types: {total_unique_items}")
 
-    # Equipment Usage
+    # Equipment usage, ensure each model-serial combination is handled as a unique entity
     equipment_usage = df_pm.groupby(['digitizationProcess.playbackDevice.model', 'digitizationProcess.playbackDevice.serialNumber'])['bibliographic.primaryID'].nunique().reset_index()
     equipment_usage.columns = ['Device Model', 'Serial Number', 'Unique Items']
+    equipment_usage['Label'] = equipment_usage['Device Model'] + " (" + equipment_usage['Serial Number'] + ")"
     equipment_usage = equipment_usage.sort_values(by='Unique Items', ascending=False)
 
-     # Calculate unique items per SPEC Collection ID
-    spec_collection_usage = df_pm.groupby('bibliographic.cmsCollectionID')['bibliographic.primaryID'].nunique().reset_index()
-    spec_collection_usage.columns = ['SPEC Collection ID', 'Unique Items']
+    # Calculate unique items per SPEC Collection ID
+    spec_collection_usage = df_pm.groupby('cmsCollectionTitle')['bibliographic.primaryID'].nunique().reset_index()
+    spec_collection_usage.columns = ['SPEC Collection Title', 'Unique Items']
     spec_collection_usage = spec_collection_usage.sort_values(by='Unique Items', ascending=False)
 
     # Grouping data by operator and month, and aggregating unique IDs and average duration
@@ -468,24 +469,55 @@ def save_plot_to_pdf(data, bar_data, pie_data, args, total_items_per_month_summe
         pdf.savefig(fig)
         plt.close(fig)
 
-        #Items Digitized Per SPEC Collection ID
+
+        # Items Digitized Per SPEC Collection ID
         top_collections = spec_collection_usage.sort_values(by='Unique Items', ascending=False).head(15)  # Display top 15 collections
         fig, ax = plt.subplots(figsize=(12, 8))
-        sns.barplot(x='Unique Items', y='SPEC Collection ID', data=top_collections, palette='muted', ax=ax)
+
+        # Generate a cubehelix palette
+        num_colors = len(top_collections)
+        palette = sns.cubehelix_palette(start=2, rot=0, dark=0.3, light=0.8, n_colors=num_colors, reverse=True)
+
+        # Plotting with the custom palette
+        bars = sns.barplot(x='Unique Items', y='SPEC Collection Title', data=top_collections, palette=palette, ax=ax)
+        ax.set_yticklabels([])  # Hide y-axis labels
+
+        # Calculate the median or mean width of the bars to use as a threshold
+        bar_widths = [bar.get_width() for bar in bars.patches]
+        adaptive_threshold = np.mean(bar_widths)  # You can use np.mean(bar_widths) if preferred
+
+        # Annotate each bar with the corresponding SPEC Collection Title
+        for bar, title in zip(bars.patches, top_collections['SPEC Collection Title']):
+            bar_width = bar.get_width()  # Get the width of the bar
+            if bar_width > adaptive_threshold:  # Use the adaptive threshold
+                text_x = bar_width - 10
+                va_position = 'center'
+                ha_position = 'right'
+                color = 'white'  # Better readability for text inside bars
+            else:
+                text_x = bar_width + 10  # Position outside the bar
+                va_position = 'center'
+                ha_position = 'left'
+                color = 'black'
+            
+            ax.text(text_x, bar.get_y() + bar.get_height()/2, title, va=va_position, ha=ha_position, color=color, fontweight='bold')
+
         plt.title('Top SPEC Collections Digitized', fontsize=16)
         plt.xlabel('Number of Unique Items')
-        plt.ylabel('Collection ID')
+        plt.ylabel('')  # Remove the y-axis label
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
 
-        # Equipment usage visualization
-        top_equipment = equipment_usage.head(15)  # Adjust to display top 10 or 15 as needed
+        # Adjust the number of colors to the number of unique equipment labels
+        num_colors = len(equipment_usage['Label'].unique())
+        palette = sns.cubehelix_palette(start=1.5, rot=-0.5, dark=0.2, light=0.8, n_colors=num_colors, reverse=False)
+
         fig, ax = plt.subplots(figsize=(12, 8))
-        sns.barplot(x='Unique Items', y='Device Model', data=top_equipment, palette='viridis', ax=ax)
+        sns.barplot(x='Unique Items', y='Label', data=equipment_usage.head(15), palette=palette, ax=ax)
         plt.title('Top Equipment Used', fontsize=16)
         plt.xlabel('Number of Unique Items Processed')
-        plt.ylabel('Equipment Model')
+        plt.ylabel('Equipment Model and Serial Number')
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
