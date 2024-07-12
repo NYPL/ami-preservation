@@ -469,8 +469,10 @@ def save_plot_to_pdf(data, bar_data, pie_data, args, total_items_per_month_summe
         pdf.savefig(fig)
         plt.close(fig)
 
-
         # Items Digitized Per SPEC Collection ID
+        # Cutting out text after comma characters for collection titles
+        spec_collection_usage['SPEC Collection Title'] = spec_collection_usage['SPEC Collection Title'].str.split(',').str[0]
+
         top_collections = spec_collection_usage.sort_values(by='Unique Items', ascending=False).head(15)  # Display top 15 collections
         fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -509,12 +511,14 @@ def save_plot_to_pdf(data, bar_data, pie_data, args, total_items_per_month_summe
         pdf.savefig(fig)
         plt.close(fig)
 
-        # Adjust the number of colors to the number of unique equipment labels
-        num_colors = len(equipment_usage['Label'].unique())
-        palette = sns.cubehelix_palette(start=1.5, rot=-0.5, dark=0.2, light=0.8, n_colors=num_colors, reverse=False)
+        # Generate a palette that matches the number of items being displayed
+        num_display = 15  # Number of items you are displaying
+        palette = sns.cubehelix_palette(n_colors=num_display, start=1.5, rot=-0.5, dark=0.3, light=0.8, reverse=True)
 
         fig, ax = plt.subplots(figsize=(12, 8))
-        sns.barplot(x='Unique Items', y='Label', data=equipment_usage.head(15), palette=palette, ax=ax)
+        # Apply the palette by using the hue parameter
+        # Assuming 'Label' is what you're differentiating by color
+        sns.barplot(x='Unique Items', y='Label', data=equipment_usage.head(num_display), palette=palette, ax=ax)
         plt.title('Top Equipment Used', fontsize=16)
         plt.xlabel('Number of Unique Items Processed')
         plt.ylabel('Equipment Model and Serial Number')
