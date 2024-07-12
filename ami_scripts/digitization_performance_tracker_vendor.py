@@ -53,8 +53,8 @@ def fetch_data_from_jdbc(args):
         print("Now Fetching Data (Expect 2-3 minutes)")
 
         # Define your queries
-        query1 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "mediaType", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "bibliographic.cmsCollectionID" FROM tbl_vendor_mediainfo'
-        query2 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "bibliographic.cmsCollectionID" FROM tbl_metadata'
+        query1 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "mediaType", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "cmsCollectionTitle" FROM tbl_vendor_mediainfo'
+        query2 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "cmsCollectionTitle" FROM tbl_metadata'
 
         # Execute the first query always
         curs = conn.cursor()
@@ -223,10 +223,10 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     print(f"Total of all media types: {total_unique_items}")
 
     # Calculate unique items per SPEC Collection ID
-    spec_collection_usage = df_pm.groupby('bibliographic.cmsCollectionID')['bibliographic.primaryID'].nunique().reset_index()
-    spec_collection_usage.columns = ['SPEC Collection ID', 'Unique Items']
-    spec_collection_usage = spec_collection_usage.sort_values(by='Unique Items', ascending=False)    
-
+    spec_collection_usage = df_pm.groupby('cmsCollectionTitle')['bibliographic.primaryID'].nunique().reset_index()
+    spec_collection_usage.columns = ['SPEC Collection Title', 'Unique Items']
+    spec_collection_usage = spec_collection_usage.sort_values(by='Unique Items', ascending=False)
+   
     # Calculate yearly totals
     total_pm_summed = df_pm['bibliographic.primaryID'].nunique()
     print(f"Total digitized items (unique pm across all years): {total_pm_summed}")
@@ -292,7 +292,7 @@ def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top
 
     # Plotting with annotations
     fig, ax = plt.subplots(figsize=(15, 6))
-    sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis', ax=ax)
+    sns.barplot(x='Format', y='Count', data=format_counts, palette='cividis', ax=ax)
     plt.xticks(rotation=45)
     plt.xlabel('Format')
     plt.ylabel('Count')
@@ -471,13 +471,44 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
         pdf.savefig(fig)
         plt.close(fig)
 
-        #Items Digitized Per SPEC Collection ID
+        # Items Digitized Per SPEC Collection ID
+        # Cutting out text after comma characters for collection titles
+        spec_collection_usage['SPEC Collection Title'] = spec_collection_usage['SPEC Collection Title'].str.split(',').str[0]
+
         top_collections = spec_collection_usage.sort_values(by='Unique Items', ascending=False).head(15)  # Display top 15 collections
         fig, ax = plt.subplots(figsize=(12, 8))
-        sns.barplot(x='Unique Items', y='SPEC Collection ID', data=top_collections, palette='muted', ax=ax)
+
+        # Generate a cubehelix palette
+        num_colors = len(top_collections)
+        palette = sns.cubehelix_palette(start=2, rot=0, dark=0.3, light=0.8, n_colors=num_colors, reverse=True)
+
+        # Plotting with the custom palette
+        bars = sns.barplot(x='Unique Items', y='SPEC Collection Title', data=top_collections, palette=palette, ax=ax)
+        ax.set_yticklabels([])  # Hide y-axis labels
+
+        # Calculate the median or mean width of the bars to use as a threshold
+        bar_widths = [bar.get_width() for bar in bars.patches]
+        adaptive_threshold = np.mean(bar_widths)  # You can use np.mean(bar_widths) if preferred
+
+        # Annotate each bar with the corresponding SPEC Collection Title
+        for bar, title in zip(bars.patches, top_collections['SPEC Collection Title']):
+            bar_width = bar.get_width()  # Get the width of the bar
+            if bar_width > adaptive_threshold:  # Use the adaptive threshold
+                text_x = bar_width - 10
+                va_position = 'center'
+                ha_position = 'right'
+                color = 'white'  # Better readability for text inside bars
+            else:
+                text_x = bar_width + 10  # Position outside the bar
+                va_position = 'center'
+                ha_position = 'left'
+                color = 'black'
+            
+            ax.text(text_x, bar.get_y() + bar.get_height()/2, title, va=va_position, ha=ha_position, color=color, fontweight='bold')
+
         plt.title('Top SPEC Collections Digitized', fontsize=16)
         plt.xlabel('Number of Unique Items')
-        plt.ylabel('Collection ID')
+        plt.ylabel('')  # Remove the y-axis label
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
