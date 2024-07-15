@@ -6,7 +6,6 @@ import os
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from hurry.filesize import size, si
 import numpy as np
 import datetime
 from matplotlib.backends.backend_pdf import PdfPages
@@ -53,8 +52,8 @@ def fetch_data_from_jdbc(args):
         print("Now Fetching Data (Expect 2-3 minutes)")
 
         # Define your queries
-        query1 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "mediaType", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "cmsCollectionTitle" FROM tbl_vendor_mediainfo'
-        query2 = 'SELECT "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "cmsCollectionTitle" FROM tbl_metadata'
+        query1 = 'SELECT "asset.referenceFilename", "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "mediaType", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "cmsCollectionTitle" FROM tbl_vendor_mediainfo'
+        query2 = 'SELECT "asset.referenceFilename", "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "cmsCollectionTitle" FROM tbl_metadata'
 
         # Execute the first query always
         curs = conn.cursor()
@@ -217,6 +216,40 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
         'Unique Items': 'sum'
     }).reset_index()
 
+        # Adjust regex to capture only up to the first significant identifier (up to version number)
+    df_pm['core_id'] = df_pm['asset.referenceFilename'].str.extract(r'(^.+?)_v\d+')[0]
+    df_pm['is_multitrack'] = df_pm['asset.referenceFilename'].str.contains(r's\d+_pm')
+
+    # Define the custom aggregation function
+    def custom_aggregate(group, include_groups=False):
+        if group['is_multitrack'].any():
+            # Only consider the duration of the first stream if it's a multi-track
+            return group.loc[group['is_multitrack'], 'technical.durationMilli.measure'].iloc[0]
+        else:
+            # For non-multi-track, sum the durations in the group
+            return group['technical.durationMilli.measure'].sum()
+
+    # Adjust the groupby and apply the function with include_groups set to False
+    monthly_unique_durations = df_pm.groupby(['month', 'core_id']).apply(custom_aggregate, include_groups=False).reset_index()
+
+    # Rename the resulting series manually after resetting the index
+    monthly_unique_durations.rename(columns={0: 'Total Duration (ms)'}, inplace=True)
+
+    # Sum these durations for each month
+    monthly_durations = monthly_unique_durations.groupby('month').agg({'Total Duration (ms)': 'sum'}).reset_index()
+
+    # Calculate the grand total of durations
+    grand_total_duration = monthly_durations['Total Duration (ms)'].sum()
+
+    # Convert the grand total duration from milliseconds to HH:MM:SS
+    hours, remainder = divmod(grand_total_duration / 1000, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    # Formatted string for the grand total duration
+    formatted_grand_total_duration = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+
+    print(f"Total duration of all digitized items (HH:MM:SS): {formatted_grand_total_duration}")
+
     total_unique_items = total_media_counts['Unique Items'].sum()  # Calculate the total sum of unique items across all media types
     print(f"Total unique items per media type across {year_label}:")
     print(total_media_counts)
@@ -262,9 +295,9 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     plt.tight_layout()
     plt.show()
 
-    return output, year_label, total_items_per_month_summed, total_file_size, total_media_counts, spec_collection_usage
+    return output, year_label, total_items_per_month_summed, total_file_size, total_media_counts, spec_collection_usage, formatted_grand_total_duration
 
-def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None):
+def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None, formatted_grand_total_duration=""):
     df_pm = df[df['asset.fileRole'] == 'pm']
     
     current_date = datetime.datetime.now()
@@ -292,11 +325,11 @@ def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top
 
     # Plotting with annotations
     fig, ax = plt.subplots(figsize=(15, 6))
-    sns.barplot(x='Format', y='Count', data=format_counts, palette='cividis', ax=ax)
+    sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis', hue='Format', ax=ax, legend=False)
     plt.xticks(rotation=45)
     plt.xlabel('Format')
     plt.ylabel('Count')
-    plt.title(f'Top {top_n} Counts of Source Object Formats in {year_label}', fontsize=16, fontweight='bold')
+    plt.title(f'Top {top_n} Counts of AMI Digitized in {year_label}', fontsize=16, fontweight='bold')
     plt.subplots_adjust(bottom=0.3)
 
     # Adding annotations for each bar
@@ -307,6 +340,9 @@ def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top
     media_text = ""
     for index, row in media_counts.iterrows():
         media_text += f"\n{row['media_type'].title()}: {row['Unique Items']}"
+    
+    # Append formatted_grand_total_duration to the media text
+    media_text += f"\nTotal Duration of Digitized Items (HH:MM:SS): {formatted_grand_total_duration}"
 
     # Display total count of all objects digitized and media type counts
     plt.text(0.95, 0.95, f"Total Items Digitized: {total_items_per_month_summed}\nTotal Data Generated: {formatted_file_size}{media_text}", transform=ax.transAxes, horizontalalignment='right',
@@ -369,7 +405,7 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
 
     return objects_by_division_code
 
-def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage):    
+def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage, formatted_grand_total_duration):    
     # Determine the report type based on the args
     if args.historical:
         report_type = "Historical"
@@ -438,9 +474,12 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
         for index, row in media_counts.iterrows():
             media_text += f"\n{row['media_type'].title()}: {row['Unique Items']}"
 
+        # Append formatted_grand_total_duration to the media text
+        media_text += f"\nTotal Duration of Digitized Items (HH:MM:SS): {formatted_grand_total_duration}"
+
         # Bar plot with annotations for object format counts
         fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(x='Format', y='Count', data=bar_data, palette='viridis', ax=ax)
+        sns.barplot(x='Format', y='Count', data=bar_data, palette='viridis', hue='Format', ax=ax, legend=False)
         plt.xticks(rotation=45)
         plt.xlabel('Format')
         plt.ylabel('Count')
@@ -483,7 +522,7 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
         palette = sns.cubehelix_palette(start=2, rot=0, dark=0.3, light=0.8, n_colors=num_colors, reverse=True)
 
         # Plotting with the custom palette
-        bars = sns.barplot(x='Unique Items', y='SPEC Collection Title', data=top_collections, palette=palette, ax=ax)
+        bars = sns.barplot(x='Unique Items', y='SPEC Collection Title', data=top_collections, palette=palette, hue='SPEC Collection Title', ax=ax, legend=False)
         ax.set_yticklabels([])  # Hide y-axis labels
 
         # Calculate the median or mean width of the bars to use as a threshold
@@ -520,7 +559,7 @@ def main():
     args = get_args()
     df = fetch_data_from_jdbc(args)
     df_processed = process_data(df, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
-    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, spec_collection_usage = display_monthly_output(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
+    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, spec_collection_usage, formatted_grand_total_duration = display_monthly_output(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
     if line_data is None:
         print("Error: Missing data. Exiting the program.")
         return
@@ -531,13 +570,13 @@ def main():
     pie_data = plot_objects_by_division_code(df_processed, year_label)
 
     # Now pass formatted_file_size to plot_object_format_counts
-    bar_data = plot_object_format_counts(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal, formatted_file_size=formatted_file_size, total_items_per_month_summed=total_items_per_month_summed, media_counts=media_counts)
+    bar_data = plot_object_format_counts(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal, formatted_file_size=formatted_file_size, total_items_per_month_summed=total_items_per_month_summed, media_counts=media_counts, formatted_grand_total_duration=formatted_grand_total_duration)
     if bar_data is None:
         print("Error: No data available for plotting format counts. Exiting the program.")
         return
 
     # Also pass formatted_file_size to save_plot_to_pdf
-    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage)
+    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage, formatted_grand_total_duration)
 
 if __name__ == "__main__":
     main()
