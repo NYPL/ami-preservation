@@ -155,19 +155,27 @@ def main():
         return
 
     bags = process_bags(top_directory)
-    if args.vendor and not bags:
-        logging.error("No valid BagIt bags found in the directory.")
-        return
-
     files_to_examine = []
-    for bag in bags:
-        files = process_directory(bag, process_json=args.vendor)
-        files_to_examine.extend(files)
-        if files:
-            logging.info(f"Processing {len(files)} files from {bag}")
+
+    # Process each bag if present
+    if args.vendor and bags:
+        for bag in bags:
+            files = process_directory(bag, process_json=args.vendor)
+            files_to_examine.extend(files)
+            if files:
+                logging.info(f"Processing {len(files)} files from {bag}")
+    else:
+        # If no bags are present, assume the directory contains loose media files
+        for path in top_directory.rglob('*'):
+            if path.is_file() and path.suffix.lower() in video_extensions.union(audio_extensions):
+                if path.name.startswith("._"):
+                    logging.info(f"Skipping hidden Mac file: {path}")
+                else:
+                    files_to_examine.append(path)
+                    logging.info(f"Adding file to processing list: {path}")
 
     if not files_to_examine:
-        logging.error('No media files found in bags')
+        logging.error('No media files found')
         return
 
     all_file_data = []
