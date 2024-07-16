@@ -193,6 +193,21 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
         df_pm = df_pm[df_pm['calendar_year'] == current_date.year]
         year_label = str(current_date.year)
 
+    combine_dict = {
+        'MUS': 'MUS + RHA',
+        'RHA': 'MUS + RHA',
+        'mym': 'MUS + RHA',
+        'myh': 'MUS + RHA',
+        'SCM': 'SCH',
+        'SCL': 'SCH',
+        'scb': 'SCH',
+        'scd': 'SCH',
+        'THE': 'THE + TOFT',
+        'TOFT': 'THE + TOFT',
+        'myt': 'THE + TOFT',
+        'DAN': 'DAN',
+        'myd': 'DAN'
+    }
 
     # Group by both month and source to differentiate the data
     output = df_pm.groupby(['month', 'source']).agg({
@@ -203,20 +218,51 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     output['month'] = pd.to_datetime(output['month'])
     output = output.sort_values(['month', 'source'])
 
-    # Group by media type and month, count unique IDs
-    monthly_media_counts = df_pm.groupby(['media_type', 'month']).agg({
+    # Group by media type, month, and division code, then count unique IDs
+    monthly_media_counts = df_pm.groupby(['media_type', 'month', 'bibliographic.vernacularDivisionCode']).agg({
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
     # Rename columns for clarity
     monthly_media_counts.rename(columns={'bibliographic.primaryID': 'Unique Items'}, inplace=True)
 
-    # Summing across months for total per media type
+    # Calculate the total per media type to use for percentage calculations
     total_media_counts = monthly_media_counts.groupby('media_type').agg({
         'Unique Items': 'sum'
-    }).reset_index()
+    }).rename(columns={'Unique Items': 'Total Items Per Media'}).reset_index()
 
-        # Adjust regex to capture only up to the first significant identifier (up to version number)
+    # Use total_media_counts for calculations
+    print(f"Total unique items per media type across {year_label}:")
+    print(total_media_counts)
+
+    total_unique_items = total_media_counts['Total Items Per Media'].sum()
+    print(f"Total of all media types: {total_unique_items}")
+
+    # Merge the totals back to get percentages for display purposes and then drop unnecessary columns
+    total_media_counts_by_division = monthly_media_counts.groupby(['media_type', 'bibliographic.vernacularDivisionCode']).agg({
+        'Unique Items': 'sum'
+    }).reset_index().merge(total_media_counts, on='media_type')
+
+    # Apply division combinations
+    total_media_counts_by_division['bibliographic.vernacularDivisionCode'] = total_media_counts_by_division['bibliographic.vernacularDivisionCode'].replace(combine_dict)
+
+    # Re-aggregate after combining divisions
+    total_media_counts_by_division = total_media_counts_by_division.groupby(['media_type', 'bibliographic.vernacularDivisionCode']).agg({
+        'Unique Items': 'sum'
+    }).reset_index().merge(total_media_counts, on='media_type')
+
+    total_media_counts_by_division['Percentage'] = (total_media_counts_by_division['Unique Items'] / total_media_counts_by_division['Total Items Per Media']) * 100
+    total_media_counts_by_division['Percentage'] = total_media_counts_by_division['Percentage'].apply(lambda x: f"{x:.2f}%")
+
+    print(total_media_counts_by_division)
+
+    # Define the minimum percentage threshold
+    min_percentage = 5.0
+
+    # Filter divisions based on percentage threshold
+    total_media_counts_by_division = total_media_counts_by_division[total_media_counts_by_division['Percentage'].str.rstrip('%').astype(float) >= min_percentage]
+
+    # Adjust regex to capture only up to the first significant identifier (up to version number)
     df_pm['core_id'] = df_pm['asset.referenceFilename'].str.extract(r'(^.+?)_v\d+')[0]
     df_pm['is_multitrack'] = df_pm['asset.referenceFilename'].str.contains(r's\d+_pm')
 
@@ -249,11 +295,6 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     formatted_grand_total_duration = f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
 
     print(f"Total duration of all digitized items (HH:MM:SS): {formatted_grand_total_duration}")
-
-    total_unique_items = total_media_counts['Unique Items'].sum()  # Calculate the total sum of unique items across all media types
-    print(f"Total unique items per media type across {year_label}:")
-    print(total_media_counts)
-    print(f"Total of all media types: {total_unique_items}")
 
     # Calculate unique items per SPEC Collection ID
     spec_collection_usage = df_pm.groupby('cmsCollectionTitle')['bibliographic.primaryID'].nunique().reset_index()
@@ -295,7 +336,7 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     plt.tight_layout()
     plt.show()
 
-    return output, year_label, total_items_per_month_summed, total_file_size, total_media_counts, spec_collection_usage, formatted_grand_total_duration
+    return output, year_label, total_items_per_month_summed, total_file_size, total_media_counts, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division
 
 def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None, formatted_grand_total_duration=""):
     df_pm = df[df['asset.fileRole'] == 'pm']
@@ -315,11 +356,6 @@ def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top
     else:
         df_pm = df_pm[df_pm['calendar_year'] == current_date.year]
         year_label = str(current_date.year)
-
-    # Calculate total count of all digitized items before filtering to top_n
-    total_count = df_pm['bibliographic.primaryID'].nunique()
-
-    # Get top n formats
     format_counts = df_pm.groupby('source.object.format')['bibliographic.primaryID'].nunique().nlargest(top_n).reset_index()
     format_counts.columns = ['Format', 'Count']
 
@@ -332,30 +368,32 @@ def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top
     plt.title(f'Top {top_n} Counts of AMI Digitized in {year_label}', fontsize=16, fontweight='bold')
     plt.subplots_adjust(bottom=0.3)
 
-    # Adding annotations for each bar
+    # Adding annotations
     for p in ax.patches:
         ax.annotate(f'{int(p.get_height())}', (p.get_x() + p.get_width() / 2., p.get_height()),
                     ha='center', va='bottom', color='black', xytext=(0, 5), textcoords='offset points')
 
     media_text = ""
     for index, row in media_counts.iterrows():
-        media_text += f"\n{row['media_type'].title()}: {row['Unique Items']}"
-    
+        media_text += f"\n{row['media_type'].title()}: {row['Total Items Per Media']}"
+
     # Append formatted_grand_total_duration to the media text
     media_text += f"\nTotal Duration of Digitized Items (HH:MM:SS): {formatted_grand_total_duration}"
 
     # Display total count of all objects digitized and media type counts
     plt.text(0.95, 0.95, f"Total Items Digitized: {total_items_per_month_summed}\nTotal Data Generated: {formatted_file_size}{media_text}", transform=ax.transAxes, horizontalalignment='right',
-             verticalalignment='top', fontsize=14, color='black', bbox=dict(facecolor='white', alpha=0.5))
+            verticalalignment='top', fontsize=14, color='black', bbox=dict(facecolor='white', alpha=0.5))
 
-    plt.tight_layout()
     plt.show()
 
     return format_counts
 
 def plot_objects_by_division_code(df, year_label, min_percentage=1):
     df_pm = df[df['asset.fileRole'] == 'pm']
-    objects_by_division_code = df_pm.groupby('bibliographic.vernacularDivisionCode').agg({
+    df_pm = classify_media_types(df_pm)  # Ensure media types are classified
+
+    # Group by media type, month, and division code, then count unique IDs
+    objects_by_division_code = df_pm.groupby(['media_type', 'month', 'bibliographic.vernacularDivisionCode']).agg({
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
@@ -400,12 +438,16 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
     plt.figure(figsize=(10, 10))
     plt.pie(objects_by_division_code['bibliographic.primaryID'], labels=objects_by_division_code['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    # Add text annotations for actual counts
+    text_str = '\n'.join([f"{row['bibliographic.vernacularDivisionCode']}: {row['bibliographic.primaryID']}" for index, row in objects_by_division_code.iterrows()])
+    plt.text(-1.3, -1.3, text_str, fontsize=12, verticalalignment='bottom', 
+            bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray', boxstyle='round,pad=1'))
     plt.title(f'Objects Digitized by Division Code in {year_label}', fontsize=16)
     plt.show()
 
     return objects_by_division_code
 
-def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage, formatted_grand_total_duration):    
+def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division):    
     # Determine the report type based on the args
     if args.historical:
         report_type = "Historical"
@@ -472,7 +514,7 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
 
         media_text = ""
         for index, row in media_counts.iterrows():
-            media_text += f"\n{row['media_type'].title()}: {row['Unique Items']}"
+            media_text += f"\n{row['media_type'].title()}: {row['Total Items Per Media']}"
 
         # Append formatted_grand_total_duration to the media text
         media_text += f"\nTotal Duration of Digitized Items (HH:MM:SS): {formatted_grand_total_duration}"
@@ -507,7 +549,31 @@ def save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_
         ax.pie(pie_data['bibliographic.primaryID'], labels=pie_data['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
         ax.set_title(f'Objects Digitized by Division Code in {year_label}', fontsize=16)
         ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        # Add text annotations for actual counts
+        text_str = '\n'.join([f"{row['bibliographic.vernacularDivisionCode']}: {row['bibliographic.primaryID']}" for index, row in pie_data.iterrows()])
+        plt.text(-1.3, -1.3, text_str, fontsize=12, verticalalignment='bottom', 
+                bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray', boxstyle='round,pad=1'))
         pdf.savefig(fig)
+        plt.close(fig)
+
+        # Generate pie charts for each media type
+        media_types = total_media_counts_by_division['media_type'].unique()
+        fig, axes = plt.subplots(nrows=1, ncols=len(media_types), figsize=(5 * len(media_types), 5))
+        if len(media_types) == 1:
+            axes = [axes]  # Ensure axes is iterable for a single subplot
+
+        for ax, media_type in zip(axes, media_types):
+            # Filter data for the current media type
+            data = total_media_counts_by_division[total_media_counts_by_division['media_type'] == media_type]
+            
+            # Generate a pie chart
+            colors = sns.color_palette("cubehelix", len(data))  
+            ax.pie(data['Unique Items'], labels=data['bibliographic.vernacularDivisionCode'], startangle=90, colors=colors)
+            ax.set_title(f'{media_type.title()} by Division', fontsize=16)
+            ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+        plt.tight_layout()
+        pdf.savefig(fig)  # Save the full figure with all pie charts
         plt.close(fig)
 
         # Items Digitized Per SPEC Collection ID
@@ -559,7 +625,7 @@ def main():
     args = get_args()
     df = fetch_data_from_jdbc(args)
     df_processed = process_data(df, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
-    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, spec_collection_usage, formatted_grand_total_duration = display_monthly_output(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
+    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division = display_monthly_output(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
     if line_data is None:
         print("Error: Missing data. Exiting the program.")
         return
@@ -576,7 +642,7 @@ def main():
         return
 
     # Also pass formatted_file_size to save_plot_to_pdf
-    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage, formatted_grand_total_duration)
+    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division)
 
 if __name__ == "__main__":
     main()

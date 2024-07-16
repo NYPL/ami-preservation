@@ -227,6 +227,12 @@ def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=F
 
     print(total_media_counts_by_division)
 
+    # Define the minimum percentage threshold
+    min_percentage = 5.0
+
+    # Filter divisions based on percentage threshold
+    total_media_counts_by_division = total_media_counts_by_division[total_media_counts_by_division['Percentage'].str.rstrip('%').astype(float) >= min_percentage]
+
     # Adjust regex to capture only up to the first significant identifier (up to version number)
     df_pm['core_id'] = df_pm['asset.referenceFilename'].str.extract(r'(^.+?)_v\d+')[0]
     df_pm['is_multitrack'] = df_pm['asset.referenceFilename'].str.contains(r's\d+_pm')
@@ -380,56 +386,56 @@ def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top
 
 def plot_objects_by_division_code(df, year_label, min_percentage=1):
     df_pm = df[df['asset.fileRole'] == 'pm']
-    objects_by_division_code = df_pm.groupby('bibliographic.vernacularDivisionCode').agg({
+    df_pm = classify_media_types(df_pm)  # Ensure media types are classified
+
+    # Group by media type, month, and division code, then count unique IDs
+    objects_by_division_code = df_pm.groupby(['media_type', 'month', 'bibliographic.vernacularDivisionCode']).agg({
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
-    # Define the combinations as a dictionary
+    # Combine division codes based on specified groups
     combine_dict = {
         'MUS + RHA': ['MUS', 'RHA'],
         'SCM + SCL': ['SCM', 'SCL'],
         'THE + TOFT': ['THE', 'TOFT']
     }
+    reverse_combine_dict = {v: k for k, values in combine_dict.items() for v in values}
+    objects_by_division_code['bibliographic.vernacularDivisionCode'] = objects_by_division_code['bibliographic.vernacularDivisionCode'].map(reverse_combine_dict).fillna(objects_by_division_code['bibliographic.vernacularDivisionCode'])
 
-    # Iterate over the dictionary to combine the codes
-    for new_code, old_codes in combine_dict.items():
-        combined_count = objects_by_division_code.loc[objects_by_division_code['bibliographic.vernacularDivisionCode'].isin(old_codes), 'bibliographic.primaryID'].sum()
-        # Remove the old codes rows
-        objects_by_division_code = objects_by_division_code.loc[~objects_by_division_code['bibliographic.vernacularDivisionCode'].isin(old_codes)]
-        # Add a new row for the combined codes
-        new_row = pd.DataFrame({
-            'bibliographic.vernacularDivisionCode': [new_code],
-            'bibliographic.primaryID': [combined_count]
-        })
-        objects_by_division_code = pd.concat([objects_by_division_code, new_row], ignore_index=True)
+    # Re-aggregate after combining division codes
+    objects_by_division_code = objects_by_division_code.groupby('bibliographic.vernacularDivisionCode').agg({
+        'bibliographic.primaryID': 'sum'
+    }).reset_index()
 
     # Calculate the total and percentage
     total_objects = objects_by_division_code['bibliographic.primaryID'].sum()
-    objects_by_division_code['Percentage'] = objects_by_division_code['bibliographic.primaryID'] / total_objects * 100
+    objects_by_division_code['Percentage'] = (objects_by_division_code['bibliographic.primaryID'] / total_objects) * 100
 
-    # Filter based on the minimum percentage
-    objects_by_division_code = objects_by_division_code[objects_by_division_code['Percentage'] >= min_percentage]
-    others_count = total_objects - objects_by_division_code['bibliographic.primaryID'].sum()
-
+    # Filter based on minimum percentage and handle 'Others'
+    filtered_data = objects_by_division_code[objects_by_division_code['Percentage'] >= min_percentage]
+    others_count = total_objects - filtered_data['bibliographic.primaryID'].sum()
     if others_count > 0:
         others_row = pd.DataFrame({
             'bibliographic.vernacularDivisionCode': ['Others'],
             'bibliographic.primaryID': [others_count]
         })
-        objects_by_division_code = pd.concat([objects_by_division_code, others_row], ignore_index=True)
+        filtered_data = pd.concat([filtered_data, others_row], ignore_index=True)
 
-    # Generating a custom Cubehelix palette
-    colors = sns.cubehelix_palette(start=1.5, rot=-1, dark=0.3, light=0.8, reverse=False, n_colors=len(objects_by_division_code))
-
+    # Plotting
+    colors = sns.cubehelix_palette(start=1.5, rot=-1, dark=0.3, light=0.8, reverse=False, n_colors=len(filtered_data))
     plt.figure(figsize=(10, 10))
-    plt.pie(objects_by_division_code['bibliographic.primaryID'], labels=objects_by_division_code['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
-    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    plt.pie(filtered_data['bibliographic.primaryID'], labels=filtered_data['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
+    plt.axis('equal')
+    # Add text annotations for actual counts
+    text_str = '\n'.join([f"{row['bibliographic.vernacularDivisionCode']}: {row['bibliographic.primaryID']}" for index, row in filtered_data.iterrows()])
+    plt.text(-1.3, -1.3, text_str, fontsize=12, verticalalignment='bottom', 
+            bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray', boxstyle='round,pad=1'))
     plt.title(f'Objects Digitized by Division Code in {year_label}', fontsize=16)
     plt.show()
 
-    return objects_by_division_code
-    
-def save_plot_to_pdf(data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division):
+    return filtered_data
+
+def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division):
     engineer_name = "_".join(args.engineer) if args.engineer else ""
     
     # Determine the report type based on the args
@@ -529,15 +535,18 @@ def save_plot_to_pdf(data, bar_data, pie_data, args, total_items_per_month_summe
         plt.close(fig)
 
         # Pie chart for division codes
-        colors = sns.cubehelix_palette(start=1.5, rot=-1, dark=0.3, light=0.8, reverse=False, n_colors=len(pie_data))
+        colors = sns.cubehelix_palette(start=1.5, rot=-1, dark=0.3, light=0.8, reverse=False, n_colors=len(filtered_data))
         fig, ax = plt.subplots(figsize=(10, 10))
-        # Update here: use 'bibliographic.primaryID' instead of 'Count' and 'bibliographic.vernacularDivisionCode' instead of 'DivisionCode'
-        ax.pie(pie_data['bibliographic.primaryID'], labels=pie_data['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
+        ax.pie(filtered_data['bibliographic.primaryID'], labels=filtered_data['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
         ax.set_title(f'Objects Digitized by Division Code in {year_label}', fontsize=16)
-        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        ax.axis('equal')  
+        # Add text annotations for actual counts
+        text_str = '\n'.join([f"{row['bibliographic.vernacularDivisionCode']}: {row['bibliographic.primaryID']}" for index, row in filtered_data.iterrows()])
+        plt.text(-1.3, -1.3, text_str, fontsize=12, verticalalignment='bottom', 
+                bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray', boxstyle='round,pad=1'))
         pdf.savefig(fig)
         plt.close(fig)
-    
+
         # Generate pie charts for each media type
         media_types = total_media_counts_by_division['media_type'].unique()
         fig, axes = plt.subplots(nrows=1, ncols=len(media_types), figsize=(5 * len(media_types), 5))
@@ -549,8 +558,8 @@ def save_plot_to_pdf(data, bar_data, pie_data, args, total_items_per_month_summe
             data = total_media_counts_by_division[total_media_counts_by_division['media_type'] == media_type]
             
             # Generate a pie chart
-            colors = sns.color_palette("cubehelix", len(data))  # or any other suitable palette
-            ax.pie(data['Unique Items'], labels=data['bibliographic.vernacularDivisionCode'], autopct='%1.1f%%', startangle=90, colors=colors)
+            colors = sns.color_palette("cubehelix", len(data))  
+            ax.pie(data['Unique Items'], labels=data['bibliographic.vernacularDivisionCode'], startangle=90, colors=colors)
             ax.set_title(f'{media_type.title()} by Division', fontsize=16)
             ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
@@ -629,10 +638,10 @@ def main():
     # Format the file size here
     formatted_file_size = format_file_size(total_file_size)
 
-    pie_data = plot_objects_by_division_code(df_processed, year_label)
+    filtered_data = plot_objects_by_division_code(df_processed, year_label)
 
     bar_data = plot_object_format_counts(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal, formatted_file_size=formatted_file_size, total_items_per_month_summed=total_items_per_month_summed, media_counts=media_counts, formatted_grand_total_duration=formatted_grand_total_duration)
-    save_plot_to_pdf(line_data, bar_data, pie_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division)
+    save_plot_to_pdf(line_data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division)
 
 if __name__ == "__main__":
     main()
