@@ -183,8 +183,8 @@ def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=F
     combine_dict = {
         'MUS': 'MUS + RHA',
         'RHA': 'MUS + RHA',
-        'SCM': 'SCM + SCL',
-        'SCL': 'SCM + SCL',
+        'SCM': 'SCH',
+        'SCL': 'SCH',
         'THE': 'THE + TOFT',
         'TOFT': 'THE + TOFT'
     }
@@ -396,7 +396,7 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
     # Combine division codes based on specified groups
     combine_dict = {
         'MUS + RHA': ['MUS', 'RHA'],
-        'SCM + SCL': ['SCM', 'SCL'],
+        'SCH': ['SCM', 'SCL'],
         'THE + TOFT': ['THE', 'TOFT']
     }
     reverse_combine_dict = {v: k for k, values in combine_dict.items() for v in values}

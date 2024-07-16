@@ -10,13 +10,14 @@ from collections import defaultdict
 import xml.etree.ElementTree as ET
 from bookops_nypl_platform import PlatformSession, PlatformToken
 import logging
+import requests
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Script to read SPEC AMI IDs from a CSV or Excel file and process them using a Filemaker database.")
+    parser = argparse.ArgumentParser(description="Script to read SPEC AMI IDs from a CSV or Excel file and process them using a Filemaker database and APIs.")
     parser.add_argument('-u', '--username', help="The username for the Filemaker database.", required=True)
     parser.add_argument('-p', '--password', help="The password for the Filemaker database.", required=True)
     parser.add_argument('-i', '--input', help="The path to the input file containing SPEC AMI IDs.", required=True)
-    parser.add_argument('-o', '--output', help="The path to the output CSV file for exporting barcodes.", required=True)
+    parser.add_argument('-o', '--output', help="The path to the output XLSX file for exported data.", required=True)
     return parser.parse_args()
 
 # Environment variables
@@ -53,45 +54,61 @@ def connect_to_filemaker(server, username, password, database, layout):
         logging.error(f"Failed to connect to Filemaker server: {e}")
         return None
 
-def get_item(session, barcode):
-    response = session.get_item_list(barcode=barcode)
-    return response.json()
+def get_sierra_item(session, barcode):
+    try:
+        response = session.get_item_list(barcode=barcode)
+        if response.status_code == 200 and response.json()["data"]:
+            return response.json()
+        else:
+            return {"error": "Item barcode does not exist in Sierra database."}
+    except Exception as e:
+        logging.error(f"Error fetching item from Sierra: {e}")
+        return {"error": str(e)}
 
-def extract_location(data):
+def extract_sierra_location(data):
+    if "error" in data:
+        return data["error"], data["error"]
     try:
         location_value = data["data"][0]["fixedFields"]["79"]["value"]
         location_display = data["data"][0]["fixedFields"]["79"]["display"]
         return location_value, location_display
     except (KeyError, IndexError):
-        return "", ""
-    
-def get_scsb_xml(session, customer_code, barcode=None):
-    """
-    Retrieves SCSB XML from the NYPL Platform API.
-    """
-    params = {"customerCode": customer_code, "barcode": barcode}
-    url = f"{session.base_url}/recap/nypl-bibs"
-    response = session.get(url, params=params)
-    if response.status_code == 200:
-        return response.text
-    else:
-        response.raise_for_status()
+        return "N/A", "N/A"
 
-def extract_scsb_data(xml_data):
-    """
-    Extracts and returns desired fields from XML.
-    """
-    if not xml_data:
-        logging.error("Empty XML data received.")
-        return {}
-    ns = {'marc': 'http://www.loc.gov/MARC21/slim'}
-    root = ET.fromstring(xml_data)
-    scsb_info = {}
-    ns = {'marc': 'http://www.loc.gov/MARC21/slim'}
-    availability = root.find('.//marc:datafield[@tag="876"]/marc:subfield[@code="j"]', ns)
-    scsb_info['Availability'] = availability.text if availability is not None else "N/A"
     
-    return scsb_info
+def get_scsb_availability(barcode):
+    """
+    Retrieves the item availability from the SCSB API.
+    """
+    api_key = os.getenv("SCSB_API_KEY")
+    url = "https://scsb.recaplib.org:9093/sharedCollection/itemAvailabilityStatus"
+    headers = {
+        'accept': 'application/json',
+        'api_key': api_key,
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        "barcodes": [barcode]
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return [{"error": "Item barcode doesn't exist in SCSB database."}]
+    except Exception as e:
+        logging.error(f"SCSB API request failed: {e}")
+        return [{"error": str(e)}]
+
+def extract_scsb_data(json_response):
+    if not json_response:
+        logging.error("Empty JSON data received.")
+        return {'Availability': 'N/A'}
+    if "error" in json_response:
+        return {'Availability': json_response["error"]}
+    
+    item_availability = json_response[0].get('itemAvailabilityStatus', 'N/A')
+    return {'Availability': item_availability}
 
 # Function to read SPEC AMI IDs from input file
 def read_spec_ami_ids(file_path):
@@ -130,13 +147,13 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
             record_data = record.to_dict()
             box_barcode = record_data.get('OBJECTS_parent_from_OBJECTS::id_barcode', '')
             if box_barcode:
-                platform_data = get_item(platform_session, box_barcode)
-                sierra_location_code, sierra_location_display = extract_location(platform_data)
+                platform_data = get_sierra_item(platform_session, box_barcode)
+                sierra_location_code, sierra_location_display = extract_sierra_location(platform_data)
 
                 # SCSB API call
                 try:
-                    scsb_xml = get_scsb_xml(platform_session, customer_code, barcode=box_barcode)
-                    scsb_data = extract_scsb_data(scsb_xml)
+                    scsb_json = get_scsb_availability(box_barcode)
+                    scsb_data = extract_scsb_data(scsb_json)
                     logging.info(f"SCSB Data retrieved for {box_barcode}: {scsb_data}")
                     scsb_availability = scsb_data.get('Availability', 'N/A')
                 except Exception as e:
