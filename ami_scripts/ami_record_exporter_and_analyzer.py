@@ -169,7 +169,7 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
 def get_item_format:
     format_2 = record_data.get('format_2', '')
     format_3 = record_data.get('format_3', '')
-    if format_3 == None:
+    if len(format_3) == 0:
         return format_2
     else:
         return format_3
