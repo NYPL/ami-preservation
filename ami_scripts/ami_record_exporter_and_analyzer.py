@@ -166,7 +166,7 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
                 # Log the successful data retrieval for each ID
                 logging.info(f"Sierra Data retrieved for AMI ID {ami_id}: Barcode {box_barcode}, Location Code {sierra_location_code}, Location Name {sierra_location_display}")
 
-def get_item_format:
+def get_item_format(record_data):
     format_2 = record_data.get('format_2', '')
     format_3 = record_data.get('format_3', '')
     if len(format_3) == 0:
