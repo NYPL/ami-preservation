@@ -81,7 +81,7 @@ def get_scsb_availability(barcode):
     Retrieves the item availability from the SCSB API.
     """
     api_key = os.getenv("SCSB_API_KEY")
-    url = "https://scsb.recaplib.org:9093/sharedCollection/itemAvailabilityStatus"
+    url = os.getenv("SCSB_API_URL")  
     headers = {
         'accept': 'application/json',
         'api_key': api_key,
@@ -99,6 +99,7 @@ def get_scsb_availability(barcode):
     except Exception as e:
         logging.error(f"SCSB API request failed: {e}")
         return [{"error": str(e)}]
+
 
 def extract_scsb_data(json_response):
     if not json_response:
