@@ -169,10 +169,10 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
 def get_item_format:
     format_2 = record_data.get('format_2', '')
     format_3 = record_data.get('format_3', '')
-    if format_2 == None:
-        return format_3
-    else:
+    if format_3 == None:
         return format_2
+    else:
+        return format_3
 
 def update_details_and_summary(record_data, ami_id, box_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability):
     ami_id_detail = {
