@@ -147,7 +147,6 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
         for record in found_records:
             record_data = record.to_dict()
             box_barcode = record_data.get('OBJECTS_parent_from_OBJECTS::id_barcode', None)
-            print(box_barcode)
 
             if not box_barcode:
                 # Treat items without a box barcode as single items
@@ -171,9 +170,7 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
             else:
                 # Handle as normal if there is a box barcode
                 platform_data = get_sierra_item(platform_session, box_barcode)
-                print(platform_data)
                 sierra_location_code, sierra_location_display = extract_sierra_location(platform_data)
-                print(sierra_location_code)
                 try:
                     scsb_json = get_scsb_availability(box_barcode)
                     scsb_data = extract_scsb_data(scsb_json)
