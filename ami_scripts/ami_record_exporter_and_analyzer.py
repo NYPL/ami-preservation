@@ -166,11 +166,19 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
                 # Log the successful data retrieval for each ID
                 logging.info(f"Sierra Data retrieved for AMI ID {ami_id}: Barcode {box_barcode}, Location Code {sierra_location_code}, Location Name {sierra_location_display}")
 
+def get_item_format(record_data):
+    format_2 = record_data.get('format_2', '')
+    format_3 = record_data.get('format_3', '')
+    if len(format_3) == 0:
+        return format_2
+    else:
+        return format_3
+
 def update_details_and_summary(record_data, ami_id, box_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability):
     ami_id_detail = {
         'AMI ID': ami_id,
         'Barcode': record_data.get('id_barcode', None),
-        'Format': record_data.get('format_3', ''),
+        'Format': get_item_format(record_data),
         'Migration Status': record_data.get('OBJECTS_MIGRATION_STATUS_active::migration_status', None),
         'SPEC Item Location': record_data.get('ux_loc_active_d', ''),
         'Box Name': record_data.get('OBJECTS_parent_from_OBJECTS::name_d_calc', ''),
