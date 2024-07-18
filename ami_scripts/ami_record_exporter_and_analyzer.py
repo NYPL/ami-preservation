@@ -201,7 +201,7 @@ def update_details_and_summary(record_data, ami_id, box_barcode, sierra_location
         }
 
     box_summary[box_name]['Total Count'] += 1
-    box_summary[box_name]['Formats'][record_data.get('format_3', '')] += 1
+    box_summary[box_name]['Formats'][get_item_format(record_data)] += 1
     box_summary[box_name]['SCSB Availabilities'].add(scsb_availability)
 
 
