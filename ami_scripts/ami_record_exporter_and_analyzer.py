@@ -146,24 +146,44 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
 
         for record in found_records:
             record_data = record.to_dict()
-            box_barcode = record_data.get('OBJECTS_parent_from_OBJECTS::id_barcode', '')
-            if box_barcode:
-                platform_data = get_sierra_item(platform_session, box_barcode)
-                sierra_location_code, sierra_location_display = extract_sierra_location(platform_data)
+            box_barcode = record_data.get('OBJECTS_parent_from_OBJECTS::id_barcode', None)
+            print(box_barcode)
 
-                # SCSB API call
+            if not box_barcode:
+                # Treat items without a box barcode as single items
+                ami_barcode = record_data.get('id_barcode', None)
+                if ami_barcode:
+                    logging.info(f"Handling as a single item in SCSB: {ami_barcode}")
+                    try:
+                        scsb_json = get_scsb_availability(ami_barcode)
+                        scsb_data = extract_scsb_data(scsb_json)
+                        scsb_availability = scsb_data.get('Availability', 'N/A')
+                        logging.info(f"SCSB Data retrieved for single item {ami_barcode}: {scsb_data}")
+                    except Exception as e:
+                        logging.error(f"Failed to retrieve or parse SCSB data for single item {ami_barcode}: {e}")
+                        scsb_availability = 'N/A'
+                    sierra_location_code, sierra_location_display = 'N/A', 'N/A'
+                else:
+                    scsb_availability = 'No Barcode for Single Item'
+                    sierra_location_code, sierra_location_display = 'N/A', 'N/A'
+                update_details_and_summary(record_data, ami_id, ami_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability)
+                logging.info(f"No box barcode found for AMI ID {ami_id}, handled as a single item with barcode: {ami_barcode}")
+            else:
+                # Handle as normal if there is a box barcode
+                platform_data = get_sierra_item(platform_session, box_barcode)
+                print(platform_data)
+                sierra_location_code, sierra_location_display = extract_sierra_location(platform_data)
+                print(sierra_location_code)
                 try:
                     scsb_json = get_scsb_availability(box_barcode)
                     scsb_data = extract_scsb_data(scsb_json)
-                    logging.info(f"SCSB Data retrieved for {box_barcode}: {scsb_data}")
                     scsb_availability = scsb_data.get('Availability', 'N/A')
+                    logging.info(f"SCSB Data retrieved for {box_barcode}: {scsb_data}")
                 except Exception as e:
                     logging.error(f"Failed to retrieve or parse SCSB data for barcode {box_barcode}: {e}")
                     scsb_availability = 'N/A'
 
                 update_details_and_summary(record_data, ami_id, box_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability)
-
-                # Log the successful data retrieval for each ID
                 logging.info(f"Sierra Data retrieved for AMI ID {ami_id}: Barcode {box_barcode}, Location Code {sierra_location_code}, Location Name {sierra_location_display}")
 
 def get_item_format(record_data):
@@ -175,26 +195,28 @@ def get_item_format(record_data):
         return format_3
 
 def update_details_and_summary(record_data, ami_id, box_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability):
+    # Default values for missing box barcodes
+    box_name = record_data.get('OBJECTS_parent_from_OBJECTS::name_d_calc', 'No Box')
+    box_barcode = record_data.get('OBJECTS_parent_from_OBJECTS::id_barcode', 'No Barcode')
+
     ami_id_detail = {
         'AMI ID': ami_id,
         'Barcode': record_data.get('id_barcode', None),
         'Format': get_item_format(record_data),
         'Migration Status': record_data.get('OBJECTS_MIGRATION_STATUS_active::migration_status', None),
         'SPEC Item Location': record_data.get('ux_loc_active_d', ''),
-        'Box Name': record_data.get('OBJECTS_parent_from_OBJECTS::name_d_calc', ''),
+        'Box Name': box_name,
         'Box Barcode': box_barcode,
-        'SPEC Box Location': record_data.get('OBJECTS_parent_from_OBJECTS::ux_loc_active_d', ''),
         'Sierra Location Code': sierra_location_code,
         'Sierra Location Name': sierra_location_display,
         'SCSB Availability': scsb_availability
     }
     ami_id_details.append(ami_id_detail)
 
-    box_name = ami_id_detail['Box Name']
     if box_name not in box_summary:
         box_summary[box_name] = {
             'Box Barcode': box_barcode,
-            'SPEC Box Location': ami_id_detail['SPEC Box Location'],
+            'SPEC Box Location': record_data.get('OBJECTS_parent_from_OBJECTS::ux_loc_active_d', 'Not Specified'),
             'Total Count': 0,
             'Formats': defaultdict(int),
             'SCSB Availabilities': set()  # Using a set to avoid duplicates
@@ -203,7 +225,6 @@ def update_details_and_summary(record_data, ami_id, box_barcode, sierra_location
     box_summary[box_name]['Total Count'] += 1
     box_summary[box_name]['Formats'][get_item_format(record_data)] += 1
     box_summary[box_name]['SCSB Availabilities'].add(scsb_availability)
-
 
 def prepare_summary_dataframes(box_summary):
     overview = []
