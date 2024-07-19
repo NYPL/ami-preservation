@@ -257,7 +257,7 @@ def display_monthly_output(df, args, fiscal=False, previous_fiscal=False):
     print(total_media_counts_by_division)
 
     # Define the minimum percentage threshold
-    min_percentage = 5.0
+    min_percentage = 3.0
 
     # Filter divisions based on percentage threshold
     total_media_counts_by_division = total_media_counts_by_division[total_media_counts_by_division['Percentage'].str.rstrip('%').astype(float) >= min_percentage]
