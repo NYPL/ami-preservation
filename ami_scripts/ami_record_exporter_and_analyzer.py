@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from bookops_nypl_platform import PlatformSession, PlatformToken
 import logging
 import requests
+from openpyxl.styles import Font
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Script to read SPEC AMI IDs from a CSV or Excel file and process them using a Filemaker database and APIs.")
@@ -75,7 +76,6 @@ def extract_sierra_location(data):
     except (KeyError, IndexError):
         return "N/A", "N/A"
 
-    
 def get_scsb_availability(barcode):
     """
     Retrieves the item availability from the SCSB API.
@@ -99,7 +99,6 @@ def get_scsb_availability(barcode):
     except Exception as e:
         logging.error(f"SCSB API request failed: {e}")
         return [{"error": str(e)}]
-
 
 def extract_scsb_data(json_response):
     if not json_response:
@@ -140,6 +139,8 @@ def read_spec_ami_ids(file_path):
 
 def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_summary):
     customer_code = "NYPL"  # Set the appropriate customer code
+    spec_ami_id_set = set(spec_ami_ids)  # Convert to set for faster lookup
+
     for ami_id in sorted(spec_ami_ids):
         logging.info(f"Attempting to find: {ami_id}")
         found_records = fms.find([{"ref_ami_id": ami_id}])
@@ -147,6 +148,18 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
         for record in found_records:
             record_data = record.to_dict()
             box_barcode = record_data.get('OBJECTS_parent_from_OBJECTS::id_barcode', None)
+
+            # Initialize summary data if not already done
+            box_name = record_data.get('OBJECTS_parent_from_OBJECTS::name_d_calc', 'No Box')
+            if box_name not in box_summary:
+                box_summary[box_name] = {
+                    'Box Barcode': box_barcode or 'No Barcode',
+                    'SPEC Box Location': record_data.get('OBJECTS_parent_from_OBJECTS::ux_loc_active_d', 'Not Specified'),
+                    'Total Count': 0,
+                    'Formats': defaultdict(int),
+                    'SCSB Availabilities': set(),
+                    'Total Box Items': 0  # Track total items in box
+                }
 
             if not box_barcode:
                 # Treat items without a box barcode as single items
@@ -168,6 +181,16 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
                 update_details_and_summary(record_data, ami_id, ami_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability)
                 logging.info(f"No box barcode found for AMI ID {ami_id}, handled as a single item with barcode: {ami_barcode}")
             else:
+                # Fetch all items in the box if a box barcode is present
+                box_records = fms.find([{"OBJECTS_parent_from_OBJECTS::id_barcode": box_barcode}])
+                box_records_list = list(box_records)  # Convert Foundset to list for easier handling
+                logging.info(f"Found {len(box_records_list)} items in box {box_name} with barcode {box_barcode}")
+                
+                # Update box summary with the correct barcode and SPEC location
+                box_summary[box_name]['Box Barcode'] = box_barcode
+                box_summary[box_name]['SPEC Box Location'] = record_data.get('OBJECTS_parent_from_OBJECTS::ux_loc_active_d', 'Not Specified')
+                box_summary[box_name]['Total Box Items'] = len(box_records_list)
+
                 # Handle as normal if there is a box barcode
                 platform_data = get_sierra_item(platform_session, box_barcode)
                 sierra_location_code, sierra_location_display = extract_sierra_location(platform_data)
@@ -182,6 +205,9 @@ def process_records(fms, platform_session, spec_ami_ids, ami_id_details, box_sum
 
                 update_details_and_summary(record_data, ami_id, box_barcode, sierra_location_code, sierra_location_display, ami_id_details, box_summary, scsb_availability)
                 logging.info(f"Sierra Data retrieved for AMI ID {ami_id}: Barcode {box_barcode}, Location Code {sierra_location_code}, Location Name {sierra_location_display}")
+
+                # Increment requested item count for each AMI ID processed
+                box_summary[box_name]['Total Count'] += 1
 
 def get_item_format(record_data):
     format_2 = record_data.get('format_2', '')
@@ -216,10 +242,10 @@ def update_details_and_summary(record_data, ami_id, box_barcode, sierra_location
             'SPEC Box Location': record_data.get('OBJECTS_parent_from_OBJECTS::ux_loc_active_d', 'Not Specified'),
             'Total Count': 0,
             'Formats': defaultdict(int),
-            'SCSB Availabilities': set()  # Using a set to avoid duplicates
+            'SCSB Availabilities': set(),
+            'Total Box Items': 0
         }
 
-    box_summary[box_name]['Total Count'] += 1
     box_summary[box_name]['Formats'][get_item_format(record_data)] += 1
     box_summary[box_name]['SCSB Availabilities'].add(scsb_availability)
 
@@ -232,6 +258,7 @@ def prepare_summary_dataframes(box_summary):
             'Box Barcode': details['Box Barcode'],
             'SPEC Box Location': details['SPEC Box Location'],
             'Total Requested Items': details['Total Count'],
+            'Remaining Items in Box': details['Total Box Items'] - details['Total Count'],
             'SCSB Availability': ', '.join(details['SCSB Availabilities'])  # Join all unique availabilities
         })
         for format_name, count in details['Formats'].items():
@@ -240,11 +267,23 @@ def prepare_summary_dataframes(box_summary):
                 'Format': format_name,
                 'Count': count
             })
-    
+
+    # Create DataFrames
     overview_df = pd.DataFrame(overview)
     formats_df = pd.DataFrame(formats)
-    return overview_df, formats_df
 
+    # Group by Box Name and Format, summing the counts
+    formats_df = formats_df.groupby(['Box Name', 'Format']).sum().reset_index()
+    
+    # Sorting for better readability
+    formats_df = formats_df.sort_values(by=['Box Name', 'Format'])
+
+    # Calculate and append total row
+    total_items = formats_df['Count'].sum()
+    total_row = pd.DataFrame([{'Box Name': 'Total', 'Format': '', 'Count': total_items}], columns=['Box Name', 'Format', 'Count'])
+    formats_df = pd.concat([formats_df, total_row], ignore_index=True)
+
+    return overview_df, formats_df
 
 def export_to_excel(output_path, ami_id_details, box_summary):
     details_df = pd.DataFrame(ami_id_details)
@@ -254,6 +293,18 @@ def export_to_excel(output_path, ami_id_details, box_summary):
         details_df.to_excel(writer, sheet_name='AMI ID Details', index=False)
         overview_df.to_excel(writer, sheet_name='Box Summary', index=False)
         formats_df.to_excel(writer, sheet_name='Format Counts', index=False)
+
+        # Accessing the workbook and the specific sheet
+        workbook = writer.book
+        format_sheet = writer.sheets['Format Counts']
+
+        # Apply bold formatting to the last row (total row) and 'Count' column if it's the total row
+        for row in format_sheet.iter_rows(min_row=1, max_row=format_sheet.max_row, min_col=1, max_col=3):
+            if row[0].value == 'Total':  # Assuming 'Total' is in the first column
+                for cell in row:
+                    cell.font = Font(bold=True)
+            if row[0].value == 'Total' and row[2].column == 3:  # The column index for 'Count' is 3
+                row[2].font = Font(bold=True)
 
         # Adjusting column widths
         for sheet_name in writer.sheets:
@@ -272,7 +323,6 @@ def export_to_excel(output_path, ami_id_details, box_summary):
 
         logging.info(f"Exported details to {output_path} with sheets: 'AMI ID Details', 'Box Summary', and 'Format Counts'.")
 
-
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
@@ -286,7 +336,14 @@ def main():
 
     spec_ami_ids = read_spec_ami_ids(args.input)
     ami_id_details = []
-    box_summary = defaultdict(lambda: {'Total Count': 0, 'Formats': defaultdict(int)})
+    box_summary = defaultdict(lambda: {
+        'Box Barcode': 'No Barcode',
+        'SPEC Box Location': 'Not Specified',
+        'Total Count': 0,
+        'Formats': defaultdict(int),
+        'SCSB Availabilities': set(),
+        'Total Box Items': 0
+    })
 
     platform_session = None  # Define platform_session outside the try block to ensure it's always defined
     try:
