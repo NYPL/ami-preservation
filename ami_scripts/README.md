@@ -475,11 +475,16 @@ Key Features:
 
 ### mediainfo_extractor.py
 
-This script extracts MediaInfo from a collection of video or audio files in a specified directory or a single file and saves the extracted data to a CSV file.
+This script extracts MediaInfo from a collection of video or audio files in a specified directory or a single file and saves the extracted data to a CSV file. It also supports processing BagIt packages with sidecar JSON metadata.
 
-```python3 mediainfo_extractor.py [-d /path/to/media/directory] [-f /path/to/media/file] -o /path/to/output/csv```
+```python3 mediainfo_extractor.py [-d /path/to/media/directory] [-f /path/to/media/file] -o /path/to/output/csv [-v]```
 
-Use the -d flag followed by the path to the directory containing the media files or the -f flag followed by the path to a single media file. The -o flag followed by the path to the output CSV file is required.
+Options:
+
+* -d, --directory: Path to the directory containing media files. This can include BagIt packages if the -v flag is used.
+* -f, --file: Path to a single media file.
+* -o, --output: Path to save the output CSV file. This is a required argument.
+* -v, --vendor: Optional. Process files as BagIt packages with sidecar JSON metadata.
 
 This script performs the following steps:
 
@@ -488,7 +493,9 @@ This script performs the following steps:
 3. For each media file, retrieve its MediaInfo using the pymediainfo library.
 4. Extract the relevant track information from the MediaInfo.
 5. Append the extracted information to a list of file data.
-6. Write the file data to the output CSV file, including headers for each field.
+6. JSON Metadata Handling (optional):
+* Reads sidecar JSON files (if present) to extract additional metadata (collectionID, objectType, objectFormat).
+7. Write the file data to the output CSV file, including headers for each field.
 
 The script processes video files with the following extensions: .mkv, .mov, .mp4, .dv, .iso and audio files with the following extensions: .wav, .flac.
 
