@@ -20,13 +20,16 @@
     - [json\_to\_csv.py](#json_to_csvpy)
     - [json\_updater.py](#json_updaterpy)
     - [json\_validator.py](#json_validatorpy)
+    - [make\_anamorphic\_scs.py](#make_anamorphic_scspy)
     - [media\_metrics\_aggregator.py](#media_metrics_aggregatorpy)
     - [media\_production\_stats.py](#media_production_statspy)
     - [mediaconch\_checker.py](#mediaconch_checkerpy)
     - [mediainfo\_extractor.py](#mediainfo_extractorpy)
     - [migrated\_media\_file\_checker.py](#migrated_media_file_checkerpy)
+    - [migration\_status\_reporter.py](#migration_status_reporterpy)
     - [prepend\_title\_cards.py](#prepend_title_cardspy)
     - [rawcooked\_check\_mkv.py](#rawcooked_check_mkvpy)
+    - [remake\_anamorphic\_bags.py](#remake_anamorphic_bagspy)
     - [rsync\_and\_organize\_json.py](#rsync_and_organize_jsonpy)
     - [rsync\_validator.py](#rsync_validatorpy)
     - [spec\_csv\_summary\_to\_excel.py](#spec_csv_summary_to_excelpy)
@@ -75,10 +78,12 @@ This script performs the following steps:
 1. Connect to FileMaker Database: Utilizes environment variables to configure the connection to the FileMaker database. It attempts to log in using the provided credentials and prints the connection status.
 2. Read AMI IDs: Depending on the file type (.csv or .xlsx), the script parses the input file to extract AMI IDs. It skips headers and checks for numeric values in the designated 'SPEC_AMI_ID' column.
 3. Query Database: For each AMI ID, the script queries the FileMaker database to retrieve associated data such as barcode, migration status, item location, box name, box barcode, box location, and format type.
-4. Data Organization: Organizes retrieved data into two structures:
+4. Query Sierra API: The script fetches additional item information from the Sierra API, including item locations.
+5. Query SCSB API: The script retrieves item availability from the SCSB API.
+6. Data Organization: Organizes retrieved data into two structures:
 * AMI ID Details: Contains detailed information per AMI ID.
 * Box Summary: Aggregates data by box name, counting items and categorizing them by format type.
-5. Export to Excel: Outputs the organized data into an Excel file with two sheets:
+7. Export to Excel: Outputs the organized data into an Excel file with two sheets:
 * 'AMI ID Details': Detailed view for each AMI ID.
 * 'Box Summary': Summarized box information and format breakdown, presented in two sections within the same sheet.
 
@@ -87,7 +92,11 @@ The script requires the following environment variables to be set:
 * FM_SERVER: URL of the FileMaker server.
 * FM_DATABASE: Name of the FileMaker database.
 * FM_LAYOUT: Database layout to be used for queries.
-
+* OAUTH_CLIENT_ID: Client ID for OAuth authentication.
+* OAUTH_CLIENT_SECRET: Client secret for OAuth authentication.
+* OAUTH_SERVER: URL of the OAuth server.
+* SCSB_API_KEY: API key for accessing the SCSB API.
+* SCSB_API_URL: URL of the SCSB API endpoint.
 
 ### audio_processing.py
 
@@ -203,7 +212,7 @@ This script performs the following steps:
 
 ### digitization_performance_tracker.py
 
-This script is designed to fetch and visualize digitization performance statistics from the AMIDB (Asset Management Information Database). It allows users to generate detailed reports and visualizations by fiscal or calendar year, and can filter results based on specific digitization engineers.
+This script generates production statistics and visualizations from the AMIDB. It fetches data, processes it, and creates various plots to summarize the digitization performance, compiling all results into a comprehensive PDF report.
 
 ```python3 digitization_performance_tracker.py -s <source_directory> [-f] [-e <engineer_names>] [-H]```
 
@@ -212,6 +221,7 @@ Options:
 * -f, --fiscal: Optional. Organize statistics and visualizations by fiscal year instead of the default calendar year.
 * -e, --engineer: Optional. Filter the output to include only specific engineers. This should be followed by one or more last names.
 * -H, --historical: Optional. Analyze data from all available years instead of just the current year.
+* -p, --previous-fiscal: Optional. Analyze data from the previous fiscal year.
 
 This script performs the following steps:
 
@@ -395,6 +405,16 @@ This script performs the following steps:
 5. Results Summary: Provides a concise summary of validation outcomes, including counts by type and detailed reports on any errors or issues detected in the JSON files.
 
 
+### make_anamorphic_scs.py
+This script processes MKV videos to create anamorphic service copies using FFmpeg. The script can handle a single MKV file or all MKV files in a specified directory, outputting the processed files in a specified directory or the same directory as the input files.
+
+```python3 make_anamorphic_scs.py [-f <input_file>] [-d <input_directory>] [-o <output_directory>]```
+
+This script performs the following steps:
+1. Uses argparse to handle command-line options for specifying a single input file or a directory of files to process and an optional output directory.
+2. Constructs the output file name based on the input file name, appending _sc.mp4 to the base name, andBuilds the FFmpeg command to process the video.
+
+
 ### media_metrics_aggregator.py
 
 This script processes a CSV containing detailed metrics for media files (from AMIDB), such as duration and file size, to compute and report aggregate statistics. It groups files by their physical object origin and media format, calculates average durations and file sizes, and outputs a summary CSV with these averages.
@@ -490,6 +510,26 @@ This script performs the following steps:
 5. Output Generation: Writes the list of missing IDs to the specified output CSV file.
 
 
+### migration_status_reporter.py
+This script fetches and processes migration status issues from the AMIDB, filtering the output by specific engineers if specified, and exports the data to a CSV file.
+
+```python3 migration_status_reporter.py [-e <engineer_names>]```
+
+This script performs the following steps:
+1. Uses argparse to handle command-line options for specifying specific engineers to filter the output.
+2. Establishes a JDBC connection to the AMIDB using credentials stored in environment variables.
+3. Executes a SQL query to fetch relevant data, including details like primary ID, migration exceptions, capture issue notes, issue types, and engineer details.
+4. Data Cleaning and Processing:
+* Cleans fields that may contain special characters or formatting issues.
+* Splits and concatenates the __captureIssueCategory field to handle multiple categories properly.
+* Removes duplicates and aggregates issues to ensure consistent ordering.
+* Filters out records where all specified fields are effectively blank.
+5. Data Export:
+* Reorders the DataFrame columns to a predefined order.
+* Sorts the DataFrame first by __migrationExceptions and then by issue.Type.
+* Exports the cleaned and processed data to a CSV file named migration_status_<today's_date>.csv on the Desktop.
+
+
 ### prepend_title_cards.py
 
 This script automates the process of prepending title cards to video or audio files. It selects title cards based on predefined criteria related to the file's content and, if specified, appends asset IDs and timecodes directly to the media file.
@@ -523,6 +563,27 @@ This script performs the following steps:
 2. Selective Processing: Randomly selects a user-defined percentage of files for checking, optimizing resource usage.
 3. Batch Processing: Allows for the processing of large numbers of files with minimal manual intervention.
 4. Reporting: Provides a concise report detailing the success or failure of RAWcooked checks.
+
+### remake_anamorphic_bags.py
+This script processes BagIt packages to remake anamorphic service copies, update associated metadata files, and ensure the integrity of the BagIt package by updating the manifests and checksums.
+
+```python3 remake_anamorphic_bags.py -d <directory>```
+
+This script performs the following steps:
+
+1. BagIt Package Validation:
+* Verifies the presence of essential BagIt files (bag-info.txt, bagit.txt, manifest-md5.txt, tagmanifest-md5.txt) in each directory to ensure it is a valid BagIt package.
+2. Remake Anamorphic Service Copies:
+* Processes each service copy (*_sc.mp4 files) in the ServiceCopies directory by re-transcoding them using FFmpeg with specific settings to ensure they are anamorphic.
+* The original file is replaced with the newly transcoded file.
+3. Update JSON Metadata:
+* Updates the JSON metadata files (*_sc.json) to reflect the latest file modification date and file size.
+* Uses pymediainfo to extract the necessary metadata from the newly transcoded video files.
+4. Update Manifests:
+* Re-calculates the MD5 checksums for the modified files and updates the manifest-md5.txt and tagmanifest-md5.txt files accordingly.
+* Ensures the new checksums are accurately recorded to maintain the integrity of the BagIt package.
+5. Update Payload-Oxum:
+* Calculates the new Payload-Oxum (total size and file count of all files in the data directory) and updates this information in the bag-info.txt.
 
 
 ### rsync_and_organize_json.py
