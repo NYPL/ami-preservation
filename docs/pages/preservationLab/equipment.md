@@ -22,6 +22,7 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   Wire      |  Webster-Chicago 80-1 |
 |   Audiocassette (compact cassette)     |  Tascam 122MKII, Tascam 122MKIII |
 |   Microcassette      |  JBR Forensic Microcassette Playback Unit, Sony M-2008 |
+| 4-track cassette    | Tascam 224  |
 | 8-track cassette    | Tascam 238  |
 |   Quarter-inch open-reel (various speeds and configurations)     |  Studer A810; Studer A812; MCI/Mara Machines JH110-1/4", Otari MTR-10, Otari MX-5050 (B, BQ, BIII, BIII-2), Revox B77 MKII, Nagra 4.2, Tascam TSR-8 |
 |   Half-inch open reel      |  MCI/Mara Machines JH-110 |
@@ -34,7 +35,6 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   DTRS     |  Tascam DA-98HR |
 |   Digital Audio Processor (F1)      |  Sony PCM-501ES, PCM-601ESD |
 |   Noise Reduction      |  Dolby A Type Model 361, Dolby B Type Module AN180; DBX Type 2 Model 224 |
-|   Digital Patch Bay      |  Z Systems z-8.8 |
 |   A-D Converter      |  Antelope Orion 32+, Mytek 8x192, Prism ADA-8XR, RME Fireface UFX+ |
 |   Digital Interface     |  Roland Quadcapture |
 |   HD Digital Microscope      |  Leica DMS 1000 |
