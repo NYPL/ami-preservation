@@ -53,10 +53,10 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 
 | **Format/Equipment** | **Manufacturer/Model** |
 |   -----          |     -----      |  
-|   Half-inch open-reel (CV)    |  GE CV-2000; Sony CV-2200 |
+|   Half-inch open-reel (CV)    |  Sony CV-2200 |
 |   Half-inch open-reel (EIAJ-1/2)      |  Sony AV-3650, Sony AV-8650 |
 |   One-inch Type C      | Sony BVH-2000, Sony BVH-3100 |
-|   U-matic (NTSC/PAL: LB, HB, SP)      |  Sony BVU-950, Sony BVU-950P, Sony VO-9850, Sony VO-7630; Sony VP-7040, Sony VO-9600P |
+|   U-matic (NTSC/PAL: LB, HB, SP)      |  Sony BVU-800, Sony BVU-850, Sony BVU-950, Sony BVU-950P, Sony VO-9850, Sony VO-7630; Sony VP-7040, Sony VO-9600P |
 |   Betamax      |  Sony SL-HF450, Sony SLO-420, Sony GCS-50, Sony SL-HF2000; Sony SL0-1800 |
 |   VHS (NTSC/PAL/SECAM, S-VHS, VHS-C)      |  Sony SVO-5800, SVO-5800P, Sony SVO-1630, Sony SVO-1500, Panasonic AG-W3P, Panasonic AG-DS550, AG-1980P, Samsung SV-7000W |
 |   Betacam (Oxide, SP, SX, Digital Betacam, IMX, HDCAM)      |  Sony UVW-1800, Sony PVW-2800, Sony PVW-2800P, Sony DVW-M2000, Sony J-30SDI, Sony HDW-M2000 |
@@ -70,7 +70,7 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   Distribution Amplifier      |  Aphex 120A |
 |   A-D Converter      |  Blackmagic Ultrastudio Mini HD, Blackmagic Teranex 2D, Blackmagic Decklink Duo 2, AJA HD10AVA |
 |   Video Monitor      |  Sony LMD-2450W, Sony PVM-20M2U, Sony PVM-1954Q, Blackmagic Smartscope Duo |
-|   Time Base Corrector (TBC) / Frame Synchronizer      |  Fortel CCD HP, FOR.A FA-360, FOR.A FA-310T, Snell & Wilcox TBS185AV, Snell & Wilcox TBS190AV, Snell & Wilcox CVR-600AD, DPS-575 |
+|   Time Base Corrector (TBC) / Frame Synchronizer      |  Fortel CCD HP, FOR.A FA-360, FOR.A FA-310T, Sony BVT-800, Snell & Wilcox TBS185AV, Snell & Wilcox TBS190AV, Snell & Wilcox CVR-600AD, DPS-575 |
 |   Remote Control Unit      |  Sony BVR-55 |
 |   Sync Generator      |  Sigma Electronics BSG-26, Grass Valley SCB-200N |
 |   Waveform Monitor/Vectorscope     |  Leader 5872A, Tektronix WVR-500|
