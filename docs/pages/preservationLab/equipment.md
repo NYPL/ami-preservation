@@ -15,7 +15,6 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 
 | **Format/Equipment** | **Manufacturer/Model** |
 |   -----          |     -----      |  
-|   CD      |  Acronova Nimbie |
 |   Cylinder, Dictabelt      |  Endpoint, Archeophone |
 |   Grooved Disc (transcription discs, aka "lacquer" or "acetate," and other instantaneous formats; 78 rpm discs, aka "shellac", long-play (LP) vinyl discs)      |  Technics SP-15 and SME 3012-R Tonearm |
 |   Phono Stage      |  Timestep T-01EQ, KAB Souvenir EQS MK12 |
@@ -28,14 +27,14 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   Half-inch open reel      |  MCI/Mara Machines JH-110 |
 |   One-inch and Two-inch open reel      |  MCI/Mara Machines JH-24 |
 |   Digital Audio Tape (DAT)      |  Fostex D-5, Sony PCM-R500, Sony PCM-R700, Panasonic SV-3700, Panasonic SV-3800 |
-|   Compact Disc (CD)      |  Plextor PX-880U, Tascam CD-305, Tascam CD-401 MKII |
+|   Compact Disc (CD)      |  Acronova Nimbie, Plextor PX-880U, Tascam CD-305, Tascam CD-401 MKII |
 |   MiniDisc     |  Sony MDS-E12 |
 |  PCM-1610/30     |  Sony DMR-4000; Sony PCM-1630 |
 |   Alesis Digital Audio Tape (ADAT)     |  Alesis ADAT XT |
 |   DTRS     |  Tascam DA-98HR |
 |   Digital Audio Processor (F1)      |  Sony PCM-501ES, PCM-601ESD |
-|   Noise Reduction      |  Dolby A Type Model 361, Dolby B Type Module AN180; DBX Type 2 Model 224 |
-|   A-D Converter      |  Antelope Orion 32+, Mytek 8x192, Prism ADA-8XR, RME Fireface UFX+ |
+|   Noise Reduction      |  Dolby A Type Model 361, Dolby B Type Module AN180; Dolby 363 Type SR, DBX Type 2 Model 224 |
+|   A-D Converter      |  Antelope Orion 32+, RME Fireface UFX+ |
 |   Digital Interface     |  Roland Quadcapture |
 |   HD Digital Microscope      |  Leica DMS 1000 |
 |   Disc Cleaner      |  Keith Monks |
