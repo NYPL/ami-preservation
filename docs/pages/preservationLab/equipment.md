@@ -24,8 +24,8 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   Microcassette      |  JBR Forensic Microcassette Playback Unit, Sony M-2008 |
 | 8-track cassette    | Tascam 238  |
 |   Quarter-inch open-reel (various speeds and configurations)     |  Studer A810; Studer A812; MCI/Mara Machines JH110-1/4", Otari MTR-10, Otari MX-5050 (B, BQ, BIII, BIII-2), Revox B77 MKII, Nagra 4.2, Tascam TSR-8 |
-|   1/2" Open Reel      |  MCI/Mara Machines JH-110 |
-|   1" & 2" Open Reel      |  MCI/Mara Machines JH-24 |
+|   Half-inch open reel      |  MCI/Mara Machines JH-110 |
+|   One-inch and Two-inch open reel      |  MCI/Mara Machines JH-24 |
 |   Digital Audio Tape (DAT)      |  Fostex D-5, Sony PCM-R500, Sony PCM-R700, Panasonic SV-3700, Panasonic SV-3800 |
 |   Compact Disc (CD)      |  Plextor PX-880U, Tascam CD-305, Tascam CD-401 MKII |
 |   MiniDisc     |  Sony MDS-E12 |
@@ -80,7 +80,9 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   Audio Splitter/Mixer      |  Rane SM26S |
 |   Voltage Regulator/Power Conditioner      |  Furman PL8 |
 |   Cleaner: Half-inch open-reel   |  Bow Industries Bow 432 |
+|   Cleaner: One-inch open-reel   |  Bow Industries Bow 432 |
 |   Cleaner: U-matic      |  RTI VT-3100 RM |
 |   Cleaner: VHS      |  RTI 4905 |
 |   Cleaner: Betacam      |  RTI 4100ME |
+|   Cleaner: DV      |  RTI Tapechek 5100 |
 |   Lab Oven      |  Thermo Scientific PR205045M |
