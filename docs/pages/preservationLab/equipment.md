@@ -35,7 +35,7 @@ The Preservation Lab maintains a variety of playback devices, cleaning machines,
 |   Digital Audio Processor (F1)      |  Sony PCM-501ES, PCM-601ESD |
 |   Noise Reduction      |  Dolby A Type Model 361, Dolby B Type Module AN180; DBX Type 2 Model 224 |
 |   Digital Patch Bay      |  Z Systems z-8.8 |
-|   A-D Converter      |  Mytek 8x192, Prism ADA-8XR |
+|   A-D Converter      |  Antelope Orion 32+, Mytek 8x192, Prism ADA-8XR, RME Fireface UFX+ |
 |   Digital Interface     |  Roland Quadcapture |
 |   HD Digital Microscope      |  Leica DMS 1000 |
 |   Disc Cleaner      |  Keith Monks |
