@@ -32,7 +32,7 @@ Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py`,
      export FILEMAKER_DATABASE='your_filemaker_database'
      export FILEMAKER_LAYOUT='your_filemaker_layout'
      ```
-  - For `digitization_performance_tracker.py`, which requires AMI Database connection details:
+   - For `digitization_performance_tracker.py`, which requires AMI Database connection details:
      ```bash
     export FM_SERVER='<server_ip>'
     export AMI_DATABASE='<database_name>'
