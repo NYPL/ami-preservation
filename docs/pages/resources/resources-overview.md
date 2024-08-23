@@ -15,6 +15,5 @@ Included in this section are guidelines on:
 * Setting up and troubleshooting the macOS terminal environment.
 * Understanding and modifying the PATH environment variable for proper recognition and functionality of tools.
 * Advanced terminal configurations, error troubleshooting, and script setup.
-
-Additionally, this section includes vital information on managing migration statuses and addressing issues within the SPEC system, crucial for overseeing the digitization progress and resolving concerns in preservation projects.
-
+* Navigating the ServiceNow systems for Digital Access Requests (DAR) and Media Digitization Requests (MDR), including best practices for form submission, access types, and VIP request handling.
+* Managing migration statuses and addressing issues within the SPEC system, essential for overseeing digitization progress and resolving preservation concerns.
