@@ -57,9 +57,10 @@ Before submitting either a DAR or MDR for access to AMI materials, it’s import
 #### Important Note on Migration Statuses
 
 - **Simple vs. Complex Statuses**
-   - **Simple Status:** This will initially display as either "Migrated" or "Migration target."
+   - **Simple Status:** This will initially display as either "Migrated," "Migration target," or "Will not migrate."
      - **Migration target:** If the status is marked as "Migration target," it’s beneficial to click on the status. This will open a window revealing the item’s **complex status.**
-   - **Complex Status:** The complex status may provide additional details that are crucial for determining the next steps. For example, an item marked as "Migration target" in the simple status might have a complex status indicating special treatment is required, such as "AMI re-batch: vendor (mold)." This indicates that the item’s digitization was attempted but could not be completed due to condition issues, and it may need to be sent to a specialty vendor. Understanding the complex status is important because it impacts the timeline and process for accessing the item.
+         - **Complex Status:** The complex status may provide additional details that are crucial for determining the next steps. For example, an item marked as "Migration target" in the simple status might have a complex status indicating special treatment is required, such as "AMI re-batch: vendor (mold)." This indicates that the item’s digitization was attempted but could not be completed due to condition issues, and it may need to be sent to a specialty vendor. Understanding the complex status is important because it impacts the timeline and process for accessing the item.
+     - **Will not migrate:** If an item is marked as "Will not migrate," it should not be requested for digitization. This status means that the item cannot be digitized, typically due to severe condition issues, the item being blank (e.g., empty media or unrecorded content), or other factors that make digitization technically unfeasible.
 
 ## Form Selection Based on Migration Status
 
