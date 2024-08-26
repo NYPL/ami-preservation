@@ -57,21 +57,21 @@ Before submitting either a DAR or MDR for access to AMI materials, it’s import
 #### Important Note on Migration Statuses
 
 - **Simple vs. Complex Statuses**
-   - **Simple Status:** This will initially display as either "Migrated" or "Unmigrated."
-     - **Unmigrated:** If the status is marked as "Unmigrated," it’s beneficial to click on the status. This will open a window revealing the item’s **complex status.**
-   - **Complex Status:** The complex status may provide additional details that are crucial for determining the next steps. For example, an item marked as "Unmigrated" in the simple status might have a complex status indicating special treatment is required, such as "AMI re-batch: vendor (mold)." This indicates that the item’s digitization was attempted but could not be completed due to condition issues, and it may need to be sent to a specialty vendor. Understanding the complex status is important because it impacts the timeline and process for accessing the item.
+   - **Simple Status:** This will initially display as either "Migrated" or "Migration target."
+     - **Migration target:** If the status is marked as "Migration target," it’s beneficial to click on the status. This will open a window revealing the item’s **complex status.**
+   - **Complex Status:** The complex status may provide additional details that are crucial for determining the next steps. For example, an item marked as "Migration target" in the simple status might have a complex status indicating special treatment is required, such as "AMI re-batch: vendor (mold)." This indicates that the item’s digitization was attempted but could not be completed due to condition issues, and it may need to be sent to a specialty vendor. Understanding the complex status is important because it impacts the timeline and process for accessing the item.
 
 ## Form Selection Based on Migration Status
 
 - If the item is marked as **"Migrated":** Submit a DAR to request access to the digital file.
-- If the item is marked as **"Unmigrated":** Submit an MDR to initiate the digitization process.
+- If the item is marked as **"Migration target":** Submit an MDR to initiate the digitization process.
 
 ### Handling Partially Digitized Groups
 
 - **Scenario:** When requesting access to a group of items where some have a migration status of "Migrated" and others "Unmigrated":
   - **Action:** Submit the appropriate form based on the status of each item:
     - **For "Migrated" items:** Submit a DAR for the digital files.
-    - **For "Unmigrated" items:** Submit an MDR to initiate digitization.
+    - **For "Migration target" items:** Submit an MDR to initiate digitization.
   - **Note:** In some cases, it may be necessary to submit both a DAR and an MDR if the request involves a mixed group of items.
 
 ## Workflow Impact Ramifications Based on Type of Access Requested
@@ -127,8 +127,8 @@ By following these guidelines, you’ll ensure that patrons are directed to the 
 
 ### Special Considerations for VIP Requests
 
-While neither the DAR nor MDR forms offer a specific place to note a request's VIP nature, selecting "Donor request" in item usage typically triggers further discussion regarding subsequent processes. Requesters are also encouraged to use the free text "Notes" fields to describe their request in greater detail to facilitate smoother processing.
+Although the DAR and MDR forms do not include a designated field for noting a request's VIP status, choosing "Donor request" under item usage generally prompts further discussion on the necessary steps. Requesters are also encouraged to use the "Notes" field to provide additional details, which can help streamline the process.
 
-- **Process for VIP Requests:** VIP requests are not handled in a radically different manner. However, at times the Rights Clearance process may be waived after receiving the express approval of Senior Leaders. These Senior Leaders are members of an assignment group in ServiceNow and will have tickets assigned to them after initial vetting of VIP status.
+- **Process for VIP Requests:** While VIP requests are managed similarly to other requests, there are instances where the Rights Clearance process may be waived. This can occur with the express approval of Senior Leaders, who are part of a specific assignment group in ServiceNow. Once a request is flagged as VIP, these leaders will be involved through ticket assignment after an initial review.
 
 Understanding the nuances of VIP requests ensures that these high-priority items are handled efficiently while maintaining the necessary oversight and approval processes.
