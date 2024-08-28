@@ -84,12 +84,27 @@ def extract_iso_file_format(file_path):
         process = subprocess.run(command, check=True, capture_output=True, text=True)
         xml_output = process.stdout
         root = ET.fromstring(xml_output)
-        file_system_type = root.find(".//{http://kb.nl/ns/isolyzer/v1/}fileSystem").attrib['TYPE']
-        logging.info(f"Extracted ISO file format: {file_system_type}")
-        return file_system_type
+        
+        # Find the fileSystem element
+        file_system_element = root.find(".//{http://kb.nl/ns/isolyzer/v1/}fileSystem")
+        
+        if file_system_element is not None:
+            file_system_type = file_system_element.attrib.get('TYPE')
+            logging.info(f"Extracted ISO file format: {file_system_type}")
+            return file_system_type
+        else:
+            logging.error(f"FileSystem element not found in Isolyzer output for file: {file_path}")
+            logging.debug(f"Isolyzer output: {xml_output}")
+            return None
+        
     except subprocess.CalledProcessError as e:
         logging.error(f"Isolyzer failed with error: {e}")
         return None
+    except ET.ParseError as e:
+        logging.error(f"Failed to parse Isolyzer XML output: {e}")
+        logging.debug(f"Isolyzer output: {xml_output}")
+        return None
+
 
 def extract_track_info(media_info, path, valid_extensions):
     # the pattern to match YYYY-MM-DD
