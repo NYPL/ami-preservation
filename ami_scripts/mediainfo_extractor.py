@@ -60,7 +60,7 @@ def process_directory(bag_directory, process_json=False):
     return media_files
 
 def read_json_sidecar(json_path):
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8-sig') as f:
         data = json.load(f)
         logging.info(f"Reading JSON sidecar file: {json_path}")
         bib = data.get('bibliographic', {})
