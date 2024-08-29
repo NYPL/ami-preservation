@@ -1,11 +1,11 @@
 ---
-title: ServiceNow Ticketing Systems (DAR and MDR)
+title: ServiceNow Ticketing Systems
 layout: default
 nav_order: 4
 parent: Resources
 ---
 
-# ServiceNow Ticketing Systems: DAR and MDR
+# ServiceNow Ticketing Systems
 {: .no_toc }
 
 ## Table of contents
@@ -27,6 +27,20 @@ parent: Resources
 ### Media Digitization Request (MDR)
 - **Purpose:** The MDR system initiates the work required to digitize physical AMI items that have not been previously digitized.
 - **Usage:** Use the MDR system when requesting digitization of physical audio or video materials that are not yet available in digital format.
+
+### Digital Repair Request (DRR)
+- **Purpose:** The DRR system is for reporting any digital resources in need of repair to the Digital Research team. It applies to the following:
+  - Digitized images
+  - Digitized Audio and Moving Image (AMI) materials
+  - Born-digital AMI materials
+  - Born-digital archives
+- **Usage:** Use the DRR system to report digital resources that appear to be flawed. This process triggers an investigation that may not always result in an improved file. For Digitized AMI assets, this might involve a poor or problematic transfer that could require a new digitization attempt (e.g., subpar vendor digitization that might benefit from an in-house attempt), or a corrupted file that may need to be repaired or manipulated. Before submitting a DRR, check the item's migration status and any "Issues" recorded in SPEC, as these may indicate problems that cannot be resolved.
+
+## General ServiceNow Instructions
+
+### Accessing ServiceNow
+
+ServiceNow can be accessed via LAIR under the Staff Tools section. From the ServiceNow landing page, click on "Make a Request," then select "Digital Research Requests" to access the DAR, MDR, and DRR forms.
 
 ## Determining Which Form to Use
 
@@ -107,7 +121,6 @@ Both the DAR and MDR forms include questions designed to determine the type of a
 - **On-Site Access**
    - On-site access is generally simpler and does not require the additional steps of rights clearance or VIP approval. The requested files can be made available more quickly since they remain within the Library's controlled environment.
 
-These distinctions help ensure that the right steps are taken based on the type of access requested, maintaining efficiency and compliance.
 
 ## When to Submit an MDR/DAR Form Yourself or When to Direct a Patron to the Permissions Team
 
@@ -122,8 +135,6 @@ It’s important to understand when to submit an MDR or DAR form yourself and wh
 - **On-Site Usage:**
   - **Simpler Process:** On-site usage of materials does not generally require the same level of permissions clearance. In these cases, you can submit a DAR or MDR form yourself, depending on whether the item is already digitized or needs to be digitized.
 
-By following these guidelines, you’ll ensure that patrons are directed to the correct process, helping to streamline their access requests.
-
 ## Handling VIP Requests
 
 ### Special Considerations for VIP Requests
@@ -131,5 +142,3 @@ By following these guidelines, you’ll ensure that patrons are directed to the 
 Although the DAR and MDR forms do not include a designated field for noting a request's VIP status, choosing "Donor request" under item usage generally prompts further discussion on the necessary steps. Requesters are also encouraged to use the "Notes" field to provide additional details, which can help streamline the process.
 
 - **Process for VIP Requests:** While VIP requests are managed similarly to other requests, there are instances where the Rights Clearance process may be waived. This can occur with the express approval of Senior Leaders, who are part of a specific assignment group in ServiceNow. Once a request is flagged as VIP, these leaders will be involved through ticket assignment after an initial review.
-
-Understanding the nuances of VIP requests ensures that these high-priority items are handled efficiently while maintaining the necessary oversight and approval processes.
