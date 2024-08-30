@@ -40,7 +40,23 @@ parent: Resources
 
 ### Accessing ServiceNow
 
-ServiceNow can be accessed via LAIR under the Staff Tools section. From the ServiceNow landing page, click on "Make a Request," then select "Digital Research Requests" to access the DAR, MDR, and DRR forms.
+ServiceNow can be accessed via LAIR under the Staff Tools section. 
+
+### Navigating to the Forms
+
+From the ServiceNow landing page, click on "Make a Request," then select "Digital Research Requests" to access the DAR, MDR, and DRR forms.
+
+### Confirmation of Receipt
+
+After submitting a ticket, you will receive an email with the subject line "Media digitization [or Digital access, etc.] request no. MDR/DAR/DRR000XXX has been submitted" confirming the details of your request.
+
+### Checking the Status of Your Open Tickets
+
+From the ServiceNow homepage, you can review the status of all your open requests by clicking on "Tickets" in the upper right corner. Clicking on an individual ticket will direct you to a page that provides more detail on the status of the ticket, including the "State," the "Assignment Group," and the person the ticket has been "Assigned To."
+
+### Communicating with the Assigned Person
+
+To communicate directly with the person assigned to your ticket through the ServiceNow platform (our preference, as this correspondence will be part of the record for this project), you can add notes to the "Additional Comments" field.
 
 ## Determining Which Form to Use
 
