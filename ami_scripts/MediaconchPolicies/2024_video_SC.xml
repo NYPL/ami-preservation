@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<policy type="and" name="2024_video_SC">
+  <!-- audio bit rate: return to this -->
+  <rule name="Audio/Channels is 2" value="Channels" tracktype="Audio" occurrence="*" operator="=">2</rule>
+  <rule name="Audio/Format is AAC" value="Format" tracktype="Audio" occurrence="*" operator="=">AAC</rule>
+  <rule name="Audio/SamplingRate is 48000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+  <rule name="General/FileExtension is mp4" value="FileExtension" tracktype="General" occurrence="*" operator="=">mp4</rule>
+  <rule name="General/Format is MPEG-4" value="Format" tracktype="General" occurrence="*" operator="=">MPEG-4</rule>
+  <rule name="Video/BitDepth is 8" value="BitDepth" tracktype="Video" occurrence="*" operator="=">8</rule> 
+  <!-- video bit rate: return to this -->
+  <rule name="Video/ChromaSubsampling is 4:2:0" value="ChromaSubsampling" tracktype="Video" occurrence="*" operator="=">4:2:0</rule>
+  <rule name="Video/CodecID is avc1" value="CodecID" tracktype="Video" occurrence="*" operator="=">avc1</rule>
+  <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <rule name="Video/Format is AVC" value="Format" tracktype="Video" occurrence="*" operator="=">AVC</rule>
+  <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
+  <rule name="Video/Width is 720" value="Width" tracktype="Video" occurrence="*" operator="=">720</rule>
+  <policy type="or" name="NTSC or PAL specs">
+    <policy type="and" name="NTSC specs">
+      <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
+      <rule name="Video/Height is 486" value="Height" tracktype="Video" occurrence="*" operator="=">486</rule>
+      <rule name="Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=">NTSC</rule>
+      <policy type="or" name="NTSC DAR + PAR (various settings)">
+        <policy type="and" name="NTSC DAR + PAR: old 4:3 settings">
+          <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+          <rule name="Video/PixelAspectRatio is 0.900" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
+        </policy>
+        <policy type="and" name="NTSC DAR + PAR: old 16:9 settings">
+          <!-- <rule name="Video/DisplayAspectRatio is 1.778" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.778</rule> -->
+          <!-- PAR (=?) -->
+        </policy>
+        <policy type="and" name="NTSC DAR + PAR: new 4:3 settings">
+          <!-- DAR (=1.347?) -->
+          <!-- PAR (=0.909?) -->
+        </policy>
+        <policy type="and" name="NTSC DAR + PAR: new 16:9 settings">
+          <!-- DAR (=?) -->
+          <!-- PAR (=?) -->
+        </policy>
+      </policy>
+    </policy>
+    <policy type="and" name="PAL specs">
+      <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
+      <rule name="Video/Height is 576" value="Height" tracktype="Video" occurrence="*" operator="=">576</rule>
+      <rule name="Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=">PAL</rule>
+      <policy type="or" name="PAL DAR + PAR (various settings)">
+        <policy type="and" name="PAL DAR + PAR: old 4:3 settings">
+          <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+          <rule name="Video/PixelAspectRatio is 1.067" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.067</rule>
+        </policy>
+        <policy type="and" name="PAL DAR + PAR: old 16:9 settings">
+          <!-- <rule name="Video/DisplayAspectRatio is 1.778" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.778</rule> -->
+          <!-- PAR (=?) -->
+        </policy>
+        <policy type="and" name="PAL DAR + PAR: new 4:3 settings">
+          <!-- DAR (=?) -->
+          <!-- PAR (=?) -->
+        </policy>
+        <policy type="and" name="PAL DAR + PAR: new 16:9 settings">
+          <!-- DAR (=?) -->
+          <!-- PAR (=?) -->
+        </policy>
+      </policy>
+    </policy>
+  </policy>
+</policy>

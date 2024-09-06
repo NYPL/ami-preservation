@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<policy type="and" name="2024_film16_PM">
+  <policy type="or" name="silent or composite sound specs">
+    <rule name="Audio/Channels does not exist" value="Channels" tracktype="Audio" occurrence="*" operator="must not exist"/>
+    <policy type="and" name="composite sound specs">
+      <rule name="Audio/BitDepth is 24" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
+      <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+      <rule name="Audio/SamplingRate is 96000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">96000</rule>
+      <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
+    </policy>
+  </policy>
+  <rule name="General/extra[1]/Attachments is RAWcooked reversibility data" value="extra[1]/Attachments" tracktype="General" occurrence="*" operator="=">RAWcooked reversibility data</rule>
+  <rule name="General/extra[1]/ErrorDetectionType is Per level 1" value="extra[1]/ErrorDetectionType" tracktype="General" occurrence="*" operator="=">Per level 1</rule>
+  <rule name="General/FileExtension is mkv" value="FileExtension" tracktype="General" occurrence="*" operator="=">mkv</rule>
+  <rule name="General/Format is Matroska" value="Format" tracktype="General" occurrence="*" operator="=">Matroska</rule>
+  <rule name="General/Format_Version is 4 or greater" value="Format_Version" tracktype="General" occurrence="*" operator="&gt;=">4</rule>
+  <rule name="General/UniqueID exists" value="UniqueID" tracktype="General" occurrence="*" operator="exists"/>
+  <rule name="General/VideoCount is 1" value="VideoCount" tracktype="General" occurrence="*" operator="=">1</rule>
+  <rule name="SegmentUID is present?" value="Segment/Info/SegmentUID/" occurrence="*" operator="exists" scope="mmt"/>
+  <rule name="SeekHead is present?" value="Segment/SeekHead/" occurrence="*" operator="exists" scope="mmt"/>
+  <rule name="mmt: Duration is greater than zero?" scope="mmt" operator="&gt;" value="Segment/Info/Duration/Data">0</rule>
+  <rule name="Video/BitDepth is 10" value="BitDepth" tracktype="Video" occurrence="*" operator="=">10</rule>
+  <rule name="Video/CodecID is V_MS/VFW/FOURCC / FFV1" value="CodecID" tracktype="Video" occurrence="*" operator="=">V_MS/VFW/FOURCC / FFV1</rule>
+  <rule name="Video/ColorSpace is RGB" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">RGB</rule>
+  <rule name="Video/Compression_Mode is Lossless" value="Compression_Mode" tracktype="Video" occurrence="*" operator="=">Lossless</rule>
+  <rule name="Video/DisplayAspectRatio is 1.316" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.316</rule>
+  <rule name="Video/extra[1]/ErrorDetectionType is Per slice" value="extra[1]/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule>
+  <rule name="Video/extra[1]/MaxSlicesCount is 24 or greater" value="extra[1]/MaxSlicesCount" tracktype="Video" occurrence="*" operator="&gt;=">24</rule>
+  <rule name="Video/Format is FFV1" value="Format" tracktype="Video" occurrence="*" operator="=">FFV1</rule>
+  <rule name="Video/Format_Settings_GOP is N=1" value="Format_Settings_GOP" tracktype="Video" occurrence="*" operator="=">N=1</rule>
+  <rule name="Video/Format_Version is 3.4 or greater" value="Format_Version" tracktype="Video" occurrence="*" operator="&gt;=">3.4</rule>
+  <rule name="Video/FrameRate_Mode is CFR" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=">CFR</rule>
+  <rule name="Video/Height is 1556" value="Height" tracktype="Video" occurrence="*" operator="=">1556</rule>
+  <rule name="Video/PixelAspectRatio is 1.000" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.000</rule>
+  <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
+  <rule name="Video/transfer_characteristics is BT.709" value="transfer_characteristics" tracktype="Video" occurrence="*" operator="=">BT.709</rule>
+  <rule name="Video/Width is 2048" value="Width" tracktype="Video" occurrence="*" operator="=">2048</rule>
+</policy>
