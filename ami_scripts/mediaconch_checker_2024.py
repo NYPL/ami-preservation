@@ -21,12 +21,22 @@ AUDIO_DIGITAL = 'MediaConch_NYPL-FLAC_Digital.xml'
 # New MediaConch policies:
 # AUDIO_ANALOG = ''
 # AUDIO_DIGITAL = ''
-FILM_35_PM = '2024_film35_PM.xml'
-FILM_8_16_PM = '2024_film16_PM.xml'
-FILM_MZ = '2024_film_MZ.xml'
-FILM_SC = '2024_film_SC.xml'
+# FILM_16_PM = '2024_film16_PM.xml'
+# FILM_35_PM = '2024_film35_PM.xml'
+# FILM_MZ = '2024_film_MZ.xml'
+# FILM_SC = '2024_film_SC.xml'
 VIDEO_PM = '2024_video_PM.xml'
 VIDEO_SC = '2024_video_SC.xml'
+
+# Newer MediaConch film policies:
+FILM16_PM_COMP = '2024_film16_PM_compsound.xml'
+FILM16_PM_SLNT = '2024_film16_PM_silent.xml'
+FILM35_PM_COMP = '2024_film35_PM_compsound.xml'
+FILM35_PM_SLNT = '2024_film35_PM_silent.xml'
+FILM_MZ_COMP = '2024_film_MZ_compsound.xml'
+FILM_MZ_SLNT = '2024_film_MZ_silent.xml'
+FILM_SC_COMP = '2024_film_SC_compsound.xml'
+FILM_SC_SLNT = '2024_film_SC_silent.xml'
 
 def parse_args():
 
@@ -74,14 +84,12 @@ def parse_args():
     return parser.parse_args()
 
 def get_asset_paths(dir_path):
-    asset_paths = []
     non_asset_exts = ('cue', 'framemd5', 'jpeg', 'jpg', 'json', 'old', 'scc', 'txt')
-    for item in dir_path.rglob('*'):
-        if (item.is_file() and 
-            not (item.name.startswith('.') or 
-                 item.suffix.lower().lstrip('.') in non_asset_exts)):
-            asset_paths.append(item)
-    return asset_paths
+    asset_paths = [item for item in dir_path.rglob('*') 
+                   if (item.is_file() and 
+                       not (item.name.startswith('.') or 
+                            item.suffix.lower().lstrip('.') in non_asset_exts))]
+    return sorted(asset_paths)
 
 def assign_policy(jformat, jrole, jtype):
     
@@ -91,19 +99,41 @@ def assign_policy(jformat, jrole, jtype):
         else:
             policy = AUDIO_ANALOG
         return policy
-    
-    def assign_film_policy():
+
+    # def assign_film_policy(): # with policies covering all mp film sound configurations
+    #     if re.search('full-coat|track', jformat):
+    #         policy = AUDIO_ANALOG
+    #     elif jrole == 'sc':
+    #         policy = FILM_SC
+    #     elif jrole == 'mz':
+    #         policy = FILM_MZ
+    #     else:
+    #         if not re.search('35', jformat):
+    #             policy = FILM_16_PM
+    #         else:
+    #             policy = FILM_35_PM
+    #     return policy
+
+    def assign_film_policy(): # with different policies for silent and composite sound film
+
+        def sort_mp_film(silent_policy, compsound_policy):
+            if re.search('silent', jformat):
+                policy = silent_policy
+            else:
+                policy = compsound_policy
+            return policy
+
         if re.search('full-coat|track', jformat):
             policy = AUDIO_ANALOG
         elif jrole == 'sc':
-            policy = FILM_SC
+            policy = sort_mp_film(FILM_SC_SLNT, FILM_SC_COMP)
         elif jrole == 'mz':
-            policy = FILM_MZ
+            policy = sort_mp_film(FILM_MZ_SLNT, FILM_MZ_COMP)
         else:
             if not re.search('35', jformat):
-                policy = FILM_8_16_PM
+                policy = sort_mp_film(FILM16_PM_SLNT, FILM16_PM_COMP)
             else:
-                policy = FILM_35_PM
+                policy = sort_mp_film(FILM35_PM_SLNT, FILM35_PM_COMP)
         return policy
     
     def assign_video_policy():
@@ -187,30 +217,33 @@ def print_ineligible(ineligible):
         report_sorted(ineligible, 'asset_path')
     return count
 
+def check_policy_paths(policy_paths):
+    bad_p_paths = [item for item in set(policy_paths) if not item.exists()]
+    if len(bad_p_paths) > 0:
+        print(f'\n{bold("WARNING:")} \nThe following policy paths DO NOT exist (commands will result in error):')
+        for item in bad_p_paths:
+            print(item)
+        print()
+
 def prepare_mc_commands(eligible, policies_dir):
-    bad_policy_paths = []
+    print('Preparing MediaConch commands...')
+    policy_paths = []
     for idict in eligible:
         policy_path = policies_dir.joinpath(idict['policy'])
         idict['command'] = ['mediaconch', '-p', policy_path, idict['asset_path']]
-        if not policy_path.exists():
-            bad_policy_paths.append(policy_path)
-    if len(bad_policy_paths) > 0:
-        print(f'\n{bold("WARNING:")} \nThe following policy paths DO NOT exist (commands will result in error):')
-        for item in set(bad_policy_paths):
-            print(item)
-        print()
+        policy_paths.append(policy_path)
+    check_policy_paths(policy_paths)
 
 def run_command(command):
     try:
         process = subprocess.run(command, check=True, timeout=300, text=True, capture_output=True)
         output = process.stdout
-    except subprocess.CalledProcessError as e:
-        output = str(e)
-    except subprocess.TimeoutExpired as e:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         output = str(e)
     return output
 
 def get_mc_output(eligible):
+    print('Running MediaConch commands in subprocess...')
     for idict in tqdm(eligible):
         idict['output'] = run_command(idict['command'])
 
@@ -271,16 +304,14 @@ def main():
           "\nParsing jsons and sorting for assets' eligibility for MediaConch evaluation...")
     asset_paths = get_asset_paths(args.project_dir)
     asset_count = len(asset_paths)
-    print(f'{asset_count} assets found:')
     eligible, ineligible, json_invalid, json_missing = sort_assets(asset_paths)
+    print(f'{asset_count} assets found:')
     j_miss_count = print_json_problem_list(json_missing, 'MISSING')
     json_inv_count = print_json_problem_list(json_invalid, 'INVALID')
     inelig_count = print_ineligible(ineligible)
     elig_count = len(eligible)
     print(f'\n\n{elig_count} assets are MediaConch ELIGIBLE')
-    print('Preparing MediaConch commands...')
     prepare_mc_commands(eligible, args.policies_dir)
-    print('Running MediaConch commands in subprocess...')
     get_mc_output(eligible)
     p_count, f_count, e_count = parse_output(eligible, args.format_pass, args.format_fail)
     report_results(eligible, args.sort_results)
