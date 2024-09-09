@@ -1,14 +1,7 @@
 <?xml version="1.0"?>
 <policy type="and" name="2024_film16_PM">
-  <policy type="or" name="silent or composite sound specs">
-    <rule name="Audio/Channels does not exist" value="Channels" tracktype="Audio" occurrence="*" operator="must not exist"/>
-    <policy type="and" name="composite sound specs">
-      <rule name="Audio/BitDepth is 24" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
-      <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
-      <rule name="Audio/SamplingRate is 96000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">96000</rule>
-      <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
-    </policy>
-  </policy>
+
+  <!-- rules for all motion picture film (silent or composite sound)-->
   <rule name="General/extra[1]/Attachments is RAWcooked reversibility data" value="extra[1]/Attachments" tracktype="General" occurrence="*" operator="=">RAWcooked reversibility data</rule>
   <rule name="General/extra[1]/ErrorDetectionType is Per level 1" value="extra[1]/ErrorDetectionType" tracktype="General" occurrence="*" operator="=">Per level 1</rule>
   <rule name="General/FileExtension is mkv" value="FileExtension" tracktype="General" occurrence="*" operator="=">mkv</rule>
@@ -35,4 +28,16 @@
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
   <rule name="Video/transfer_characteristics is BT.709" value="transfer_characteristics" tracktype="Video" occurrence="*" operator="=">BT.709</rule>
   <rule name="Video/Width is 2048" value="Width" tracktype="Video" occurrence="*" operator="=">2048</rule>
+
+  <!-- policy/rules for silent OR composite sound film -->
+  <policy type="or" name="silent or composite sound specs">
+    <rule name="Audio/Channels does not exist" value="Channels" tracktype="Audio" occurrence="*" operator="must not exist"/>
+    <policy type="and" name="composite sound specs">
+      <rule name="Audio/BitDepth is 24" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
+      <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+      <rule name="Audio/SamplingRate is 96000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">96000</rule>
+      <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
+    </policy>
+  </policy>
+
 </policy>

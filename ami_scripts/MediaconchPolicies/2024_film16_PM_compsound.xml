@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<policy type="and" name="2024_film35_PM">
+<policy type="and" name="2024_film16_PM_compsound">
 
   <!-- rules for all motion picture film (silent or composite sound)-->
   <rule name="General/extra[1]/Attachments is RAWcooked reversibility data" value="extra[1]/Attachments" tracktype="General" occurrence="*" operator="=">RAWcooked reversibility data</rule>
@@ -12,7 +12,7 @@
   <rule name="SegmentUID is present?" value="Segment/Info/SegmentUID/" occurrence="*" operator="exists" scope="mmt"/>
   <rule name="SeekHead is present?" value="Segment/SeekHead/" occurrence="*" operator="exists" scope="mmt"/>
   <rule name="mmt: Duration is greater than zero?" scope="mmt" operator="&gt;" value="Segment/Info/Duration/Data">0</rule>
-  <rule name="Video/BitDepth is 16" value="BitDepth" tracktype="Video" occurrence="*" operator="=">16</rule>
+  <rule name="Video/BitDepth is 10" value="BitDepth" tracktype="Video" occurrence="*" operator="=">10</rule>
   <rule name="Video/CodecID is V_MS/VFW/FOURCC / FFV1" value="CodecID" tracktype="Video" occurrence="*" operator="=">V_MS/VFW/FOURCC / FFV1</rule>
   <rule name="Video/ColorSpace is RGB" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">RGB</rule>
   <rule name="Video/Compression_Mode is Lossless" value="Compression_Mode" tracktype="Video" occurrence="*" operator="=">Lossless</rule>
@@ -23,21 +23,16 @@
   <rule name="Video/Format_Settings_GOP is N=1" value="Format_Settings_GOP" tracktype="Video" occurrence="*" operator="=">N=1</rule>
   <rule name="Video/Format_Version is 3.4 or greater" value="Format_Version" tracktype="Video" occurrence="*" operator="&gt;=">3.4</rule>
   <rule name="Video/FrameRate_Mode is CFR" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=">CFR</rule>
-  <rule name="Video/Height is 3112" value="Height" tracktype="Video" occurrence="*" operator="=">3112</rule>
+  <rule name="Video/Height is 1556" value="Height" tracktype="Video" occurrence="*" operator="=">1556</rule>
   <rule name="Video/PixelAspectRatio is 1.000" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.000</rule>
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
   <rule name="Video/transfer_characteristics is BT.709" value="transfer_characteristics" tracktype="Video" occurrence="*" operator="=">BT.709</rule>
-  <rule name="Video/Width is 4096" value="Width" tracktype="Video" occurrence="*" operator="=">4096</rule>
+  <rule name="Video/Width is 2048" value="Width" tracktype="Video" occurrence="*" operator="=">2048</rule>
 
-  <!-- policy/rules for silent OR composite sound film -->
-  <policy type="or" name="silent or composite sound specs">
-    <rule name="Audio/Channels does not exist" value="Channels" tracktype="Audio" occurrence="*" operator="must not exist"/>
-    <policy type="and" name="composite sound specs">
-      <rule name="Audio/BitDepth is 24" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
-      <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
-      <rule name="Audio/SamplingRate is 96000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">96000</rule>
-      <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
-    </policy>
-  </policy>
+  <!-- rules specific to composite sound film -->
+  <rule name="Audio/BitDepth is 24" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
+  <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+  <rule name="Audio/SamplingRate is 96000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">96000</rule>
+  <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
 
 </policy>

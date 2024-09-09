@@ -1,14 +1,7 @@
 <?xml version="1.0"?>
 <policy type="and" name="2024_film_SC">
-  <policy type="or" name="silent or composite sound specs">
-    <rule name="Audio/ID does not exist" value="ID" tracktype="Audio" occurrence="*" operator="must not exist"/>
-    <policy type="and" name="composite sound specs">
-      <!-- audio bitrate: return to this -->
-      <rule name="Audio/Format is AAC" value="Format" tracktype="Audio" occurrence="*" operator="=">AAC</rule>
-      <rule name="Audio/SamplingRate is 48000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
-      <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
-    </policy>
-  </policy>
+
+  <!-- rules for all motion picture film (silent or composite sound)-->
   <rule name="General/FileExtension is mp4" value="FileExtension" tracktype="General" occurrence="*" operator="=">mp4</rule>
   <rule name="General/Format is MPEG-4" value="Format" tracktype="General" occurrence="*" operator="=">MPEG-4</rule>
   <rule name="General/VideoCount is 1" value="VideoCount" tracktype="General" occurrence="*" operator="=">1</rule>
@@ -23,5 +16,17 @@
   <rule name="Video/Height is 1080" value="Height" tracktype="Video" occurrence="*" operator="=">1080</rule>
   <rule name="Video/PixelAspectRatio is 1.000" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.000</rule>
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
-  <rule name="Video/Width is 1920" value="Width" tracktype="Video" occurrence="*" operator="=">1920</rule>a
+  <rule name="Video/Width is 1920" value="Width" tracktype="Video" occurrence="*" operator="=">1920</rule>
+  
+  <!-- policy/rules for silent OR composite sound film -->
+  <policy type="or" name="silent or composite sound specs">
+    <rule name="Audio/ID does not exist" value="ID" tracktype="Audio" occurrence="*" operator="must not exist"/>
+    <policy type="and" name="composite sound specs">
+      <!-- audio bitrate: return to this -->
+      <rule name="Audio/Format is AAC" value="Format" tracktype="Audio" occurrence="*" operator="=">AAC</rule>
+      <rule name="Audio/SamplingRate is 48000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+      <rule name="Video/FrameRate is 24.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">24.000</rule>
+    </policy>
+  </policy>
+
 </policy>
