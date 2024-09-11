@@ -301,11 +301,11 @@ def summarize(asset_count, j_miss_count, json_inv_count, inelig_count, elig_coun
 def main():
     args = parse_args()
     print("\nSearching for assets... \nSearching for assets' json metadata files..." 
-          "\nParsing jsons and sorting for assets' eligibility for MediaConch evaluation...")
+          "\nParsing jsons and sorting assets' eligibility for MediaConch evaluation...")
     asset_paths = get_asset_paths(args.project_dir)
     asset_count = len(asset_paths)
     eligible, ineligible, json_invalid, json_missing = sort_assets(asset_paths)
-    print(f'{asset_count} assets found:')
+    print(f'\n{asset_count} assets found:')
     j_miss_count = print_json_problem_list(json_missing, 'MISSING')
     json_inv_count = print_json_problem_list(json_invalid, 'INVALID')
     inelig_count = print_ineligible(ineligible)

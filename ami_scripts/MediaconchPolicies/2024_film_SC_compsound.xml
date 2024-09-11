@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<policy type="and" name="2024_film_SC">
+<policy type="and" name="2024_film_SC_compsound">
 
   <!-- rules for all motion picture film (silent or composite sound)-->
   <rule name="General/FileExtension is mp4" value="FileExtension" tracktype="General" occurrence="*" operator="=">mp4</rule>
