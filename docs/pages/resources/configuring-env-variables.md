@@ -7,7 +7,7 @@ parent: Resources
 
 # Configuring Environmental Variables for Scripts
 
-Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py`, `fmrest_barcode`, and `digitization_performance_tracker.py`, require specific environmental variables to be set in your `.zshrc` file to function correctly. These variables typically include API keys, tokens, configuration settings, and database credentials necessary for the scripts to interact with external services like Trello, FileMaker, and AMI Database.
+Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py`, `fmrest_barcode`, and `digitization_performance_tracker.py`, and `fetch_and_export_fm_data.py`, require specific environmental variables to be set in your `.zshrc` file to function correctly. These variables typically include API keys, tokens, configuration settings, and database credentials necessary for the scripts to interact with external services like Trello, FileMaker, and AMI Database.
 
 **Setting up Environmental Variables:**
 
@@ -40,6 +40,15 @@ Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py`,
     export AMI_DATABASE_PASSWORD='<password>'
      ```
 
+   - For `fetch_and_export_fm_data.py`, which requires FileMaker connection details for both production and development servers:
+     ```bash
+    export FM_SERVER='<server_ip>'
+    export FM_DEV_SERVER='<dev_server_ip>'
+    export FM_DATABASE='<database_name>'
+    export FM_DATABASE_USERNAME='<username>'
+    export FM_DATABASE_PASSWORD='<password>'
+     ```
+
 4. **Save and close TextEdit.** After adding your variables, save the changes and close the editor.
 
 5. **Apply the changes by typing the following in Terminal:**
@@ -67,6 +76,18 @@ Certain scripts utilized in our workflows, such as `clean_spec_csv_to_excel.py`,
 4. **Verify the Java installation**
    ```bash
    java -version
+   ```
+5. **Install the required jaydebeapi Python package**
+
+For the fetch_and_export_fm_data.py script to work, you need to install the jaydebeapi package for connecting to the FileMaker database through JDBC. You can install it using the following command:
+   ```bash
+   python3 -m pip install jaydebeapi
+   ```
+
+6. Verify the installation by importing jaydebeapi in a Python script or running the following command:
+
+   ```bash
+   python3 -c "import jaydebeapi; print('jaydebeapi installed successfully!')"
    ```
 
 **Verification:**
