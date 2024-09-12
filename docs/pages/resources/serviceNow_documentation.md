@@ -132,7 +132,7 @@ Both the DAR and MDR forms include questions designed to determine the type of a
 #### Implications of Access Type
 
 - **External Access (Off-Site)**
-   - Items shared externally will need to undergo additional steps, either through our standard [Rights Clearance/Permissions process](https://www.nypl.org/help/get-what-you-need/audio-video-files) or by obtaining VIP approval. This is critical to ensure that all necessary permissions are secured before files are shared outside the Library.
+   - Items shared externally will be subject to a copyright review by the Rights and Legal departments. Legal may require a permissions agreement to be issued to the external party, and requesters will be contacted by the Rights department with further instructions in these cases. Requests that are not approved for VIP status due to copyright issues should be submitted to the [Permissions Department](https://www.nypl.org/help/get-what-you-need/audio-video-files).
 
 - **On-Site Access**
    - On-site access is generally simpler and does not require the additional steps of rights clearance or VIP approval. The requested files can be made available more quickly since they remain within the Library's controlled environment.
