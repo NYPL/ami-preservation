@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import ListedColormap
 
-def fetch_data_from_jdbc(use_dev=False):
+def fetch_data_from_jdbc(use_dev=False, record_limit=None):
     # Load environment variables for the appropriate server
     server_ip = os.getenv('FM_DEV_SERVER') if use_dev else os.getenv('FM_SERVER')
     database_name = os.getenv('FM_DATABASE')  # This remains the same for both servers
@@ -35,6 +35,10 @@ def fetch_data_from_jdbc(use_dev=False):
         # Define the query to fetch 'object_id' and 'format_1' from the 'OBJECTS' table
         query = 'SELECT "object_id", "format_1" FROM OBJECTS'
         
+        # If a record limit is provided, modify the query to include a LIMIT clause
+        if record_limit:
+            query += f" LIMIT {record_limit}"
+
         # Execute the query
         curs = conn.cursor()
         curs.execute(query)
@@ -64,18 +68,23 @@ def fetch_data_from_jdbc(use_dev=False):
     return df
 
 def main():
-    # Set up argument parsing to allow choosing between dev and prod
+    # Set up argument parsing to allow choosing between dev and prod, and setting record limit
     parser = argparse.ArgumentParser(description="Fetch data from FileMaker database.")
     parser.add_argument(
         "--use-dev", 
         action="store_true", 
         help="Use the development server instead of the production server."
     )
+    parser.add_argument(
+        "--limit", 
+        type=int, 
+        help="Limit the number of records to fetch (for testing purposes)."
+    )
     
     args = parser.parse_args()
 
-    # Call the data fetching function, passing the dev/prod flag
-    df = fetch_data_from_jdbc(use_dev=args.use_dev)
+    # Call the data fetching function, passing the dev/prod flag and record limit
+    df = fetch_data_from_jdbc(use_dev=args.use_dev, record_limit=args.limit)
     
     # If data is successfully fetched, proceed with other operations (e.g., plotting)
     if not df.empty:
