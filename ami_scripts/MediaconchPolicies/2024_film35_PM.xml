@@ -26,7 +26,7 @@
   <rule name="Video/Height is 3112" value="Height" tracktype="Video" occurrence="*" operator="=">3112</rule>
   <rule name="Video/PixelAspectRatio is 1.000" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.000</rule>
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
-  <!-- <rule name="Video/transfer_characteristics is BT.709" value="transfer_characteristics" tracktype="Video" occurrence="*" operator="=">BT.709</rule> -->
+  <rule name="Video/transfer_characteristics is BT.709" value="transfer_characteristics" tracktype="Video" occurrence="*" operator="=">BT.709</rule>
   <rule name="Video/Width is 4096" value="Width" tracktype="Video" occurrence="*" operator="=">4096</rule>
 
   <!-- policy/rules for silent OR composite sound film -->
