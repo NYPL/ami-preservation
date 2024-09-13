@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<policy type="and" name="2024_video_PM">
+  <rule name="Audio/BitDepth is 24" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">24</rule>
+  <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+  <rule name="Audio/SamplingRate is 48000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+  <rule name="General/FileExtension is mkv" value="FileExtension" tracktype="General" occurrence="*" operator="=">mkv</rule>
+  <rule name="General/Format is Matroska" value="Format" tracktype="General" occurrence="*" operator="=">Matroska</rule>
+  <rule name="General/Format_Version is 4 or greater" value="Format_Version" tracktype="General" occurrence="*" operator="&gt;=">4</rule>
+  <rule name="general unique id exists" value="UniqueID" tracktype="General" occurrence="*" operator="exists"/>
+  <rule name="mmt: SegmentUID is present?" value="Segment/Info/SegmentUID/" occurrence="*" operator="exists" scope="mmt"/>
+  <rule name="mmt: SeekHead is present?" value="Segment/SeekHead/" occurrence="*" operator="exists" scope="mmt"/>
+  <rule name="mmt: Duration is greater than zero?" scope="mmt" operator="&gt;" value="Segment/Info/Duration/Data">0</rule>
+  <rule name="Video/BitDepth is 10" value="BitDepth" tracktype="Video" occurrence="*" operator="=">10</rule>
+  <rule name="Video/ChromaSubsampling is 4:2:2" value="ChromaSubsampling" tracktype="Video" occurrence="*" operator="=">4:2:2</rule>
+  <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <rule name="Video/colour_range exists" value="colour_range" tracktype="Video" occurrence="*" operator="exists"/> 
+  <!-- ^check -->
+  <rule name="Video/Compression_Mode is Lossless" value="Compression_Mode" tracktype="Video" occurrence="*" operator="=">Lossless</rule>
+  <rule name="Video/extra[1]/ErrorDetectionType is Per slice" value="extra[1]/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule>
+  <rule name="Video/extra[1]/MaxSlicesCount is 24" value="extra[1]/MaxSlicesCount" tracktype="Video" occurrence="*" operator="=">24</rule>
+  <rule name="Video/Format is FFV1" value="Format" tracktype="Video" occurrence="*" operator="=">FFV1</rule>
+  <rule name="Video/Format_Settings_GOP is N=1" value="Format_Settings_GOP" tracktype="Video" occurrence="*" operator="=">N=1</rule>
+  <rule name="Video/Format_Version is 3.4 or greater" value="Format_Version" tracktype="Video" occurrence="*" operator="&gt;=">3.4</rule>
+  <rule name="Video/FrameRate_Mode is CFR" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=">CFR</rule>
+  <rule name="Video/ScanType is Interlaced" value="ScanType" tracktype="Video" occurrence="*" operator="=">Interlaced</rule>
+  <rule name="Video/transfer_characteristics is BT.709" value="transfer_characteristics" tracktype="Video" occurrence="*" operator="=">BT.709</rule>
+  <rule name="Video/Width is 720" value="Width" tracktype="Video" occurrence="*" operator="=">720</rule>
+  <policy type="or" name="NTSC or PAL specs">
+    <policy type="and" name="NTSC specs">
+      <rule name="Video/colour_primaries is BT.601 NTSC" value="colour_primaries" tracktype="Video" occurrence="*" operator="=">BT.601 NTSC</rule>
+      <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
+      <rule name="Video/Height is 486" value="Height" tracktype="Video" occurrence="*" operator="=">486</rule>
+      <rule name="Video/matrix_coefficients is BT.601" value="matrix_coefficients" tracktype="Video" occurrence="*" operator="=">BT.601</rule>
+      <rule name="Video/ScanOrder is BFF" value="ScanOrder" tracktype="Video" occurrence="*" operator="=">BFF</rule>
+      <rule name="Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=">NTSC</rule>
+      <policy type="or" name="NTSC DAR + PAR (various settings)">
+        <policy type="and" name="NTSC DAR + PAR: old 4:3 settings">
+          <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+          <rule name="Video/PixelAspectRatio is 0.900" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
+        </policy>
+        <policy type="and" name="NTSC DAR + PAR: new 4:3 settings">
+          <!-- DAR (=1.347?) -->
+          <!-- PAR (=0.909?) -->
+        </policy>
+        <policy type="and" name="NTSC DAR + PAR: new 16:9 settings">
+          <!-- DAR (=?) -->
+          <!-- PAR (=?) -->
+        </policy>
+      </policy>
+    </policy>
+    <policy type="and" name="PAL specs">
+      <rule name="Video/colour_primaries is BT.601 PAL" value="colour_primaries" tracktype="Video" occurrence="*" operator="=">BT.601 PAL</rule>
+      <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
+      <rule name="Video/Height is 576" value="Height" tracktype="Video" occurrence="*" operator="=">576</rule>
+      <rule name="Video/matrix_coefficients is BT.470 System B/G" value="matrix_coefficients" tracktype="Video" occurrence="*" operator="=">BT.470 System B/G</rule>
+      <rule name="Video/ScanOrder is TFF" value="ScanOrder" tracktype="Video" occurrence="*" operator="=">TFF</rule>
+      <rule name="Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=">PAL</rule>
+      <policy type="or" name="PAL DAR + PAR (various settings)">
+        <policy type="and" name="PAL DAR + PAR: old 4:3 settings">
+          <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+          <rule name="Video/PixelAspectRatio is 1.067" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.067</rule>
+        </policy>
+        <policy type="and" name="PAL DAR + PAR: new 4:3 settings">
+          <!-- DAR (=?) -->
+          <!-- PAR (=?) -->
+        </policy>
+        <policy type="and" name="PAL DAR + PAR: new 16:9 settings">
+          <!-- DAR (=?) -->
+          <!-- PAR (=?) -->
+        </policy>
+      </policy>
+    </policy>
+  </policy>
+</policy>
