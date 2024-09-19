@@ -4,7 +4,12 @@ import os
 import argparse
 import xml.etree.ElementTree as ET
 import pandas as pd
-from openpyxl import load_workbook
+import re
+import plotly.express as px
+
+def sanitize_column_name(name):
+    """ Replace invalid characters for Excel column names. """
+    return re.sub(r'[^A-Za-z0-9_]', '_', name)
 
 def parse_policy(file_path):
     tree = ET.parse(file_path)
@@ -16,11 +21,14 @@ def parse_policy(file_path):
         rule_operator = rule.get('operator')  # Get the operator
         rule_value = rule.text if rule.text else ""  # Get the text (rule value)
 
-        # Special handling for rules with the 'must not exist' operator or empty text values
-        if rule_operator == "must not exist":
-            policy_rules[rule_name] = f"{rule_operator}"  # Store the operator as the value for this rule
+        # Special handling for rules with the 'exists' operator or empty text values
+        if rule_operator == "exists":
+            policy_rules[rule_name] = "exists"
+        elif rule_operator == "must not exist":
+            policy_rules[rule_name] = "must not exist"
         else:
-            policy_rules[rule_name] = rule_value
+            # If rule has a value, store it. Otherwise, use the operator as the value.
+            policy_rules[rule_name] = rule_value if rule_value else rule_operator
 
     return policy_rules
 
@@ -46,10 +54,12 @@ def generate_comparison_dataframe(policies_names, policies_data):
     # Replace missing values with a custom placeholder
     df = df.fillna("Rule not in policy")
 
+    # Sanitize column names to remove invalid characters for Excel
+    df.columns = [sanitize_column_name(col) for col in df.columns]
+
     return df
 
 def adjust_column_width(excel_writer, df):
-    workbook = excel_writer.book
     worksheet = excel_writer.sheets['Sheet1']
 
     # Adjust column width based on max length of column header and cell values
@@ -57,8 +67,19 @@ def adjust_column_width(excel_writer, df):
         max_len = max(
             df[col].astype(str).apply(len).max(),  # Max length in column
             len(col)  # Length of column header
-        ) + 4  # Adding extra space for readability
-        worksheet.column_dimensions[chr(64 + idx)].width = max_len
+        ) + 2  # Adding extra space for readability
+
+        column_letter = worksheet.cell(1, idx).column_letter  # Get the column letter
+        worksheet.column_dimensions[column_letter].width = max_len
+
+def create_interactive_heatmap(df):
+    # Convert the DataFrame to binary: 1 if a rule is present, 0 if it's "Rule not in policy"
+    binary_df = df.applymap(lambda x: 1 if x != "Rule not in policy" else 0)
+
+    # Plot the interactive heatmap using Plotly
+    fig = px.imshow(binary_df, labels=dict(x="Rules", y="Policies"), x=binary_df.columns, y=binary_df.index)
+    fig.update_layout(title="Interactive Policy Comparison Heatmap", xaxis_nticks=36)
+    fig.show()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -86,6 +107,9 @@ def main():
             adjust_column_width(writer, df)
     else:
         print("Unsupported output format. Please use .csv or .xlsx.")
+
+    # Create the interactive heatmap using Plotly
+    create_interactive_heatmap(df)
 
     print(f"Comparison saved to {args.output}")
 
