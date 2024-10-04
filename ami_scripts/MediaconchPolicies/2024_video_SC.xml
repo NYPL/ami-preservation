@@ -24,18 +24,16 @@
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
           <rule name="Video/PixelAspectRatio is 0.900" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
         </policy>
-        <policy type="and" name="NTSC DAR + PAR: old 16:9 settings">
-          <!-- <rule name="Video/DisplayAspectRatio is 1.778" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.778</rule> -->
-          <!-- PAR (=?) -->
-        </policy>
+        <!-- <policy type="and" name="NTSC DAR + PAR: old 16:9 settings">
+
+        </policy> -->
         <policy type="and" name="NTSC DAR + PAR: new 4:3 settings">
-          <!-- DAR (=1.347?) -->
-          <!-- PAR (=0.909?) -->
+          <rule name="Video/DisplayAspectRatio is 1.347" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.347</rule>
+          <rule name="Video/PixelAspectRatio is 0.909" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.909</rule>
         </policy>
-        <policy type="and" name="NTSC DAR + PAR: new 16:9 settings">
-          <!-- DAR (=?) -->
-          <!-- PAR (=?) -->
-        </policy>
+        <!-- <policy type="and" name="NTSC DAR + PAR: new 16:9 settings">
+
+        </policy> -->
       </policy>
     </policy>
     <policy type="and" name="PAL specs">
@@ -47,18 +45,15 @@
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
           <rule name="Video/PixelAspectRatio is 1.067" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.067</rule>
         </policy>
-        <policy type="and" name="PAL DAR + PAR: old 16:9 settings">
-          <!-- <rule name="Video/DisplayAspectRatio is 1.778" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.778</rule> -->
-          <!-- PAR (=?) -->
+        <!-- <policy type="and" name="PAL DAR + PAR: old 16:9 settings">
+
         </policy>
         <policy type="and" name="PAL DAR + PAR: new 4:3 settings">
-          <!-- DAR (=?) -->
-          <!-- PAR (=?) -->
+
         </policy>
         <policy type="and" name="PAL DAR + PAR: new 16:9 settings">
-          <!-- DAR (=?) -->
-          <!-- PAR (=?) -->
-        </policy>
+
+        </policy> -->
       </policy>
     </policy>
   </policy>
