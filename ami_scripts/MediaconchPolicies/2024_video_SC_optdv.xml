@@ -24,9 +24,11 @@
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
           <rule name="Video/PixelAspectRatio is 0.889" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.889</rule>
         </policy>
-        <!-- <policy type="and" name="NTSC DAR + PAR: optical and DV 16:9">
-
-        </policy> -->
+        <policy type="and" name="NTSC DAR + PAR: optical and DV 16:9">
+          <rule name="Video/DisplayAspectRatio is 1.777" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.777</rule>
+          <!-- ^ check -->
+          <rule name="Video/PixelAspectRatio is 1.185" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.185</rule>
+        </policy>
       </policy>
     </policy>
     <policy type="and" name="PAL specs">
