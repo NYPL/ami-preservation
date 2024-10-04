@@ -38,6 +38,9 @@ FILM_MZ_SLNT = '2024_film_MZ_silent.xml'
 FILM_SC_COMP = '2024_film_SC_compsound.xml'
 FILM_SC_SLNT = '2024_film_SC_silent.xml'
 
+# More new policies:
+VIDEO_SC_OPTDV = '2024_video_SC_optdv.xml'
+
 def parse_args():
 
     def dir_exists(dir):
@@ -136,14 +139,31 @@ def assign_policy(jformat, jrole, jtype):
                 policy = sort_mp_film(FILM35_PM_SLNT, FILM35_PM_COMP)
         return policy
     
-    def assign_video_policy():
-        if jrole == 'sc':
-            policy = VIDEO_SC
+    # def assign_video_policy(): #old version
+    #     if jrole == 'sc':
+    #         policy = VIDEO_SC
+    #     else:
+    #         if re.search('optical', jtype):
+    #             policy = None
+    #         else:
+    #             policy = VIDEO_PM
+    #     return policy
+    
+    def assign_video_policy(): #new version test: diff policy for SC from optical source (and dv? ...incomplete/untested)  
+
+        def sort_video(v_sc_policy, v_pm_policy):
+            if jrole == 'sc': 
+                policy = v_sc_policy
+            else: 
+                policy = v_pm_policy
+            return policy
+
+        if re.search('optical', jtype):
+            policy = sort_video(VIDEO_SC_OPTDV, None)
+        elif re.search('dv', jtype):
+            policy = sort_video(VIDEO_SC_OPTDV, VIDEO_PM) #to do!
         else:
-            if re.search('optical', jtype):
-                policy = None
-            else:
-                policy = VIDEO_PM
+            policy = sort_video(VIDEO_SC, VIDEO_PM)
         return policy
 
     if re.search('audio', jtype):
