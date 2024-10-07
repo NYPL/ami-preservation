@@ -138,11 +138,20 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                 output_file = output_directory / f"{iso_basename}_sc.mp4"
                 channel_layout = get_channel_layout(tmp_vob_file.name)
                 resolution = get_resolution(tmp_vob_file.name)
+                
                 ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
-
-                if resolution not in ['720x480', '720x576']:
-                    vf_index = ffmpeg_command.index('-vf')
-                    ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                # Check the resolution and apply appropriate scaling based on height
+                if resolution:
+                    width, height = map(int, resolution.split('x'))
+                    if height == 576:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:576'
+                    elif height == 480:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                    else:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:480'  # Default to 720x480
 
                 logging.info(f"Transcoding concatenated VOB file to {output_file}")
                 try:
@@ -167,11 +176,21 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                     output_file = output_directory / f"{iso_basename}_sc.mp4"
                     channel_layout = get_channel_layout(tmp_vob_file.name)
                     resolution = get_resolution(tmp_vob_file.name)
+                    
                     ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
+                    # Check the resolution and apply appropriate scaling based on height
+                    if resolution:
+                        width, height = map(int, resolution.split('x'))
+                        if height == 576:
+                            vf_index = ffmpeg_command.index('-vf')
+                            ffmpeg_command[vf_index + 1] += ',scale=720:576'
+                        elif height == 480:
+                            vf_index = ffmpeg_command.index('-vf')
+                            ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                        else:
+                            vf_index = ffmpeg_command.index('-vf')
+                            ffmpeg_command[vf_index + 1] += ',scale=720:480'  # Default to 720x480
 
-                    if resolution not in ['720x480', '720x576']:
-                        vf_index = ffmpeg_command.index('-vf')
-                        ffmpeg_command[vf_index + 1] += ',scale=720:480'
 
                     logging.info(f"Transcoding concatenated VOB file to {output_file}")
                     try:
@@ -194,10 +213,19 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                 channel_layout = get_channel_layout(vob_file)
                 resolution = get_resolution(tmp_vob_file.name)
 
-                ffmpeg_command = build_ffmpeg_command(vob_file, output_file, channel_layout)
-                if resolution not in ['720x480', '720x576']:
-                    vf_index = ffmpeg_command.index('-vf')
-                    ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
+                # Check the resolution and apply appropriate scaling based on height
+                if resolution:
+                    width, height = map(int, resolution.split('x'))
+                    if height == 576:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:576'
+                    elif height == 480:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                    else:
+                        vf_index = ffmpeg_command.index('-vf')
+                        ffmpeg_command[vf_index + 1] += ',scale=720:480'  # Default to 720x480
 
                 try:
                     subprocess.run(ffmpeg_command, check=True)
@@ -245,9 +273,19 @@ def transcode_vobs(iso_path, output_directory, split, force_concat):
                     resolution = get_resolution(tmp_vob_file.name)
 
                     ffmpeg_command = build_ffmpeg_command(tmp_vob_file.name, output_file, channel_layout)
-                    if resolution not in ['720x480', '720x576']:
-                        vf_index = ffmpeg_command.index('-vf')
-                        ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                    # Check the resolution and apply appropriate scaling based on height
+                    if resolution:
+                        width, height = map(int, resolution.split('x'))
+                        if height == 576:
+                            vf_index = ffmpeg_command.index('-vf')
+                            ffmpeg_command[vf_index + 1] += ',scale=720:576'
+                        elif height == 480:
+                            vf_index = ffmpeg_command.index('-vf')
+                            ffmpeg_command[vf_index + 1] += ',scale=720:480'
+                        else:
+                            vf_index = ffmpeg_command.index('-vf')
+                            ffmpeg_command[vf_index + 1] += ',scale=720:480'  # Default to 720x480
+
 
                     logging.info(f"Transcoding concatenated VOB file to {output_file}")
                     try:
