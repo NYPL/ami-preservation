@@ -28,27 +28,42 @@ def generate_mpv_command(file_path, audio_stream_count):
     ]
     
     if audio_stream_count == 1:
-        # Single audio stream: Video + one vectorscope
+        # Single audio stream: Video + one vectorscope + showvolume overlay
         filter_complex = (
-            '[aid1]asplit=2[ao][a1];'
-            '[a1]avectorscope=s=486x486,format=yuv420p[vec];'
-            '[vid1]scale=-1:486[vid];'
-            '[vid][vec]hstack=inputs=2[vo]'
+            '[aid1]asplit=3[ao][a1][a2];'
+            '[a1]avectorscope=s=480x480,format=yuv420p[vec];'
+            '[vec]drawbox=x=0:y=0:w=iw:h=ih:color=green:t=2[vec_b];'
+            '[vec_b]drawtext=fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5:x=(w-tw)/2:y=10:text=\'CH 1 + 2\'[vec_t];'
+            '[a2]aformat=channel_layouts=stereo,showvolume=f=0.5:b=4:w=180:h=40[vol];'  # Further scaled-down showvolume
+            '[vec_t][vol]overlay=x=10:y=H-h-10[vec_ov];'  # Overlay showvolume on vectorscope, oriented left
+            '[vid1]scale=-1:480[vid];'
+            '[vid][vec_ov]hstack=inputs=2[vo]'
         )
     elif audio_stream_count >= 2:
-        # Dual audio streams: Video + vectorscope (Ch 1+2 in the middle, Ch 3+4 on the right)
-        filter_complex = (
-            '[aid1][aid2]amerge=inputs=2[amerged12];'
-            '[amerged12]asplit=3[a12][a34][ao];'  # Split into audio for playback (ao) and two for visualization
-            '[a12]avectorscope=s=486x486,format=yuv420p[vec1];'
-            '[a34]avectorscope=s=486x486,format=yuv420p[vec2];'
-            '[vid1]scale=-1:486[vid];'
-            '[vid][vec1][vec2]hstack=inputs=3[vo]'
-        )
+        # Multiple audio streams: Video + vectorscope + showvolume for each stream
+        filter_complex = '[vid1]scale=-1:480[vid];'
+        
+        colors = ['green', 'blue', 'red', 'magenta', 'cyan']  # Add more colors if needed
+        
+        for i in range(1, audio_stream_count + 1):
+            color = colors[(i-1) % len(colors)]
+            channel_text = f'CH {2*i-1} + {2*i}'
+            
+            filter_complex += f'[aid{i}]asplit=3[ao{i}][a{i}][av{i}];'
+            filter_complex += f'[a{i}]avectorscope=s=480x480,format=yuv420p[vec{i}];'
+            filter_complex += f'[vec{i}]drawbox=x=0:y=0:w=iw:h=ih:color={color}:t=2[vec{i}_b];'
+            filter_complex += f'[vec{i}_b]drawtext=fontsize=24:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5:x=(w-tw)/2:y=10:text=\'{channel_text}\'[vec{i}_t];'
+            filter_complex += f'[av{i}]aformat=channel_layouts=stereo,showvolume=f=0.5:b=4:w=180:h=40[vol{i}];'  # Further scaled-down showvolume
+            filter_complex += f'[vec{i}_t][vol{i}]overlay=x=10:y=H-h-10[vec{i}_ov];'  # Overlay showvolume on vectorscope, oriented left
+        
+        # Combine all audio outputs
+        filter_complex += f'{"".join([f"[ao{i}]" for i in range(1, audio_stream_count + 1)])}amix=inputs={audio_stream_count}[ao];'
+        
+        # Stack video and vectorscopes with showvolume overlays horizontally
+        filter_complex += f'[vid]{" ".join([f"[vec{i}_ov]" for i in range(1, audio_stream_count + 1)])}hstack=inputs={audio_stream_count + 1}[vo]'
     
     base_cmd[-1] += filter_complex
     return base_cmd
-
 
 def main():
     if len(sys.argv) != 2:
