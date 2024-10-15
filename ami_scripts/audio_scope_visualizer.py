@@ -43,7 +43,7 @@ def check_mpv_installed():
 def generate_mpv_command(file_path, audio_stream_count, is_audio_only):
     # Set the autofit value based on whether it's audio-only or not
     if is_audio_only:
-        autofit_value = '65%'  # Adjusted to accommodate additional visualization
+        autofit_value = '70%'  # Adjusted to accommodate additional visualization
     else:
         autofit_value = '75%'
 
@@ -61,22 +61,35 @@ def generate_mpv_command(file_path, audio_stream_count, is_audio_only):
             filter_complex = (
                 f'{"".join([f"[aid{i}]" for i in range(1, audio_stream_count + 1)])}'
                 f'amerge=inputs={audio_stream_count}[amerged];'
-                '[amerged]asplit=4[a1][a2][a3][ao];'
+                '[amerged]asplit=5[a1][a2][a3][a4][ao];'
             )
         else:
             # Single audio stream
-            filter_complex = '[aid1]asplit=4[a1][a2][a3][ao];'
+            filter_complex = '[aid1]asplit=5[a1][a2][a3][a4][ao];'
+
+        # Process ebur128 to get video output and handle audio output
+        filter_complex += (
+            '[a2]ebur128=video=1:meter=18[ebur_raw][ebur_audio];'
+            '[ebur_audio]anullsink;'
+            '[ebur_raw]scale=320x240[ebur];'
+        )
 
         # Visualizations
         filter_complex += (
             # Avectorscope
-            '[a1]avectorscope=s=640x240:scale=sqrt:draw=dot:rc=40,format=yuv420p[vec];'
+            '[a1]avectorscope=s=320x240:scale=sqrt:draw=dot:rc=40,format=yuv420p[vec];'
             # Showspectrum
-            '[a2]showspectrum=s=640x240:slide=1:mode=combined:color=intensity:scale=cbrt[spec];'
+            # Adjusted Showspectrum
+            '[a3]showspectrum=s=640x240:slide=1:mode=combined:color=intensity:'
+            'scale=cbrt:fscale=lin:start=0:stop=20000[spec];'
             # Showvolume
-            '[a3]showvolume=w=640:h=50:f=0.5:dm=1[vol];'
-            # Stack visualizations vertically
-            '[vec][spec][vol]vstack=inputs=3[vo]'
+            '[a4]showvolume=w=640:h=50:f=0.5:dm=1[vol];'
+            # Stack avectorscope and ebur128 side by side
+            '[vec][ebur]hstack=inputs=2[top];'
+            # Stack showspectrum and showvolume vertically
+            '[spec][vol]vstack=inputs=2[bottom];'
+            # Stack top and bottom vertically to get final output
+            '[top][bottom]vstack=inputs=2[vo]'
         )
     else:
         # Video file with audio
