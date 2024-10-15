@@ -40,7 +40,7 @@ def check_mpv_installed():
         print("Error: mpv is not installed. Try running 'brew install mpv'.")
         sys.exit(1)
 
-def generate_mpv_command(file_path, audio_stream_count, is_audio_only):
+def generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspectrum_stop):
     # Set the autofit value based on whether it's audio-only or not
     if is_audio_only:
         autofit_value = '70%'  # Adjusted to accommodate additional visualization
@@ -78,10 +78,9 @@ def generate_mpv_command(file_path, audio_stream_count, is_audio_only):
         filter_complex += (
             # Avectorscope
             '[a1]avectorscope=s=320x240:scale=sqrt:draw=dot:rc=40,format=yuv420p[vec];'
-            # Showspectrum
-            # Adjusted Showspectrum
-            '[a3]showspectrum=s=640x240:slide=1:mode=combined:color=intensity:'
-            'scale=cbrt:fscale=lin:start=0:stop=20000[spec];'
+            # Showspectrum with customizable upper frequency limit
+            f'[a3]showspectrum=s=640x240:slide=1:mode=combined:color=viridis:'
+            f'scale=cbrt:fscale=lin:start=0:stop={showspectrum_stop}[spec];'
             # Showvolume
             '[a4]showvolume=w=640:h=50:f=0.5:dm=1[vol];'
             # Stack avectorscope and ebur128 side by side
@@ -139,9 +138,12 @@ def main():
     # Setup argument parser
     parser = argparse.ArgumentParser(description="Process video or audio with MPV and FFmpeg filters.")
     parser.add_argument('-f', '--file', required=True, help="Path to the media file")
-    
+    parser.add_argument('--showspectrum-stop', type=int, default=20000,
+                        help="Set the upper frequency limit for showspectrum. Default is 20000.")
+
     args = parser.parse_args()
     file_path = args.file
+    showspectrum_stop = args.showspectrum_stop
 
     # Check if mpv is installed
     check_mpv_installed()
@@ -158,7 +160,7 @@ def main():
     is_audio_only = (video_stream_count == 0)
     
     # Generate and run mpv command
-    mpv_command = generate_mpv_command(file_path, audio_stream_count, is_audio_only)
+    mpv_command = generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspectrum_stop)
     
     print("Executing command:")
     print(" ".join(mpv_command))
