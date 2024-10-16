@@ -9,6 +9,7 @@ import logging
 import tempfile
 import sys
 import time
+from colorama import Fore, Style
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -361,19 +362,32 @@ def build_ffmpeg_command(input_file, output_file, channel_layout):
 
     return ffmpeg_command
 
-
-
 def verify_transcoding(iso_paths, output_directory):
+    total_isos = len(iso_paths)
+    successful_isos = []
+    failed_isos = []
+
     for iso_path in iso_paths:
-        iso_basename = os.path.splitext(os.path.basename(iso_path))[0]
-        iso_basename = iso_basename.replace("_pm", "")
+        iso_basename = iso_path.stem.replace("_pm", "")
         expected_output_files = [file for file in os.listdir(output_directory) if file.startswith(iso_basename) and file.endswith('.mp4')]
 
         if not expected_output_files:
             logging.error(f"No MP4 files were created for ISO: {iso_path}")
+            failed_isos.append(iso_path)
         else:
             logging.info(f"{len(expected_output_files)} MP4 files were created for ISO: {iso_path}")
+            successful_isos.append(iso_path)
 
+    # Print summary with color
+    print(f"\n{Style.BRIGHT}Processing Summary:{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}Total ISOs processed: {total_isos}{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}Successfully processed: {len(successful_isos)}{Style.RESET_ALL}")
+    print(f"{Fore.RED}Failed to process (try again with sudo): {len(failed_isos)}{Style.RESET_ALL}")
+
+    if failed_isos:
+        print(f"\n{Fore.RED}List of failed ISOs:{Style.RESET_ALL}")
+        for iso in failed_isos:
+            print(f" - {iso}")
 
 def main():
     parser = argparse.ArgumentParser(description='Transcode VOB files from ISO images to H.264 MP4s.')
