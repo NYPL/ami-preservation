@@ -9,10 +9,16 @@ import logging
 import tempfile
 import sys
 import time
-from colorama import Fore, Style
+# Check for colorama installation
+try:
+    from colorama import Fore, Style
+except ImportError:
+    print("colorama is not installed. Please install it by running: python3 -m pip install colorama")
+    sys.exit(1)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
 
 def verify_mkvmerge_installation():
     try:
