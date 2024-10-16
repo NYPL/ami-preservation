@@ -43,7 +43,7 @@ def check_mpv_installed():
 def generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspectrum_stop):
     # Set the autofit value based on whether it's audio-only or not
     if is_audio_only:
-        autofit_value = '70%'  # Adjusted to accommodate additional visualization
+        autofit_value = '60%'  # Adjusted to accommodate additional visualization
     else:
         autofit_value = '75%'
 
