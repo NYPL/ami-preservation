@@ -40,7 +40,7 @@ def check_mpv_installed():
         print("Error: mpv is not installed. Try running 'brew install mpv'.")
         sys.exit(1)
 
-def generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspectrum_stop):
+def generate_mpv_command(file_path, audio_stream_count, is_audio_only, is_video_only, showspectrum_stop):
     # Set the autofit value based on whether it's audio-only or not
     if is_audio_only:
         autofit_value = '60%'  # Adjusted to accommodate additional visualization
@@ -90,6 +90,14 @@ def generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspect
             # Stack top and bottom vertically to get final output
             '[top][bottom]vstack=inputs=2[vo]'
         )
+    elif is_video_only:
+        # Handle video-only files with no audio streams
+        filter_complex = (
+            '[vid1]split=2[vid1a][vid1b];'
+            '[vid1a]scale=480:324,setsar=1,signalstats=out=brng:c=0x40e0d0,format=yuv420p[vid_scaled];'
+            '[vid1b]scale=480:162,waveform=filter=lowpass:scale=ire:graticule=green:intensity=0.2:flags=numbers+dots[wave];'
+            '[vid_scaled][wave]vstack=inputs=2[vo]'
+        )
     else:
         # Video file with audio
         if audio_stream_count == 1:
@@ -134,6 +142,7 @@ def generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspect
     base_cmd[-1] += filter_complex
     return base_cmd
 
+
 def main():
     # Setup argument parser
     parser = argparse.ArgumentParser(description="Process video or audio with MPV and FFmpeg filters.")
@@ -151,17 +160,18 @@ def main():
     # Get audio and video stream counts
     audio_stream_count = get_audio_stream_count(file_path)
     video_stream_count = get_video_stream_count(file_path)
-    
-    if audio_stream_count == 0:
-        print("Error: No audio streams found in the provided file.")
+
+    # Determine if the file is audio-only or video-only
+    is_audio_only = (video_stream_count == 0 and audio_stream_count > 0)
+    is_video_only = (audio_stream_count == 0 and video_stream_count > 0)
+
+    if audio_stream_count == 0 and video_stream_count == 0:
+        print("Error: No audio or video streams found in the provided file.")
         sys.exit(1)
 
-    # Determine if the file is audio-only
-    is_audio_only = (video_stream_count == 0)
-    
     # Generate and run mpv command
-    mpv_command = generate_mpv_command(file_path, audio_stream_count, is_audio_only, showspectrum_stop)
-    
+    mpv_command = generate_mpv_command(file_path, audio_stream_count, is_audio_only, is_video_only, showspectrum_stop)
+
     print("Executing command:")
     print(" ".join(mpv_command))
     subprocess.run(mpv_command)
