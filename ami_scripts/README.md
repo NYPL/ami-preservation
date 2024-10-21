@@ -3,12 +3,16 @@
 
 - [AMI Production Scripts](#ami-production-scripts)
     - [Overview](#overview)
+    - [ami\_collections\_digitization\_reporter.py](#ami_collections_digitization_reporterpy)
     - [ami\_file\_sync.py](#ami_file_syncpy)
     - [ami\_record\_exporter\_and\_analyzer.py](#ami_record_exporter_and_analyzerpy)
+    - [append\_eoy\_report\_intro.py](#append_eoy_report_intropy)
     - [audio\_processing.py](#audio_processingpy)
+    - [audio\_to\_mp4\_converter.py](#audio_to_mp4_converterpy)
     - [clean\_spec\_csv\_to\_excel.py](#clean_spec_csv_to_excelpy)
     - [copy\_from\_s3.py](#copy_from_s3py)
     - [copy\_to\_s3.py](#copy_to_s3py)
+    - [cover\_video\_lines.py](#cover_video_linespy)
     - [create\_media\_json.py](#create_media_jsonpy)
     - [create\_object\_bags.py](#create_object_bagspy)
     - [digitization\_performance\_tracker.py](#digitization_performance_trackerpy)
@@ -28,6 +32,7 @@
     - [migrated\_media\_file\_checker.py](#migrated_media_file_checkerpy)
     - [migration\_status\_reporter.py](#migration_status_reporterpy)
     - [prepend\_title\_cards.py](#prepend_title_cardspy)
+    - [qc\_scope\_visualizer.py](#qc_scope_visualizerpy)
     - [rawcooked\_check\_mkv.py](#rawcooked_check_mkvpy)
     - [remake\_anamorphic\_bags.py](#remake_anamorphic_bagspy)
     - [rsync\_and\_organize\_json.py](#rsync_and_organize_jsonpy)
@@ -51,6 +56,27 @@ This repository contains a set of Python scripts designed to streamline the hand
 4. Transferring access files to Amazon Web Services for storage and distribution.
 
 These scripts aim to automate and simplify the management of multimedia files, ensuring a seamless integration with NYPL's Digital Repository system. For detailed instructions, dependencies, and examples of usage, please refer to the README.md file.
+
+
+### ami_collections_digitization_reporter.py
+
+This script is designed to generate a PDF report summarizing the digitization activity of AMI (Audio and Moving Image) items in SPEC collections over the past 18 months. It connects to a FileMaker database via JDBC to retrieve digitization data, processes it to generate summary statistics, and visualizes recent digitization trends, focusing on the last three months.
+
+```python3 ami_collections_digitization_reporter.py```
+
+The script performs the following steps:
+
+1. Database Connection and Data Retrieval:
+    * The script uses jaydebeapi to connect to the AMI FileMaker database. Environment variables for the database server, database name, username, and password are required.
+    * Queries data from two tables (tbl_vendor_mediainfo and tbl_metadata) containing digitized AMI item records. The data is then loaded into a Pandas DataFrame for processing.
+2. Data Processing:
+    * Converts the dateCreated field into a datetime object and filters records to include only those from the last 18 months.
+    * Aggregates data by SPEC collection and counts the unique items digitized per collection.
+    * Generates a month-by-month breakdown of digitization activity, with a focus on the last three months. Collections with fewer than 5 items digitized over this period are excluded for better clarity.
+3. PDF Report Generation:
+    * Title Page: Creates an introductory title page summarizing the date range of the report.
+    * Trend Visualization: A bar chart visualizing digitization trends across SPEC collections for the last three months, using a custom color palette.
+    * Paginated Table: Displays a table ranking SPEC collections by the number of unique items digitized over the last 18 months, split across multiple pages if necessary.
 
 
 ### ami_file_sync.py
@@ -98,6 +124,24 @@ The script requires the following environment variables to be set:
 * SCSB_API_KEY: API key for accessing the SCSB API.
 * SCSB_API_URL: URL of the SCSB API endpoint.
 
+### append_eoy_report_intro.py
+
+This script is designed to append an introductory PDF (e.g., a cover letter or executive summary) to an existing statistics PDF report, merging the two into a single document. The resulting file is saved to the user's desktop or to a specified output path.
+
+```python3 append_eoy_report_intro.py -i <intro_pdf> -s <stats_pdf> -o <output_pdf>```
+
+Script Functionality:
+
+1. PDF Merging:
+    * The script uses the PyPDF2 library to read and merge two PDF files: an introductory PDF and a statistics report PDF.
+    * All pages from the introductory PDF are added first, followed by all pages from the statistics PDF.
+    * The merged result is written to a new output PDF file.
+
+2. Arguments:
+    * -i or --intro: Path to the introductory PDF file.
+    * -s or --stats: Path to the existing statistics PDF report.
+    * -o or --output: (Optional) Path to the output PDF file. If not provided, the script will save the merged PDF to the desktop with a default filename.
+
 ### audio_processing.py
 
 This script automates the process of transcoding WAV files to FLAC, organizing the files into appropriate directories, updating metadata in JSON files, and creating BagIt bags.
@@ -114,6 +158,21 @@ The script performs the following steps:
 
 Please note that this script requires Python 3.6 or higher.
 
+### audio_to_mp4_converter.py
+
+This script converts .wav or .flac audio files to .mp4 or .mp3 formats using FFmpeg. It processes all audio files within a specified directory, converting them to the desired output format with appropriate audio encoding settings.
+
+```python3 audio_to_mp4_converter.py -d <directory_path> -f <output_format>```
+
+Script Functionality:
+
+1. Audio Conversion:
+    * The script uses FFmpeg to convert .wav or .flac files to either .mp4 (AAC audio) or .mp3 formats.
+    * For .mp4:
+        * The audio is encoded using AAC codec at a bitrate of 320 kbps and a sample rate of 44.1 kHz.
+        * Rectangular dithering is applied during the conversion process.
+    * For .mp3:
+        * The script writes ID3v1 and ID3v2 tags, applies triangular dithering, and encodes the audio at a sample rate of 48 kHz with high-quality settings.
 
 ### clean_spec_csv_to_excel.py
 
@@ -176,6 +235,29 @@ This script performs the following steps:
 
 * AWS CLI must be installed and configured with appropriate credentials.
 
+
+### cover_video_lines.py
+
+This script allows users to cover specified numbers of lines at the top or bottom of a video with a black bar using FFmpeg. The script can either preview the changes in real time using FFplay or save the processed video to a file.
+
+```python3 cover_video_lines.py [-d <directory_path> | -f <video_file>] [-t <top_lines>] [-b <bottom_lines>] [-p] [-s]```
+
+Script Functionality:
+
+1. Covering Video Lines:
+    * The script uses FFmpeg to cover a specified number of lines at the top (-t) and/or bottom (-b) of the video with black.
+    * The user can choose to preview the result using FFplay (-p) or save the processed video as a new file (-s).
+2. Processing Options:
+    * Preview Mode: If --preview is specified, the script uses FFplay to preview the video with the black bars applied but does not save any changes.
+    * Save Mode: If --save is specified, the script saves a new video file with the processed changes. The saved file will have _processed appended to the original filename (e.g., video_processed.mp4).
+    * Users must choose either the --preview or --save option.
+3. Video Input:
+    * The script can process either a single video file (-f) or all video files in a directory (-d). Supported video formats include .mp4, .mov, .avi, and .mkv.
+4. Video Filters:
+    * The script applies the drawbox filter to cover the specified number of lines at the top or bottom of the video.
+    * It also includes the Yadif deinterlacing filter (yadif) to improve video quality during conversion.
+5. Output Video:
+    * When saving a file, the script generates a new video file using H.264 video encoding and AAC audio encoding. The output video is optimized for fast playback (-movflags faststart) and uses a video bitrate of 3.5 Mbps.
 
 ### create_media_json.py
 
@@ -557,6 +639,22 @@ This script performs the following steps:
 4. Broad Compatibility: Supports a wide range of video and audio formats, including .mp4, .wav, and .flac.
 5. Batch Processing: Capable of processing an entire directory of media files, streamlining operations for large collections.
 
+### qc_scope_visualizer.py
+
+This script is designed to provide a detailed audio and video visualization for media files using MPV and FFmpeg filters. It supports both video and audio files, and offers customizable spectrum visualizations. The script automatically detects the number of audio and video streams in the media file, configures appropriate visualizations, and processes the file for quality control (QC) review.
+
+```python3 qc_scope_visualizer.py -f <media_file> --showspectrum-stop <upper_frequency_limit>```
+
+This script performs the following steps:
+
+1. MPV Installation Check: Verifies that MPV is installed on the system. If MPV is missing, it suggests installing it via brew install mpv on macOS.
+2. Audio Stream Detection: Uses ffprobe to detect the number of audio streams in the provided media file.
+3. Video Stream Detection: Uses ffprobe to detect the number of video streams in the file.
+4. Audio-Only Mode: If no video streams are present, the script switches to audio-only mode, adjusting the layout to accommodate audio visualizations like avectorscope, showspectrum, and ebur128.
+5. Complex MPV Command Generation: Constructs a dynamic mpv command using FFmpeg filters based on the detected media streams. Visualizations are generated for:
+    * Audio-Only: Avectorscope, showspectrum, ebur128 loudness meter, and showvolume.
+    * Audio with Video: Video waveform monitor, avectorscope, and showvolume.
+6. Customizable Showspectrum Visualization: The --showspectrum-stop argument allows the user to define the upper frequency limit for the showspectrum filter, offering flexibility for different audio content.
 
 ### rawcooked_check_mkv.py
 
