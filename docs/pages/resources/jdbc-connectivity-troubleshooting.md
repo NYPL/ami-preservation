@@ -1,4 +1,3 @@
-
 ---
 title: JDBC Troubleshooting 
 layout: default
