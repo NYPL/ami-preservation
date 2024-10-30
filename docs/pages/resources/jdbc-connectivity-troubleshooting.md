@@ -58,7 +58,7 @@ This guide covers step-by-step troubleshooting to help resolve JDBC connectivity
 1. **Request IT Assistance**:  
    If all settings are correct and connectivity issues persist, it may be necessary to enlist support from IT.
 2. **Restart the Server**:  
-   The production server has a weekly scheduled restart, but sometimes a forced restart can resolve JDBC issues.
+   The production server has a weekly scheduled restart, but sometimes a forced restart can resolve JDBC issues (if things are not working or when in doubt, ask IT to restart Filemaker Windows OS).
 
 ---
 
