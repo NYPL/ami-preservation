@@ -92,13 +92,15 @@ This installs both the GUI and CLI (`makemkvcon`). Settings modified in the GUI 
 
 **Configuration for ISO Creation and DVD Title Organization:**  
 To organize DVD Title Sets by Source ID, adjust the output filename template in the MakeMKV GUI:
-1. Go to `Preferences` → `Advanced`.
+1. Go to `Preferences` → `General` and turn on Expert Mode.
+2. Go to `Advanced`.
 2. Set the filename template to:
 
    ```
-   {NAME1} {_s:SN}{-:CMNT1}{-:DT}{title:+DFLT}{_t:N2}.
+   {NAME1}{_s:SN}{-:CMNT1}{-:DT}{title:+DFLT}{_t:N2}.
    ```
 By adding `{_s:SN}` to MakeMKV's default output filename template, the resulting MKVs will be organized by DVD Source ID, which we’ve found to best reflect the native playback order of the DVD.
+
 ---
 
 #### **ddrescue**
