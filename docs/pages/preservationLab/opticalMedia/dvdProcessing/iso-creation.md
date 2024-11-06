@@ -98,7 +98,7 @@ To organize DVD Title Sets by Source ID, adjust the output filename template in 
    ```
    {NAME1} {_s:SN}{-:CMNT1}{-:DT}{title:+DFLT}{_t:N2}.
    ```
-
+By adding `{_s:SN}` to MakeMKV's default output filename template, the resulting MKVs will be organized by DVD Source ID, which we’ve found to best reflect the native playback order of the DVD.
 ---
 
 #### **ddrescue**
@@ -109,7 +109,7 @@ To organize DVD Title Sets by Source ID, adjust the output filename template in 
    ```bash
    diskutil list
    ```
-   - Identify the disk identifier (e.g., `disk1`).
+   - Identify the disk identifier (e.g., `disk2`).
    - Run:
      ```bash
      diskutil umount /dev/[DISK ID]

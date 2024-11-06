@@ -10,7 +10,7 @@ grand_parent: Optical Media
 # Generating Service Copies
 {: .no_toc }
 
-Our approach to generating MP4 service copies from ISO disc images of DVDs has evolved over the years. Unlike other media formats, creating an MP4 service copy from a DVD requires decisions that may not fully capture the experience of viewing the DVD on a native DVD player or even in software like VLC, which more faithfully reproduces menu navigation and interactive features. However, these choices are necessary to ensure accessible, high-quality service copies of these media objects.
+Our approach to generating MP4 service copies from ISO disc images of DVDs has evolved over the years. Unlike other media formats, creating an MP4 service copy from a DVD requires decisions that may not fully capture the experience of viewing the DVD on a native DVD player or even in software like VLC, which more faithfully reproduces menu navigation and interactive features. However, these choices are necessary to ensure accessible, streamable service copies of these media objects.
 
 ## Table of contents
 {: .no_toc .text-delta }
@@ -35,11 +35,11 @@ MakeMKV interprets this structure effectively, especially with DVDs created by a
 
 ## Advantages of MakeMKV and Matroska as an Intermediary
 
-Using MakeMKV, and leveraging the Matroska (MKV) format as an intermediary, allows us to retain essential information from the original DVD, including chapters and subtitle tracks. MakeMKV performs faster and more effectively than other tools when processing problematic or slightly corrupted ISOs. This method ensures that as much structural and playback information as possible is preserved before the final MP4 transcode.
+Using MakeMKV, and the Matroska (MKV) format as an intermediary, allows us to retain essential information from the original DVD, including chapters and subtitle tracks. MakeMKV performs faster and more effectively than other tools when processing problematic or slightly corrupted ISOs. This method ensures that as much structural and playback information as possible is preserved before the final MP4 transcode.
 
 ## Transcoding Approach with FFmpeg
 
-Our current FFmpeg transcoding approach focuses on changing only the video and audio codecs when converting MKVs to MP4s, aligning with our service copy specifications of H.264 for video and AAC for audio. We retain all other properties, such as aspect ratios (Display Aspect Ratio, Pixel Aspect Ratio, Sample Aspect Ratio), frame rates, and complex audio channel configurations, as they were in the MKV files.
+Our current FFmpeg transcoding approach focuses on changing only the video and audio codecs when converting MKVs to MP4s, aligning with our analog video service copy specifications of H.264 for video codec and AAC for audio codec. We retain all other properties, such as aspect ratios (Display Aspect Ratio, Pixel Aspect Ratio, Sample Aspect Ratio), frame rates, and complex audio channel configurations, as they were in the MKV files.
 
 This streamlined approach allows us to process a wide variety of DVDs without compromising playback quality. While we acknowledge typical specifications for standard DVD types (listed below), we may manipulate outliers on a case-by-case basis to ensure alignment with expected standards.
 

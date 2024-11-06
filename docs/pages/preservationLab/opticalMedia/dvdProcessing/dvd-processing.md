@@ -11,4 +11,4 @@ grand_parent: Preservation Lab
 # DVD Preservation Workflow and Processing Guide
 {: .no_toc }
 
-The following documents provide a comprehensive workflow for preserving DVD content through ISO disc image creation. Given the unique challenges of DVD preservation, we've implemented a tiered approach using multiple tools and strategies to maximize data recovery and produce playable files. This document will guide you through each stage, from software installation to step-by-step processing workflows.
+This set of documents outlines a comprehensive workflow for preserving DVD content, covering both the creation of ISO disc images and the generation of MP4 service copies from those images. Given the unique challenges of DVD preservation, we've adopted a multi-layered approach that combines various tools and techniques to maximize data recovery and produce playable files in multiple formats. This guide will take you through each stage of the process, from software installation to the step-by-step workflows for both ISO creation and MP4 conversion.
