@@ -20,9 +20,19 @@ Our approach to generating MP4 service copies from ISO disc images of DVDs has e
 
 ## Current Approach
 
-We utilize our [ISO Transcoder Script](https://github.com/NYPL/ami-preservation/blob/main/ami_scripts/iso_transcoder.py), which leverages MakeMKV to create intermediate MKV files for each video title set found within the ISO disc image of a DVD. This step provides a high-fidelity representation of each video title set, preserving essential structural information from the DVD.
+We utilize our [ISO Transcoder MakeMKV Script](https://github.com/NYPL/ami-preservation/blob/main/ami_scripts/iso_transcoder_makemkv.py), which leverages MakeMKV to create intermediate MKV files for each video title set found within the ISO disc image of a DVD. This step provides a high-fidelity representation of each video title set, preserving essential structural information from the DVD.
 
 Our script’s default behavior is to produce one MP4 per video title set, but DVDs vary widely in how they are authored. To address these variations, our script includes a `-f --force` flag, which concatenates the separate MKVs into a single MP4 file before transcoding. This option is intended only for cases where the title sets on an ISO appear to have been unintentionally fragmented.
+
+## Alternative Approach for Challenging Cases
+
+While the MakeMKV-based script is our preferred method due to its superior error handling, encryption handling, and retention of subtitles and chapters, there are cases where MakeMKV cannot process an ISO. For these scenarios, we use an alternative script: [ISO Transcoder Cat/MKVMerge](https://github.com/NYPL/ami-preservation/blob/main/ami_scripts/iso_transcoder_cat_mkvmerge.py).
+
+This script provides two options for processing:
+1. **`cat` Approach**: Concatenates the VOBs directly and quickly from the ISO, before transcoding to MP4 with FFmpeg.
+2. **`mkvmerge` Approach**: If cat fails, automatically uses MKVMerge to combine the VOBs into a single MKV file, which is then transcoded to MP4 with FFmpeg.
+
+These methods are particularly useful for ISOs where MakeMKV encounters issues, such as structural anomalies or unsupported formats.
 
 ## DVD Structure
 
@@ -31,7 +41,7 @@ Understanding the structure of DVDs is essential to accurately recreating servic
 - **Title Sets**: Each title set can contain multiple **VOB** (Video Object) files, along with **IFO** (Info) files that describe the structure, and **BUP** (Backup) files as backups for IFO data.
 - **Cells**: Cells are the smallest unit within VOBs and may represent chapters or smaller segments within a title.
 
-MakeMKV interprets this structure effectively, especially with DVDs created by amateur authors, where structure and file integrity can be inconsistent. MakeMKV helps overcome these inconsistencies by handling variations within DVD structures accurately and producing reliable intermediate MKV files.
+MakeMKV interprets this structure effectively, especially with DVDs created by amateur authors, where structure and file integrity can be inconsistent. The alternative `cat/mkvmerge` approach bypasses some of these inconsistencies, making it a reliable fallback.
 
 ## Advantages of MakeMKV and Matroska as an Intermediary
 
@@ -47,7 +57,7 @@ This streamlined approach allows us to process a wide variety of DVDs without co
 
 Our experience has led us to identify broad categories of typical DVD specifications, though these specifications may vary. Below are the most common configurations we encounter:
 
-### NTSC DVD SD
+### NTSC DVD SD (D1 Resolution)
 - **Video Width**: 720
 - **Video Height**: 480
 - **Display Aspect Ratio**: 1.333
@@ -61,14 +71,21 @@ Our experience has led us to identify broad categories of typical DVD specificat
 - **Pixel Aspect Ratio**: 1.185
 - **Frame Rate**: 29.970
 
-### NTSC DVD SD (Alternate)
+### NTSC DVD SD (4SIF Resolution)
 - **Video Width**: 704
 - **Video Height**: 480
 - **Display Aspect Ratio**: 1.333
 - **Pixel Aspect Ratio**: 0.909
 - **Frame Rate**: 29.970
 
-### PAL DVD SD
+### NTSC DVD (SIF Resolution)
+- **Video Width**: 352
+- **Video Height**: 240
+- **Display Aspect Ratio**: 1.339
+- **Pixel Aspect Ratio**: 0.913
+- **Frame Rate**: 29.970
+
+### PAL DVD SD (D1 Resolution)
 - **Video Width**: 720
 - **Video Height**: 576
 - **Display Aspect Ratio**: 1.333
@@ -80,6 +97,13 @@ Our experience has led us to identify broad categories of typical DVD specificat
 - **Video Height**: 576
 - **Display Aspect Ratio**: 1.778
 - **Pixel Aspect Ratio**: 1.422
+- **Frame Rate**: 25.000
+
+### PAL DVD (CIF Resolution)
+- **Video Width**: 352
+- **Video Height**: 288
+- **Display Aspect Ratio**: 1.333
+- **Pixel Aspect Ratio**: 1.092
 - **Frame Rate**: 25.000
 
 ---
