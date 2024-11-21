@@ -73,7 +73,6 @@ def crawl_directory(directory):
     logging.info(f"File map: {dict(file_map)}")
     return file_map
 
-# Fetch the original record
 def fetch_original_record(conn, reference_filename):
     curs = conn.cursor()
     try:
@@ -83,10 +82,26 @@ def fetch_original_record(conn, reference_filename):
         record = curs.fetchone()
         if record:
             columns = [desc[0] for desc in curs.description]
-            record_dict = dict(zip(columns, record))
-            logging.info("Record fetched successfully.")
+            # Get the column types from cursor description
+            column_types = {desc[0]: desc[1] for desc in curs.description}
+            record_dict = {}
+            
+            # Process each field with awareness of its original type
+            for col, value in zip(columns, record):
+                if value is None or value == '':
+                    record_dict[col] = None
+                elif isinstance(value, float):
+                    if value == 0.0:
+                        # Check if this was actually a blank in the original
+                        record_dict[col] = None
+                    elif value.is_integer():
+                        record_dict[col] = int(value)
+                    else:
+                        record_dict[col] = value
+                else:
+                    record_dict[col] = value
 
-            # Fields that should be treated as strings
+            # Fields that should always be treated as strings
             fields_as_strings = ['asset.schemaVersion', 'bibliographic.barcode']
             for field in fields_as_strings:
                 if field in record_dict and record_dict[field] is not None:
@@ -102,92 +117,75 @@ def fetch_original_record(conn, reference_filename):
     finally:
         curs.close()
 
-# Insert a new record
 def insert_new_record(conn, original_record, mp4_file, face_number, region_number):
     curs = conn.cursor()
     try:
         # Set default values if face_number or region_number are None
         if face_number is None:
-            face_number = ''  # Or set to a default value like '1' if appropriate
+            face_number = ''
         if region_number is None:
-            region_number = ''  # Or set to a default value like '1' if appropriate
+            region_number = ''
 
-        new_record_data = {
-            # Copy fields from the original record
-            'WorkOrderID': original_record['WorkOrderID'],
-            'Archival box barcode': original_record['Archival box barcode'],
-            'Archival box number': original_record['Archival box number'],
-            'cmsCollectionTitle': original_record['cmsCollectionTitle'],
-            'asset.fileRole': 'sc',  # Change to 'sc' for the new record
-            'asset.fileExt': 'mp4',  # Change to 'mp4' for the new record
-            'asset.schemaVersion': original_record['asset.schemaVersion'],
-            'bibliographic.primaryID': original_record['bibliographic.primaryID'],
-            'bibliographic.catalogBNumber': original_record['bibliographic.catalogBNumber'],
-            'bibliographic.classmark': original_record['bibliographic.classmark'],
-            'bibliographic.cmsCollectionID': original_record['bibliographic.cmsCollectionID'],
-            'bibliographic.cmsItemID': original_record['bibliographic.cmsItemID'],
-            'bibliographic.contentNotes': original_record['bibliographic.contentNotes'],
-            'bibliographic.date': original_record['bibliographic.date'],
-            'bibliographic.divisionCode': original_record['bibliographic.divisionCode'],
-            'bibliographic.formerClassmark': original_record['bibliographic.formerClassmark'],
-            'bibliographic.group': original_record['bibliographic.group'],
-            'bibliographic.mssID': original_record['bibliographic.mssID'],
-            'bibliographic.nonCMSItemID': original_record['bibliographic.nonCMSItemID'],
-            'bibliographic.projectCode': original_record['bibliographic.projectCode'],
-            'bibliographic.sequence': original_record['bibliographic.sequence'],
-            'bibliographic.title': original_record['bibliographic.title'],
-            'bibliographic.vernacularDivisionCode': original_record['bibliographic.vernacularDivisionCode'],
-            'digitizationProcess.captureSoftware.manufacturer': original_record['digitizationProcess.captureSoftware.manufacturer'],
-            'digitizationProcess.captureSoftware.platform': original_record['digitizationProcess.captureSoftware.platform'],
-            'digitizationProcess.captureSoftware.productName': original_record['digitizationProcess.captureSoftware.productName'],
-            'digitizationProcess.captureSoftware.version': original_record['digitizationProcess.captureSoftware.version'],
-            'digitizationProcess.notes.processNotes': original_record['digitizationProcess.notes.processNotes'],
-            'digitizationProcess.playbackDevice.model': original_record['digitizationProcess.playbackDevice.model'],
-            'digitizationProcess.playbackDevice.manufacturer': original_record['digitizationProcess.playbackDevice.manufacturer'],
-            'digitizationProcess.playbackDevice.serialNumber': original_record['digitizationProcess.playbackDevice.serialNumber'],
-            'bibliographic.accessNotes': original_record['bibliographic.accessNotes'],
-            'bibliographic.barcode': original_record['bibliographic.barcode'],
-            'source.physicalDescription.diameter.measure': original_record['source.physicalDescription.diameter.measure'],
-            'source.physicalDescription.diameter.unit': original_record['source.physicalDescription.diameter.unit'],
-            'source.physicalDescription.dataCapacity.measure': original_record['source.physicalDescription.dataCapacity.measure'],
-            'source.physicalDescription.dataCapacity.unit': original_record['source.physicalDescription.dataCapacity.unit'],
-            'source.object.type': original_record['source.object.type'],
-            'source.object.format': original_record['source.object.format'],
-            'source.object.generation': original_record['source.object.generation'],
-            'source.object.volumeNumber': int(original_record['source.object.volumeNumber']),
-            'source.audioRecording.numberOfAudioTracks': int(original_record['source.audioRecording.numberOfAudioTracks']),
-            'source.audioRecording.audioSoundField': original_record['source.audioRecording.audioSoundField'],
-            'source.contentSpecifications.broadcastStandard': original_record['source.contentSpecifications.broadcastStandard'],
-            'source.contentSpecifications.colorBW': original_record['source.contentSpecifications.colorBW'],
-            'source.contentSpecifications.regionCode': original_record['source.contentSpecifications.regionCode'],
-            'source.physicalDescription.stockManufacturer': original_record['source.physicalDescription.stockManufacturer'],
-            'source.physicalDescription.stockProductID': original_record['source.physicalDescription.stockProductID'],
-            'source.physicalDescription.dyeLayer': original_record['source.physicalDescription.dyeLayer'],
-            'source.physicalDescription.reflectiveLayer': original_record['source.physicalDescription.reflectiveLayer'],
-            'digitizer.operator.firstName': original_record['digitizer.operator.firstName'],
-            'digitizer.operator.lastName': original_record['digitizer.operator.lastName'],
-            'digitizer.organization.address.city': original_record['digitizer.organization.address.city'],
-            'digitizer.organization.address.postalCode': original_record['digitizer.organization.address.postalCode'],
-            'digitizer.organization.address.state': original_record['digitizer.organization.address.state'],
-            'digitizer.organization.address.street1': original_record['digitizer.organization.address.street1'],
-            'digitizer.organization.address.street2': original_record['digitizer.organization.address.street2'],
-            'digitizer.organization.name': original_record['digitizer.organization.name'],
-            'technical.signalNotes': original_record['technical.signalNotes'],
-            # Fields specific to the new record
-            'source.subObject.faceNumber': face_number,
-            'source.subObject.regionNumber': region_number,
+        # Define allowed prefixes
+        allowed_prefixes = ("bibliographic.", "digitizationProcess.", "digitizer.", "source.")
+
+        # Dynamically filter fields based on allowed prefixes
+        filtered_record = {
+            key: value for key, value in original_record.items()
+            if key.startswith(allowed_prefixes)
         }
 
+        # Explicitly add additional fields
+        additional_fields = [
+            'WorkOrderID',
+            'Archival box barcode',
+            'Archival box number',
+            'asset.schemaVersion',
+            'technical.signalNotes'
+        ]
+        for field in additional_fields:
+            if field in original_record:
+                filtered_record[field] = original_record[field]
+
+        # Add or override fields specific to the new record
+        filtered_record.update({
+            'asset.fileRole': 'sc',
+            'asset.fileExt': 'mp4',
+            'source.subObject.faceNumber': face_number,
+            'source.subObject.regionNumber': region_number,
+        })
+
+        # Get table column information to identify numeric fields
+        curs.execute("SELECT * FROM tbl_metadata WHERE 1=0")  # Empty result set just to get column info
+        column_info = {desc[0]: desc[1] for desc in curs.description}
+
+        # Prepare values for insertion
+        insert_values = {}
+        for key, value in filtered_record.items():
+            if value is None or value == '':
+                insert_values[key] = None
+            elif isinstance(value, float):
+                if value == 0.0:
+                    # Preserve as NULL for numeric fields
+                    insert_values[key] = None
+                elif value.is_integer():
+                    insert_values[key] = int(value)
+                else:
+                    insert_values[key] = value
+            else:
+                insert_values[key] = value
+
         # Prepare the insert statement
-        columns = ', '.join(f'"{col}"' for col in new_record_data.keys())
-        placeholders = ', '.join(['?'] * len(new_record_data))
+        columns = ', '.join(f'"{col}"' for col in insert_values.keys())
+        placeholders = ', '.join(['?'] * len(insert_values))
         sql = f"INSERT INTO tbl_metadata ({columns}) VALUES ({placeholders})"
-        values = list(new_record_data.values())
+        values = list(insert_values.values())
 
         logging.info(f"Inserting new record for file: {mp4_file}")
         logging.debug(f"SQL Statement: {sql}")
         logging.debug(f"Values: {values}")
 
+        # Execute with explicit NULL values
         curs.execute(sql, values)
         conn.commit()
         logging.info("New record inserted successfully.")
