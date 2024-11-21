@@ -144,6 +144,28 @@ def process_iso_with_makemkv(iso_path, output_directory):
         logging.error(f"MakeMKV processing failed for {iso_path}")
         return None
 
+def concatenate_mkvs(mkv_files):
+    """Concatenate MKV files using mkvmerge."""
+    if not mkv_files:
+        logging.error("No MKV files provided for concatenation.")
+        return None
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".mkv", delete=False) as tmp_mkv_file:
+            # Construct mkvmerge command
+            mkvmerge_command = ["mkvmerge", "-o", tmp_mkv_file.name, str(mkv_files[0])]  # First file
+            for mkv_file in mkv_files[1:]:
+                mkvmerge_command.extend(["+", str(mkv_file)])  # Add subsequent files with '+'
+
+            # Run mkvmerge
+            logging.info(f"Running mkvmerge command: {' '.join(mkvmerge_command)}")
+            subprocess.run(mkvmerge_command, check=True)
+            logging.info(f"Successfully concatenated MKVs into {tmp_mkv_file.name}")
+            return tmp_mkv_file.name
+    except subprocess.CalledProcessError:
+        logging.warning(f"Concatenation failed for {mkv_files} with mkvmerge.")
+        return None
+
 
 def transcode_mkv_files(mkv_directory, iso_basename, output_directory, force_concat):
     mkv_files = sorted(mkv_directory.glob("*.mkv"))
@@ -183,10 +205,11 @@ def transcode_mkv_files(mkv_directory, iso_basename, output_directory, force_con
     return True  # Indicate success if all files processed successfully
 
 
-def verify_transcoding(iso_paths, output_directory):
-    total_isos = len(iso_paths)
+def verify_transcoding(iso_paths, make_mkv_failures, output_directory):
+    total_isos = len(iso_paths) + len(make_mkv_failures)
     successful_isos = []
-    failed_isos = []
+    failed_isos = make_mkv_failures[:]  # Start with MakeMKV failures
+
     print(f"\n{Style.BRIGHT}File Creation Summary:{Style.RESET_ALL}")
 
     for iso_path in iso_paths:
@@ -272,6 +295,7 @@ def post_process_check(output_directory):
     summarize_classifications(classification_counts, outliers)
 
 
+
 def main():
     parser = argparse.ArgumentParser(description='Transcode MKV files created from ISO images to H.264 MP4s.')
     parser.add_argument('-i', '--input', dest='i', required=True, help='Path to the input directory with ISO files')
@@ -285,8 +309,9 @@ def main():
     output_directory = Path(args.o)
     output_directory.mkdir(parents=True, exist_ok=True)
 
-    iso_files = list(sorted(input_directory.glob('*.iso')))
+    iso_files = [file for file in sorted(input_directory.glob('*.iso')) if not file.name.startswith('._')]
     processed_iso_paths = []
+    make_mkv_failures = []
 
     for iso_file in iso_files:
         iso_basename = iso_file.stem.replace("_pm", "")
@@ -303,10 +328,11 @@ def main():
                 mkv_file.unlink()
             mkv_output_dir.rmdir()
         else:
-            logging.error(f"Skipping transcoding for {iso_file} due to MakeMKV processing failure.")
+            logging.error(f"MakeMKV processing failed for {iso_file}.")
+            make_mkv_failures.append(iso_file)
 
     # Verify transcoding results and print a summary
-    verify_transcoding(processed_iso_paths, output_directory)
+    verify_transcoding(processed_iso_paths, make_mkv_failures, output_directory)
 
     # Run post-process classification
     post_process_check(output_directory)
