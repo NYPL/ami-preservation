@@ -40,6 +40,13 @@ CATEGORIES = {
         "PixelAspectRatio": "0.913",
         "FrameRate": "29.970",
     },
+    "NTSC DVD (China Video Disc Resolution)": {
+        "Width": 352,
+        "Height": 480,
+        "DisplayAspectRatio": "1.333",
+        "PixelAspectRatio": "1.818",
+        "FrameRate": "29.970",
+    },
     "PAL DVD SD (D1 Resolution)": {
         "Width": 720,
         "Height": 576,
@@ -374,7 +381,6 @@ def post_process_check(output_directory):
     mp4_files = list(Path(output_directory).glob("*.mp4"))
     classification_counts, outliers = classify_mp4(mp4_files)
     summarize_classifications(classification_counts, outliers)
-
 
 
 def main():
