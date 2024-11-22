@@ -144,65 +144,146 @@ def process_iso_with_makemkv(iso_path, output_directory):
         logging.error(f"MakeMKV processing failed for {iso_path}")
         return None
 
+def verify_mkv_compatibility(mkv_files):
+    """Verify that MKV files are compatible for concatenation."""
+    if not mkv_files:
+        return False
+        
+    base_props = None
+    
+    for mkv_file in mkv_files:
+        media_info = MediaInfo.parse(str(mkv_file))
+        current_props = {}
+        
+        for track in media_info.tracks:
+            if track.track_type == "Video":
+                current_props.update({
+                    "width": track.width,
+                    "height": track.height,
+                    "frame_rate": track.frame_rate,
+                    "pixel_format": track.pixel_format,
+                    "codec_id": track.codec_id
+                })
+            elif track.track_type == "Audio":
+                current_props.update({
+                    "audio_format": track.format,
+                    "channels": track.channel_s,
+                    "sampling_rate": track.sampling_rate
+                })
+        
+        if base_props is None:
+            base_props = current_props
+        elif current_props != base_props:
+            logging.error(f"File {mkv_file.name} has different properties than the first file:")
+            for key in base_props:
+                if key in current_props and base_props[key] != current_props[key]:
+                    logging.error(f"  {key}: {base_props[key]} != {current_props[key]}")
+            return False
+            
+    return True
+
 def concatenate_mkvs(mkv_files):
-    """Concatenate MKV files using mkvmerge."""
+    """Concatenate MKV files using mkvmerge with enhanced error handling."""
     if not mkv_files:
         logging.error("No MKV files provided for concatenation.")
         return None
-
+        
+    # Verify file compatibility first
+    if not verify_mkv_compatibility(mkv_files):
+        logging.error("MKV files are not compatible for concatenation")
+        return None
+        
     try:
         with tempfile.NamedTemporaryFile(suffix=".mkv", delete=False) as tmp_mkv_file:
-            # Construct mkvmerge command
-            mkvmerge_command = ["mkvmerge", "-o", tmp_mkv_file.name, str(mkv_files[0])]  # First file
+            # First, try concatenation with default options
+            mkvmerge_command = ["mkvmerge", "-o", tmp_mkv_file.name, str(mkv_files[0])]
             for mkv_file in mkv_files[1:]:
-                mkvmerge_command.extend(["+", str(mkv_file)])  # Add subsequent files with '+'
-
-            # Run mkvmerge
-            logging.info(f"Running mkvmerge command: {' '.join(mkvmerge_command)}")
-            subprocess.run(mkvmerge_command, check=True)
-            logging.info(f"Successfully concatenated MKVs into {tmp_mkv_file.name}")
-            return tmp_mkv_file.name
-    except subprocess.CalledProcessError:
-        logging.warning(f"Concatenation failed for {mkv_files} with mkvmerge.")
+                mkvmerge_command.extend(["+", str(mkv_file)])
+                
+            logging.info(f"Attempting concatenation with command: {' '.join(mkvmerge_command)}")
+            
+            # Run mkvmerge and capture output
+            result = subprocess.run(
+                mkvmerge_command,
+                capture_output=True,
+                text=True
+            )
+            
+            # Check if concatenation was successful
+            if result.returncode == 0:
+                logging.info("Concatenation successful")
+                return tmp_mkv_file.name
+            else:
+                # If first attempt failed, try with --append-mode track
+                logging.warning("First concatenation attempt failed, trying with --append-mode track")
+                mkvmerge_command.insert(1, "--append-mode")
+                mkvmerge_command.insert(2, "track")
+                
+                result = subprocess.run(
+                    mkvmerge_command,
+                    capture_output=True,
+                    text=True
+                )
+                
+                if result.returncode == 0:
+                    logging.info("Concatenation successful with --append-mode track")
+                    return tmp_mkv_file.name
+                else:
+                    logging.error(f"Both concatenation attempts failed. Error: {result.stderr}")
+                    if os.path.exists(tmp_mkv_file.name):
+                        os.unlink(tmp_mkv_file.name)
+                    return None
+                    
+    except Exception as e:
+        logging.error(f"Unexpected error during concatenation: {str(e)}")
+        if 'tmp_mkv_file' in locals() and os.path.exists(tmp_mkv_file.name):
+            os.unlink(tmp_mkv_file.name)
         return None
-
 
 def transcode_mkv_files(mkv_directory, iso_basename, output_directory, force_concat):
     mkv_files = sorted(mkv_directory.glob("*.mkv"))
     if not mkv_files:
         logging.error(f"No MKV files found in {mkv_directory}")
-        return False  # Indicate failure
+        return False
     
     if force_concat:
-        logging.info("Concatenating MKV files using mkvmerge...")
+        logging.info(f"Found {len(mkv_files)} MKV files to concatenate")
         concatenated_mkv = concatenate_mkvs(mkv_files)
+        
         if concatenated_mkv:
             output_file = output_directory / f"{iso_basename}_sc.mp4"
             logging.info(f"Transcoding concatenated MKV to {output_file}")
-            ffmpeg_command = build_ffmpeg_command(concatenated_mkv, output_file)
+            
             try:
+                ffmpeg_command = build_ffmpeg_command(concatenated_mkv, output_file)
                 subprocess.run(ffmpeg_command, check=True)
-                return True  # Indicate success
-            except subprocess.CalledProcessError:
-                logging.error(f"Transcoding failed for concatenated MKV of {iso_basename}")
+                return True
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Transcoding failed for concatenated MKV: {e}")
                 return False
             finally:
-                Path(concatenated_mkv).unlink()  # Clean up concatenated temp MKV file
+                if os.path.exists(concatenated_mkv):
+                    os.unlink(concatenated_mkv)
         else:
-            logging.error(f"Concatenation failed for {iso_basename}, skipping transcoding.")
-            return False
+            logging.error("Concatenation failed, falling back to individual file processing")
+            # Fall back to processing files individually
+            return transcode_mkv_files(mkv_directory, iso_basename, output_directory, force_concat=False)
     else:
+        success = True
         for idx, mkv_file in enumerate(mkv_files, start=1):
-            output_file = output_directory / f"{iso_basename}f01r{str(idx).zfill(2)}_sc.mp4" if len(mkv_files) > 1 else output_directory / f"{iso_basename}_sc.mp4"
-            logging.info(f"Transcoding {mkv_file} to {output_file}")
+            output_file = (output_directory / f"{iso_basename}f01r{str(idx).zfill(2)}_sc.mp4" 
+                         if len(mkv_files) > 1 else 
+                         output_directory / f"{iso_basename}_sc.mp4")
             
-            ffmpeg_command = build_ffmpeg_command(mkv_file, output_file)
+            logging.info(f"Transcoding {mkv_file} to {output_file}")
             try:
+                ffmpeg_command = build_ffmpeg_command(mkv_file, output_file)
                 subprocess.run(ffmpeg_command, check=True)
-            except subprocess.CalledProcessError:
-                logging.error(f"Transcoding failed for {mkv_file}")
-                return False  # Indicate failure
-    return True  # Indicate success if all files processed successfully
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Transcoding failed for {mkv_file}: {e}")
+                success = False
+                
+        return success
 
 
 def verify_transcoding(iso_paths, make_mkv_failures, output_directory):
