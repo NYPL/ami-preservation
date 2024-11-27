@@ -13,8 +13,7 @@
   <rule name="Video/BitDepth is 10" value="BitDepth" tracktype="Video" occurrence="*" operator="=">10</rule>
   <rule name="Video/ChromaSubsampling is 4:2:2" value="ChromaSubsampling" tracktype="Video" occurrence="*" operator="=">4:2:2</rule>
   <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
-  <rule name="Video/colour_range exists" value="colour_range" tracktype="Video" occurrence="*" operator="exists"/> 
-  <!-- ^check -->
+  <rule name="Video/colour_range is Limited" value="colour_range" tracktype="Video" occurrence="*" operator="=">Limited</rule> 
   <rule name="Video/Compression_Mode is Lossless" value="Compression_Mode" tracktype="Video" occurrence="*" operator="=">Lossless</rule>
   <rule name="Video/extra[1]/ErrorDetectionType is Per slice" value="extra[1]/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule>
   <rule name="Video/extra[1]/MaxSlicesCount is 24" value="extra[1]/MaxSlicesCount" tracktype="Video" occurrence="*" operator="=">24</rule>
@@ -59,9 +58,10 @@
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
           <rule name="Video/PixelAspectRatio is 1.067" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.067</rule>
         </policy>
-        <!-- <policy type="and" name="PAL DAR + PAR: new 4:3 settings">
-
-        </policy> -->
+        <policy type="and" name="PAL DAR + PAR: new 4:3 settings">
+          <rule name="Video/DisplayAspectRatio is 1.364" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.364</rule>
+          <rule name="Video/PixelAspectRatio is 1.091" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.091</rule>
+        </policy>
         <!-- <policy type="and" name="PAL DAR + PAR: new 16:9 settings">
 
         </policy> -->

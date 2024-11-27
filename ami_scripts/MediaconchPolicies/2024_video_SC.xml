@@ -11,6 +11,7 @@
   <rule name="Video/ChromaSubsampling is 4:2:0" value="ChromaSubsampling" tracktype="Video" occurrence="*" operator="=">4:2:0</rule>
   <rule name="Video/CodecID is avc1" value="CodecID" tracktype="Video" occurrence="*" operator="=">avc1</rule>
   <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
+  <rule name="Video/colour_range is Limited" value="colour_range" tracktype="Video" occurrence="*" operator="=">Limited</rule>
   <rule name="Video/Format is AVC" value="Format" tracktype="Video" occurrence="*" operator="=">AVC</rule>
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
   <rule name="Video/Width is 720" value="Width" tracktype="Video" occurrence="*" operator="=">720</rule>
@@ -24,13 +25,13 @@
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
           <rule name="Video/PixelAspectRatio is 0.900" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
         </policy>
-        <!-- <policy type="and" name="NTSC DAR + PAR: old 16:9 settings">
-
-        </policy> -->
         <policy type="and" name="NTSC DAR + PAR: new 4:3 settings">
           <rule name="Video/DisplayAspectRatio is 1.347" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.347</rule>
           <rule name="Video/PixelAspectRatio is 0.909" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.909</rule>
         </policy>
+        <!-- <policy type="and" name="NTSC DAR + PAR: old 16:9 settings">
+
+        </policy> -->
         <!-- <policy type="and" name="NTSC DAR + PAR: new 16:9 settings">
 
         </policy> -->
@@ -45,10 +46,11 @@
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
           <rule name="Video/PixelAspectRatio is 1.067" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.067</rule>
         </policy>
-        <!-- <policy type="and" name="PAL DAR + PAR: old 16:9 settings">
-
-        </policy>
         <policy type="and" name="PAL DAR + PAR: new 4:3 settings">
+          <rule name="Video/DisplayAspectRatio is 1.364" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.364</rule>
+          <rule name="Video/PixelAspectRatio is 1.091" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.091</rule>
+        </policy>
+        <!-- <policy type="and" name="PAL DAR + PAR: old 16:9 settings">
 
         </policy>
         <policy type="and" name="PAL DAR + PAR: new 16:9 settings">
