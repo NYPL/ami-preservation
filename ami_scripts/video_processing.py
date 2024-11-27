@@ -32,9 +32,9 @@ def rename_files(input_directory, extensions):
         shutil.move(file, new_file)
 
 
-def convert_mkv_dv_to_mp4(input_directory):
+def convert_mkv_dv_to_mp4(input_directory, audio_pan):
     for file in itertools.chain(input_directory.glob("*.mkv"), input_directory.glob("*.dv")):
-        convert_to_mp4(file, input_directory)
+        convert_to_mp4(file, input_directory, audio_pan)
 
 
 def process_mov_files(input_directory):
@@ -104,22 +104,41 @@ def transcribe_directory(input_directory, model, output_format):
             output_writer(transcription_response, file.stem)
 
 
-def convert_to_mp4(input_file, input_directory):
+def convert_to_mp4(input_file, input_directory, audio_pan):
     output_file_name = f"{input_file.stem.replace('_pm', '')}_sc.mp4"
     output_file = input_directory / output_file_name
+
+    # Default audio filter
+    audio_filter = None
+
+    # Set audio pan filter based on user input
+    if audio_pan == "left":
+        audio_filter = "[0:a]pan=stereo|c0=c0|c1=c0[outa]"
+    elif audio_pan == "right":
+        audio_filter = "[0:a]pan=stereo|c0=c1|c1=c1[outa]"
+
     command = [
         "ffmpeg",
         "-i", str(input_file),
-        "-map", "0:v", "-map", "0:a",
-        "-c:v", "libx264",
-        "-movflags", "faststart",
-        "-pix_fmt", "yuv420p",
-        "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000",
-        "-vf", "yadif",
-        "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file)
+        "-map", "0:v", "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p",
+        "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000", "-vf", "yadif",
     ]
-    subprocess.check_call(command)
 
+    # Add audio mapping and filter if specified
+    if audio_filter:
+        command.extend([
+            "-filter_complex", audio_filter,
+            "-map", "[outa]"  # Map the output of the pan filter as the audio stream
+        ])
+    else:
+        command.extend([
+            "-map", "0:a",  # Default audio mapping if no pan is specified
+        ])
+
+    # Add audio encoding options
+    command.extend(["-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file)])
+
+    subprocess.check_call(command)
     return output_file
 
     
@@ -261,6 +280,8 @@ def main():
     parser.add_argument("-o", "--output", help="Path to save csv (optional). If provided, MediaInfo extraction will be performed.", required=False)
     parser.add_argument("-m", "--model", default='medium', choices=['tiny', 'base', 'small', 'medium', 'large'], help='The Whisper model to use')
     parser.add_argument("-f", "--format", default='vtt', choices=['vtt', 'srt', 'txt', 'json'], help='The subtitle output format to use')
+    parser.add_argument("-p", "--audio-pan", choices=["left", "right", "none"], default="none", help="Pan audio to center from left or right channel.")
+
 
     args = parser.parse_args()
 
@@ -281,7 +302,7 @@ def main():
     create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
 
     print("Converting MKV and DV to MP4...")
-    convert_mkv_dv_to_mp4(input_dir)
+    convert_mkv_dv_to_mp4(input_dir, args.audio_pan)
 
     print("Processing MOV files...")
     process_mov_files(input_dir)
