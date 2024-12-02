@@ -417,7 +417,7 @@ def main():
         transcribe_directory(input_dir, args.model, args.format)
 
     print("Deleting empty directories...")
-    delete_empty_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
+    delete_empty_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies", "ProcessedDV"])
 
     if args.output:
         project_code_pattern = re.compile(r'(\d{4}_\d{2}_\d{2})')
