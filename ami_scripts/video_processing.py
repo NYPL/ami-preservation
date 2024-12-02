@@ -122,7 +122,7 @@ def detect_audio_pan(input_file, probe_duration=60):
 
     # Analyze each audio stream
     pan_filters = []
-    for stream_index in audio_streams:
+    for i, stream_index in enumerate(audio_streams):
         print(f"Analyzing audio stream: {stream_index}")
 
         # Analyze left channel
@@ -164,14 +164,13 @@ def detect_audio_pan(input_file, probe_duration=60):
         silence_threshold = -60.0  # dB, adjust as needed
         if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
             print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
-            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{stream_index}]")
+            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
         elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
             print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
-            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{stream_index}]")
+            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
         else:
             print(f"Stream {stream_index}: Audio is balanced or both channels are silent. No panning applied.")
 
-    # Combine pan filters for FFmpeg command
     return pan_filters
 
 
@@ -179,15 +178,30 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
     output_file_name = f"{input_file.stem.replace('_pm', '')}_sc.mp4"
     output_file = input_directory / output_file_name
 
-    # Detect audio pan automatically if set to "auto"
-    if audio_pan == "auto":
+    # Detect all audio streams in the input file
+    ffprobe_command = [
+        "ffprobe", "-i", str(input_file),
+        "-show_entries", "stream=index:stream=codec_type",
+        "-select_streams", "a", "-of", "compact=p=0:nk=1", "-v", "0"
+    ]
+    ffprobe_result = subprocess.run(ffprobe_command, capture_output=True, text=True)
+    audio_streams = [
+        int(line.split('|')[0])
+        for line in ffprobe_result.stdout.splitlines() if "audio" in line
+    ]
+
+    # Generate pan filters based on user selection
+    pan_filters = []
+    if audio_pan in {"left", "right", "center"}:
+        for i, stream_index in enumerate(audio_streams):
+            if audio_pan == "left":
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+            elif audio_pan == "right":
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+            elif audio_pan == "center":
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0+c1|c1=c0+c1[outa{i}]")
+    elif audio_pan == "auto":
         pan_filters = detect_audio_pan(input_file)
-    else:
-        pan_filters = []
-        if audio_pan == "left":
-            pan_filters.append("[0:a]pan=stereo|c0=c0|c1=c0[outa]")
-        elif audio_pan == "right":
-            pan_filters.append("[0:a]pan=stereo|c0=c1|c1=c1[outa]")
 
     # FFmpeg command setup
     command = [
@@ -197,26 +211,18 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
         "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000", "-vf", "yadif",
     ]
 
-    # Add audio mapping and filters if specified
+    # Add audio filters if specified
     if pan_filters:
-        if len(pan_filters) == 1:
-            # Single audio stream case
-            # Ensure consistent output label `[outa]`
-            pan_filters[0] = pan_filters[0].replace("[outa1]", "[outa]")
-            command.extend([
-                "-filter_complex", pan_filters[0],
-                "-map", "[outa]"
-            ])
-        else:
-            # Multi-audio stream case
-            filter_complex = ";".join(pan_filters)
-            command.extend([
-                "-filter_complex", filter_complex,
-            ])
-            for idx in range(len(pan_filters)):
-                command.extend(["-map", f"[outa{idx}]"])
+        filter_complex = ";".join(pan_filters)
+        command.extend([
+            "-filter_complex", filter_complex,
+        ])
+        for i in range(len(pan_filters)):
+            command.extend(["-map", f"[outa{i}]"])
     else:
-        command.extend(["-map", "0:a", "-c:a", "aac", "-b:a", "320000", "-ar", "48000"])
+        # Default mapping for all audio streams without modification
+        for stream_index in audio_streams:
+            command.extend(["-map", f"0:{stream_index}", "-c:a", "aac", "-b:a", "320000", "-ar", "48000"])
 
     # Add output file
     command.append(str(output_file))
@@ -227,7 +233,6 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
     return output_file
 
 
-    
 def convert_mov_file(input_file, input_directory):
     """Convert a MOV file to FFV1 and MP4 formats using FFmpeg"""    
     output_file1 = input_directory / f"{pathlib.Path(input_file).stem}.mkv"
@@ -367,7 +372,7 @@ def main():
     parser.add_argument("-m", "--model", default='medium', choices=['tiny', 'base', 'small', 'medium', 'large'], help='The Whisper model to use')
     parser.add_argument("-f", "--format", default='vtt', choices=['vtt', 'srt', 'txt', 'json'], help='The subtitle output format to use')
     parser.add_argument("-p", "--audio-pan",
-        choices=["left", "right", "none", "auto"],
+        choices=["left", "right", "none", "center", "auto"],
         default="none",
         help="Pan audio to center from left, right, or auto-detect mono audio.")
 
