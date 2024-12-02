@@ -104,7 +104,7 @@ def transcribe_directory(input_directory, model, output_format):
             output_writer(transcription_response, file.stem)
 
 
-def detect_audio_pan(input_file, probe_duration=60):
+def detect_audio_pan(input_file, probe_duration=120):
     """
     Detect whether the audio is isolated to the left or right channel for each audio stream.
     Probes only the first `probe_duration` seconds of the file.
