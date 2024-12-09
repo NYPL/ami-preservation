@@ -32,9 +32,9 @@ def rename_files(input_directory, extensions):
         shutil.move(file, new_file)
 
 
-def convert_mkv_dv_to_mp4(input_directory):
+def convert_mkv_dv_to_mp4(input_directory, audio_pan):
     for file in itertools.chain(input_directory.glob("*.mkv"), input_directory.glob("*.dv")):
-        convert_to_mp4(file, input_directory)
+        convert_to_mp4(file, input_directory, audio_pan)
 
 
 def process_mov_files(input_directory):
@@ -104,25 +104,135 @@ def transcribe_directory(input_directory, model, output_format):
             output_writer(transcription_response, file.stem)
 
 
-def convert_to_mp4(input_file, input_directory):
+def detect_audio_pan(input_file, probe_duration=120):
+    """
+    Detect whether the audio is isolated to the left or right channel for each audio stream.
+    Probes only the first `probe_duration` seconds of the file.
+    """
+    # Use ffprobe to get the number of audio streams
+    ffprobe_command = [
+        "ffprobe", "-i", str(input_file),
+        "-show_entries", "stream=index:stream=codec_type",
+        "-select_streams", "a", "-of", "compact=p=0:nk=1", "-v", "0"
+    ]
+    ffprobe_result = subprocess.run(ffprobe_command, capture_output=True, text=True)
+    audio_streams = [int(line.split('|')[0]) for line in ffprobe_result.stdout.splitlines() if "audio" in line]
+
+    print(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
+
+    # Analyze each audio stream
+    pan_filters = []
+    for i, stream_index in enumerate(audio_streams):
+        print(f"Analyzing audio stream: {stream_index}")
+
+        # Analyze left channel
+        left_analysis_command = [
+            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
+            "-map", f"0:{stream_index}",  # Explicitly map the audio stream by index
+            "-af", "pan=mono|c0=c0,volumedetect", "-f", "null", "-"
+        ]
+        left_result = subprocess.run(left_analysis_command, capture_output=True, text=True)
+        left_output = left_result.stderr
+
+        # Analyze right channel
+        right_analysis_command = [
+            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
+            "-map", f"0:{stream_index}",  # Explicitly map the audio stream by index
+            "-af", "pan=mono|c0=c1,volumedetect", "-f", "null", "-"
+        ]
+        right_result = subprocess.run(right_analysis_command, capture_output=True, text=True)
+        right_output = right_result.stderr
+
+        # Parse mean volumes
+        def get_mean_volume(output):
+            match = re.search(r"mean_volume:\s*(-?\d+(\.\d+)?)", output)
+            return float(match.group(1)) if match else None
+
+        left_mean_volume = get_mean_volume(left_output)
+        right_mean_volume = get_mean_volume(right_output)
+
+        # Debugging output for clarity
+        print(f"Stream {stream_index} - Left channel mean volume: {left_mean_volume}")
+        print(f"Stream {stream_index} - Right channel mean volume: {right_mean_volume}")
+
+        # Handle cases where volume data is unavailable
+        if left_mean_volume is None or right_mean_volume is None:
+            print(f"Stream {stream_index}: Unable to analyze audio. Skipping this stream.")
+            continue
+
+        # Determine if one channel is significantly louder than the other
+        silence_threshold = -60.0  # dB, adjust as needed
+        if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
+            print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
+            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+        elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
+            print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
+            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+        else:
+            print(f"Stream {stream_index}: Audio is balanced or both channels are silent. No panning applied.")
+
+    return pan_filters
+
+
+def convert_to_mp4(input_file, input_directory, audio_pan):
     output_file_name = f"{input_file.stem.replace('_pm', '')}_sc.mp4"
     output_file = input_directory / output_file_name
+
+    # Detect all audio streams in the input file
+    ffprobe_command = [
+        "ffprobe", "-i", str(input_file),
+        "-show_entries", "stream=index:stream=codec_type",
+        "-select_streams", "a", "-of", "compact=p=0:nk=1", "-v", "0"
+    ]
+    ffprobe_result = subprocess.run(ffprobe_command, capture_output=True, text=True)
+    audio_streams = [
+        int(line.split('|')[0])
+        for line in ffprobe_result.stdout.splitlines() if "audio" in line
+    ]
+
+    # Generate pan filters based on user selection
+    pan_filters = []
+    if audio_pan in {"left", "right", "center"}:
+        for i, stream_index in enumerate(audio_streams):
+            if audio_pan == "left":
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+            elif audio_pan == "right":
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+            elif audio_pan == "center":
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0+c1|c1=c0+c1[outa{i}]")
+    elif audio_pan == "auto":
+        pan_filters = detect_audio_pan(input_file)
+
+    # FFmpeg command setup
     command = [
         "ffmpeg",
         "-i", str(input_file),
-        "-map", "0:v", "-map", "0:a",
-        "-c:v", "libx264",
-        "-movflags", "faststart",
-        "-pix_fmt", "yuv420p",
-        "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000",
-        "-vf", "yadif",
-        "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file)
+        "-map", "0:v", "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p",
+        "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000", "-vf", "yadif",
     ]
-    subprocess.check_call(command)
 
+    # Add audio filters if specified
+    if pan_filters:
+        filter_complex = ";".join(pan_filters)
+        command.extend([
+            "-filter_complex", filter_complex,
+        ])
+        for i in range(len(pan_filters)):
+            command.extend(["-map", f"[outa{i}]"])
+    else:
+        # Default mapping for all audio streams without modification
+        for stream_index in audio_streams:
+            command.extend(["-map", f"0:{stream_index}", "-c:a", "aac", "-b:a", "320000", "-ar", "48000"])
+
+    # Add output file
+    command.append(str(output_file))
+
+    print(f"FFmpeg command: {' '.join(command)}")  # Debugging output
+    subprocess.check_call(command)
+    print(f"MP4 created: {output_file}")
     return output_file
 
-    
+
 def convert_mov_file(input_file, input_directory):
     """Convert a MOV file to FFV1 and MP4 formats using FFmpeg"""    
     output_file1 = input_directory / f"{pathlib.Path(input_file).stem}.mkv"
@@ -261,6 +371,10 @@ def main():
     parser.add_argument("-o", "--output", help="Path to save csv (optional). If provided, MediaInfo extraction will be performed.", required=False)
     parser.add_argument("-m", "--model", default='medium', choices=['tiny', 'base', 'small', 'medium', 'large'], help='The Whisper model to use')
     parser.add_argument("-f", "--format", default='vtt', choices=['vtt', 'srt', 'txt', 'json'], help='The subtitle output format to use')
+    parser.add_argument("-p", "--audio-pan",
+        choices=["left", "right", "none", "center", "auto"],
+        default="none",
+        help="Pan audio to center from left, right, or auto-detect mono audio.")
 
     args = parser.parse_args()
 
@@ -281,7 +395,7 @@ def main():
     create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
 
     print("Converting MKV and DV to MP4...")
-    convert_mkv_dv_to_mp4(input_dir)
+    convert_mkv_dv_to_mp4(input_dir, args.audio_pan)
 
     print("Processing MOV files...")
     process_mov_files(input_dir)
@@ -303,7 +417,7 @@ def main():
         transcribe_directory(input_dir, args.model, args.format)
 
     print("Deleting empty directories...")
-    delete_empty_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
+    delete_empty_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies", "ProcessedDV"])
 
     if args.output:
         project_code_pattern = re.compile(r'(\d{4}_\d{2}_\d{2})')
@@ -342,4 +456,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
