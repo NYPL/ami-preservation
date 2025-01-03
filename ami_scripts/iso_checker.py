@@ -82,8 +82,6 @@ def process_isos(directory):
 
             # DEBUG: Safely serialize and print the XML result
             isolyzer_xml = safe_tostring(isolyzer_result)
-            print("Isolyzer Result (Raw XML):")
-            print(isolyzer_xml)
 
             # Extract success and size status
             success = isolyzer_result.find("statusInfo/success").text

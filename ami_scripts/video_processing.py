@@ -104,10 +104,54 @@ def transcribe_directory(input_directory, model, output_format):
             output_writer(transcription_response, file.stem)
 
 
-def detect_audio_pan(input_file, probe_duration=120):
+def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120):
     """
-    Detect whether the audio is isolated to the left or right channel for each audio stream.
-    Probes only the first `probe_duration` seconds of the file.
+    Detect LTC (Linear Timecode) in a specific channel of an audio stream.
+    This uses `ffmpeg` to isolate one channel and pipe it to `ltcdump`.
+    If LTC is detected, returns True, else False.
+    """
+
+    # channel_map: c0=c0 for left channel only, c0=c1 for right channel only
+    if channel == 'left':
+        pan_filter = 'pan=mono|c0=c0'
+    else:
+        pan_filter = 'pan=mono|c0=c1'
+
+    # Use a WAV container instead of raw s16le
+    # This gives ltcdump a proper audio header to interpret
+    ffmpeg_command = [
+        "ffmpeg",
+        "-t", str(probe_duration),
+        "-i", str(input_file),
+        "-map", f"0:{stream_index}",
+        "-af", pan_filter,
+        "-ar", "48000",     # set sample rate
+        "-ac", "1",          # set to mono
+        "-f", "wav",         # produce a WAV file to stdout
+        "pipe:1"
+    ]
+
+    ltcdump_command = ["ltcdump", "-"]
+
+    ffmpeg_proc = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ltcdump_proc = subprocess.Popen(ltcdump_command, stdin=ffmpeg_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    ffmpeg_proc.stdout.close()  # let ffmpeg_proc get SIGPIPE if ltcdump_proc exits
+    ltcdump_out, ltcdump_err = ltcdump_proc.communicate()
+    print(ltcdump_out)
+    ffmpeg_proc.wait()
+
+    # Check for LTC timecode pattern
+    if ltcdump_out and re.search(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out):
+        return True
+
+    return False
+
+
+def detect_audio_pan(input_file, audio_pan, probe_duration=120):
+    """
+    Extended version: detect mono-only audio or LTC timecode on one channel.
+    If LTC is detected on a channel, we will pan the other channel center.
     """
     # Use ffprobe to get the number of audio streams
     ffprobe_command = [
@@ -120,30 +164,28 @@ def detect_audio_pan(input_file, probe_duration=120):
 
     print(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
 
-    # Analyze each audio stream
     pan_filters = []
     for i, stream_index in enumerate(audio_streams):
         print(f"Analyzing audio stream: {stream_index}")
 
-        # Analyze left channel
+        # Analyze left channel volume
         left_analysis_command = [
             "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
-            "-map", f"0:{stream_index}",  # Explicitly map the audio stream by index
+            "-map", f"0:{stream_index}",
             "-af", "pan=mono|c0=c0,volumedetect", "-f", "null", "-"
         ]
         left_result = subprocess.run(left_analysis_command, capture_output=True, text=True)
         left_output = left_result.stderr
 
-        # Analyze right channel
+        # Analyze right channel volume
         right_analysis_command = [
             "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
-            "-map", f"0:{stream_index}",  # Explicitly map the audio stream by index
+            "-map", f"0:{stream_index}",
             "-af", "pan=mono|c0=c1,volumedetect", "-f", "null", "-"
         ]
         right_result = subprocess.run(right_analysis_command, capture_output=True, text=True)
         right_output = right_result.stderr
 
-        # Parse mean volumes
         def get_mean_volume(output):
             match = re.search(r"mean_volume:\s*(-?\d+(\.\d+)?)", output)
             return float(match.group(1)) if match else None
@@ -151,30 +193,61 @@ def detect_audio_pan(input_file, probe_duration=120):
         left_mean_volume = get_mean_volume(left_output)
         right_mean_volume = get_mean_volume(right_output)
 
-        # Debugging output for clarity
         print(f"Stream {stream_index} - Left channel mean volume: {left_mean_volume}")
         print(f"Stream {stream_index} - Right channel mean volume: {right_mean_volume}")
 
-        # Handle cases where volume data is unavailable
         if left_mean_volume is None or right_mean_volume is None:
             print(f"Stream {stream_index}: Unable to analyze audio. Skipping this stream.")
             continue
 
-        # Determine if one channel is significantly louder than the other
-        silence_threshold = -60.0  # dB, adjust as needed
-        if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
-            print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
+        silence_threshold = -60.0  # dB
+
+        # After determining mean volumes for left and right:
+        left_has_ltc = False
+        right_has_ltc = False
+
+        # If using auto mode, attempt LTC detection on both channels.
+        if audio_pan == "auto":
+            left_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'left', probe_duration=probe_duration)
+            right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration=probe_duration)
+
+        if left_has_ltc and not right_has_ltc:
+            # LTC on left, use right channel audio as mono source
+            print(f"Stream {stream_index}: Left channel LTC detected. Using right channel as mono source.")
             pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
-        elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
-            print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
+        elif right_has_ltc and not left_has_ltc:
+            # LTC on right, use left channel audio as mono source
+            print(f"Stream {stream_index}: Right channel LTC detected. Using left channel as mono source.")
             pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
         else:
-            print(f"Stream {stream_index}: Audio is balanced or both channels are silent. No panning applied.")
+            # If no LTC detected or both LTC:
+            if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
+                # right channel only audible
+                print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+            elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
+                # left channel only audible
+                print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+            else:
+                print(f"Stream {stream_index}: Audio is balanced or both channels have sound. No panning applied.")
 
     return pan_filters
 
 
 def convert_to_mp4(input_file, input_directory, audio_pan):
+    def get_video_resolution(input_file):
+        ffprobe_command = [
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=width,height", "-of", "csv=p=0"
+        ]
+        result = subprocess.run(ffprobe_command + [str(input_file)], capture_output=True, text=True)
+        if result.returncode == 0:
+            width, height = map(int, result.stdout.strip().split(","))
+            return width, height
+        else:
+            raise ValueError(f"Could not determine video resolution: {result.stderr}")
+
     output_file_name = f"{input_file.stem.replace('_pm', '')}_sc.mp4"
     output_file = input_directory / output_file_name
 
@@ -201,14 +274,29 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
             elif audio_pan == "center":
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0+c1|c1=c0+c1[outa{i}]")
     elif audio_pan == "auto":
-        pan_filters = detect_audio_pan(input_file)
+        pan_filters = detect_audio_pan(input_file, audio_pan)
+
+    # Detect resolution and decide cropping
+    try:
+        width, height = get_video_resolution(input_file)
+    except ValueError as e:
+        print(e)
+        return None
+
+    if width == 720 and height == 486:  # NTSC
+        video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4"
+    elif width == 720 and height == 576:  # PAL
+        video_filter = "idet,bwdif=1"
+    else:
+        print(f"Unknown resolution {width}x{height}. Skipping cropping.")
+        video_filter = "idet,bwdif=1"
 
     # FFmpeg command setup
     command = [
         "ffmpeg",
         "-i", str(input_file),
         "-map", "0:v", "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p",
-        "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000", "-vf", "yadif",
+        "-crf", "21", "-vf", video_filter,
     ]
 
     # Add audio filters if specified
@@ -250,7 +338,7 @@ def convert_mov_file(input_file, input_directory):
         "ffmpeg",
         "-i", input_file,
         "-map", "0", "-dn", "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p",
-        "-b:v", "3500000", "-bufsize", "1750000", "-maxrate", "3500000", "-vf", "yadif",
+        "-crf", "21", "-vf", "idet,bwdif=1,crop=w=720:h=480:x=0:y=4",
         "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file2)
     ]
     subprocess.run(command2)
