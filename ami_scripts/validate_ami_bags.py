@@ -545,16 +545,32 @@ class ami_json:
 
     def validate_json(self) -> bool:
         """
-        Perform multiple checks to ensure the JSON is well-formed and consistent:
-        1. check_techfn
-        2. check_reffn
-        3. compare_techfn_reffn
-        4. check_techmd_fields
-        5. Compare with physical media (if media_filepath is set)
-           - compare_techfn_media_filename
-           - check_techmd_values
+        Perform multiple checks to ensure the JSON is well-formed and consistent.
 
-        :return: True if all checks pass, otherwise raises AMIJSONError.
+        These checks include:
+            1. `check_techfn` to verify the presence and format of technical.filename.
+            - Logs a WARNING if not valid.
+            2. `check_reffn` to ensure asset.referenceFilename is valid.
+            - Logs a WARNING if not valid.
+            3. `compare_techfn_reffn` to confirm technical.filename + extension
+            matches asset.referenceFilename.
+            - Logs a WARNING if mismatch is found.
+            4. `check_techmd_fields` to confirm required technical fields are present
+            (depending on media type).
+            - Logs an ERROR if any required fields are missing. Also raises AMIJSONError
+                for missing required fields, making the JSON out of spec.
+            5. If `self.media_filepath` is known:
+                - `compare_techfn_media_filename`: Logs an ERROR if mismatch found.
+                - `check_techmd_values`: Logs a WARNING if some metadata fields are out of spec.
+
+        Warnings generally indicate questionable but potentially ingestable JSON (e.g., 
+        minor mismatches or non-blocking irregularities). Errors indicate the JSON is 
+        out of spec and will likely block ingest.
+
+        :return: True if all checks pass without blocking errors. 
+                If a warning occurs, it still returns True, but logs the warning.
+        :raises AMIJSONError: If the JSON fails a required check (e.g., missing 
+                            required fields), making it out of spec.
         """
         valid = True
         LOGGER.info(f"Checking: {os.path.basename(self.filename)}")
@@ -753,50 +769,6 @@ class ami_json:
 
         return True
 
-    def repair_techmd(self) -> None:
-        """
-        Rebuild the JSON's 'technical' dictionary based on the current media_file's attributes.
-        """
-        if not hasattr(self, 'media_file'):
-            self.set_media_file()
-
-        LOGGER.info(f"Rewriting technical md for {os.path.basename(self.filename)}")
-        self.dict["technical"]["filename"] = self.media_file.base_filename
-        self.dict["technical"]["extension"] = self.media_file.extension
-        self.dict["technical"]["fileFormat"] = self.media_file.format
-
-        if "fileSize" not in self.dict["technical"]:
-            self.dict["technical"]["fileSize"] = {}
-        self.dict["technical"]["fileSize"]["measure"] = self.media_file.size
-        self.dict["technical"]["fileSize"]["unit"] = "B"
-
-        if "dateCreated" not in self.dict["technical"]:
-            self.dict["technical"]["dateCreated"] = self.media_file.date_created
-
-        self.dict["technical"]["durationHuman"] = self.media_file.duration_human
-        if "durationMilli" not in self.dict["technical"]:
-            self.dict["technical"]["durationMilli"] = {}
-        self.dict["technical"]["durationMilli"]["measure"] = self.media_file.duration_milli
-        self.dict["technical"]["durationMilli"]["unit"] = "ms"
-
-        self.dict["technical"]["audioCodec"] = self.media_file.audio_codec
-        if self.media_file.type == "video":
-            self.dict["technical"]["videoCodec"] = self.media_file.video_codec
-
-    def strip_techmd(self) -> None:
-        """
-        Remove any unexpected fields in self.dict["technical"] that are not part of
-        the known 'allowed' fields for AMI JSON.
-        """
-        allowed = [
-            "filename", "extension", "fileFormat", "fileSize",
-            "dateCreated", "durationHuman", "durationMilli",
-            "audioCodec", "videoCodec"
-        ]
-        tdict = self.dict["technical"]
-        keys_to_strip = [k for k in tdict if k not in allowed]
-        for k in keys_to_strip:
-            tdict.pop(k)
 
     def check_techfn(self) -> bool:
         """
@@ -811,36 +783,6 @@ class ami_json:
             )
         return True
 
-    def repair_techfn(self) -> bool:
-        """
-        Attempt to repair technical.filename to match STUB_FN_NOEXT_RE pattern.
-        If successful, also ensures alignment with media_filepath or asset.referenceFilename.
-        """
-        correct_techfn = re.match(STUB_FN_NOEXT_RE, self.dict["technical"]["filename"])
-        if correct_techfn:
-            if hasattr(self, 'media_filepath'):
-                try:
-                    self.compare_techfn_media_filename()
-                except Exception:
-                    LOGGER.error("Extracted technical filename does not match media filename.")
-                    return False
-            try:
-                self.compare_techfn_reffn()
-            except Exception:
-                LOGGER.warning("Extracted technical filename does not match asset.referenceFilename.")
-
-            self.dict["technical"]["filename"] = correct_techfn[0]
-            self.dict["technical"]["extension"] = self.dict["technical"]["extension"].lower()
-            LOGGER.info(
-                f"{self.filename} technical.filename updated to: {self.dict['technical']['filename']}"
-            )
-            return True
-        else:
-            LOGGER.error(
-                f"Valid technical.filename could not be extracted from {self.dict['technical']['filename']}"
-            )
-            return False
-
     def check_reffn(self) -> bool:
         """
         Check that self.dict["asset"]["referenceFilename"] is present and matches FN_RE.
@@ -854,23 +796,6 @@ class ami_json:
             )
         return True
 
-    def repair_reffn(self) -> bool:
-        """
-        Attempt to align asset.referenceFilename with technical.filename/extension.
-        """
-        try:
-            self.check_techfn()
-        except AMIJSONError:
-            LOGGER.error(
-                "Valid asset.referenceFilename cannot be created from "
-                f"{self.dict['technical']['filename']}, {self.dict['technical']['extension']}"
-            )
-            return False
-        else:
-            new_val = self.dict["technical"]["filename"] + '.' + self.dict["technical"]["extension"]
-            self.dict["asset"]["referenceFilename"] = new_val
-            LOGGER.info(f"{self.filename} asset.referenceFilename updated to: {new_val}")
-            return True
 
     def compare_techfn_reffn(self) -> bool:
         """
@@ -943,26 +868,10 @@ class ami_json:
 
 
 # =============================================================================
-#                         ami_bagError and Repairable_Bag
-# =============================================================================
-
-class Repairable_Bag(bagit.Bag):
-    """
-    Subclass of bagit.Bag that can implement 'repair' logic if needed.
-    Currently a placeholder.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def repair(self) -> None:
-        pass
-
-
-# =============================================================================
 #                     ami_bag
 # =============================================================================
 
-class ami_bag(Repairable_Bag):
+class ami_bag(bagit.Bag):
     """
     Represents an AMI bag (JSON only). Validates bag structure, 
     required subdirectories, existence of PM files, etc.
@@ -1103,10 +1012,47 @@ class ami_bag(Repairable_Bag):
 
     def check_amibag(self, fast: bool = True, metadata: bool = False) -> Tuple[bool, bool]:
         """
-        Run a series of validations on this bag. 
-        :param fast: if True, skip full checksum verification (use bagit validate with completeness_only).
-        :param metadata: if True, do deeper JSON checks.
-        :return: (warning, error) booleans indicating any warnings or errors encountered.
+        Run a series of validations on this bag and return warning/error flags.
+        
+        This method performs multiple checks:
+            1. Bag completeness and basic BagIt checks (`self.validate`).
+            - Logs ERROR if the bag fails integrity or completeness checks.
+            2. Filenames checks (`check_filenames`, `check_simple_filenames`, 
+            `check_part_filenames`) to ensure naming conventions:
+            - May log WARNINGS (e.g., if filenames represent complex subobject).
+            - May log ERRORS if part filenames are found or are severely malformed.
+            3. Directory depth (`check_directory_depth`):
+            - Logs WARNING if directories exceed allowed depth.
+            4. File location checks (`check_file_in_roledir`):
+            - Logs ERROR if files are in the wrong directory (e.g., a PM file 
+                is not in PreservationMasters).
+            5. PM <-> MZ/EM/SC balance checks via `compare_fileset_pairs`:
+            - Logs ERROR if mismatch is found, except for PM <-> SC in 
+                certain ISO contexts, which just logs a WARNING.
+            6. Bag type/subtype checks (`check_type`, `check_subtype`, `check_bagstructure_json`):
+            - May log WARNINGS for unrecognized subtype,
+            - Logs ERRORS for invalid structure or missing directories.
+            7. JSON metadata checks if `metadata=True`:
+            - `check_metadata_json` logs WARNINGS for out-of-spec JSON,
+            - Logs ERRORS for missing JSON or invalid metadata.
+            - `check_filenames_md_manifest_concordance_json` logs ERROR if the 
+                basenames do not match up.
+
+        The script’s design:
+        - WARNINGS generally indicate questionable but still ingestable issues
+            (e.g., unusual naming). 
+        - ERRORS indicate out-of-spec conditions that block ingest 
+            (e.g., missing PM files, invalid structure, missing required fields).
+        
+        :param fast: If True (default), uses bagit "fast" validation (skips 
+                    recalculating all checksums).
+        :param metadata: If True, performs deeper JSON checks (e.g., JSON validity 
+                        and matching filenames).
+        :return: A tuple (warning, error) where each is a boolean. 
+                - warning=True if at least one non-blocking but questionable 
+                issue was detected.
+                - error=True if at least one critical issue was detected, 
+                blocking ingestion.
         """
         error = False
         warning = False
@@ -1177,7 +1123,7 @@ class ami_bag(Repairable_Bag):
                 pm_iso = any(f.lower().endswith(".iso") for f in self.pm_filepaths)
                 if pm_iso:
                     # For optical media, only warn
-                    LOGGER.warning(f"Asset balance out of spec for video optical bag: {e.message}")
+                    LOGGER.warning(f"Asset balance out of spec (but acceptable) for video optical bag: {e.message}")
                     warning = True
                 else:
                     # For everything else, it’s still an error
@@ -1539,6 +1485,7 @@ def process_bags(bags: List[str], args: argparse.Namespace, directory_path: str)
             bag = ami_bag(path=bagpath)
             warning, error = bag.check_amibag(fast=args.slow, metadata=args.metadata)
             if error:
+                print('hello' + error)
                 LOGGER.error(f"Invalid bag: {bagpath}")
                 error_bags.append(os.path.basename(bagpath))
             elif warning:
