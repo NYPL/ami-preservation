@@ -885,10 +885,15 @@ class ami_bag(bagit.Bag):
         """
         super().__init__(*args, **kwargs)
 
+        # lists for tracking encountered messages
+        self.error_messages = []
+        self.warning_messages = []
+
         try:
             self.validate(completeness_only=True)
         except bagit.BagValidationError as e:
             LOGGER.error(f"Bag incomplete or invalid oxum: {e.message}")
+            self.error_messages.append("Bag incomplete or invalid oxum")
             raise ami_bagError("Cannot load incomplete bag")
 
         self.name = os.path.basename(self.path)
@@ -898,6 +903,7 @@ class ami_bag(bagit.Bag):
 
         self.data_dirs = set(os.path.split(p)[0][5:] for p in self.data_files)
         if PM_DIR not in self.data_dirs:
+            self.error_messages.append("No PreservationMasters directory found in bag")
             raise ami_bagError("Payload does not contain a PreservationMasters directory")
 
         # Determine media files
@@ -906,10 +912,12 @@ class ami_bag(bagit.Bag):
             if any(p.lower().endswith(ext) for ext in MEDIA_EXTS_FULL)
         }
         if not self.media_filepaths:
+            self.error_messages.append("No media files with accepted extensions found")
             raise ami_bagError(f"Payload does not contain files with accepted extensions: {MEDIA_EXTS_FULL}")
 
         self.pm_filepaths = {p for p in self.media_filepaths if '_pm.' in p}
         if not self.pm_filepaths:
+            self.error_messages.append("No preservation master files found")
             raise ami_bagError("Payload does not contain preservation master files")
 
         self.mz_filepaths = {p for p in self.media_filepaths if '_mz.' in p}
@@ -952,6 +960,7 @@ class ami_bag(bagit.Bag):
         if JSON_EXT in self.data_exts:
             self.type = "json"
         else:
+            self.error_messages.append("No JSON metadata found in bag")
             raise ami_bagError("AMI bag must contain JSON metadata (no Excel logic left).")
 
     def set_subtype_json(self) -> None:
@@ -968,6 +977,7 @@ class ami_bag(bagit.Bag):
             if dirs_ok and exts_ok:
                 self.subtype = stype
         if self.subtype is None:
+            self.warning_messages.append("No recognized JSON subtype for this bag")            
             LOGGER.warning("No recognized JSON subtype for this bag")
             self.subtype = "unknown"
 
@@ -994,6 +1004,7 @@ class ami_bag(bagit.Bag):
         if any('tags' in f for f in self.tagfile_entries()):
             self.tagged = 'tagged'
         elif self.subtype == 'unknown':
+            self.warning_messages.append("Bag subtype unknown; tagging might be needed")
             self.tagged = 'tagging might be needed'
         else:
             self.tagged = 'tagging not needed'
@@ -1062,6 +1073,7 @@ class ami_bag(bagit.Bag):
             self.validate(fast=fast, completeness_only=fast)
         except bagit.BagValidationError as e:
             LOGGER.error(f"Bag out of spec: {e.message}")
+            self.error_messages.append("Bag out of spec (bagit validation error)")
             error = True
 
         # Filenames
@@ -1069,6 +1081,7 @@ class ami_bag(bagit.Bag):
             self.check_filenames()
         except ami_bagError as e:
             LOGGER.warning(f"Filenames out of spec: {e.message}")
+            self.warning_messages.append("Filenames out of spec")
             warning = True
 
         # Complex subobject?
@@ -1076,6 +1089,7 @@ class ami_bag(bagit.Bag):
             self.check_simple_filenames()
         except ami_bagError as e:
             LOGGER.warning(f"Filenames represent complex subobject: {e.message}")
+            self.warning_messages.append("Complex subobject filenames")
             warning = True
 
         # Part filenames
@@ -1083,6 +1097,7 @@ class ami_bag(bagit.Bag):
             self.check_part_filenames()
         except ami_bagError as e:
             LOGGER.error(f"Filenames represent part file: {e.message}")
+            self.error_messages.append("Part filenames found")
             error = True
 
         # Directory depth
@@ -1090,6 +1105,7 @@ class ami_bag(bagit.Bag):
             self.check_directory_depth()
         except ami_bagError as e:
             LOGGER.warning(f"File paths out of spec: {e.message}")
+            self.warning_messages.append("Excess directory depth")
             warning = True
 
         # File location/role
@@ -1097,6 +1113,7 @@ class ami_bag(bagit.Bag):
             self.check_file_in_roledir()
         except ami_bagError as e:
             LOGGER.error(f"File location out of spec: {e.message}")
+            self.error_messages.append("File in wrong directory")
             error = True
 
         # PM <-> MZ
@@ -1105,6 +1122,7 @@ class ami_bag(bagit.Bag):
                 self.compare_fileset_pairs(self.pm_filepaths, self.mz_filepaths, "PM", "MZ")
             except ami_bagError as e:
                 LOGGER.error(f"Asset balance out of spec: {e.message}")
+                self.error_messages.append("Mismatch of PM & MZ")
                 error = True
 
         # PM <-> EM
@@ -1113,6 +1131,7 @@ class ami_bag(bagit.Bag):
                 self.compare_fileset_pairs(self.pm_filepaths, self.em_filepaths, "PM", "EM")
             except ami_bagError as e:
                 LOGGER.error(f"Asset balance out of spec: {e.message}")
+                self.error_messages.append("Mismatch of PM & EM")
                 error = True
 
         # PM <-> SC
@@ -1124,10 +1143,12 @@ class ami_bag(bagit.Bag):
                 if pm_iso:
                     # For optical media, only warn
                     LOGGER.warning(f"Asset balance out of spec (but acceptable) for video optical bag: {e.message}")
+                    self.warning_messages.append("Mismatch of PM & SC for DVDs")
                     warning = True
                 else:
                     # For everything else, it’s still an error
                     LOGGER.error(f"Asset balance out of spec: {e.message}")
+                    self.error_messages.append("Mismatch of PM & SC")
                     error = True
 
 
@@ -1136,6 +1157,7 @@ class ami_bag(bagit.Bag):
             self.check_type()
         except ami_bagError as e:
             LOGGER.warning(f"Bag out of spec: {e.message}")
+            self.warning_messages.append("Unknown or invalid bag type")
             warning = True
 
         # Check subtype
@@ -1143,6 +1165,7 @@ class ami_bag(bagit.Bag):
             self.check_subtype()
         except ami_bagError as e:
             LOGGER.warning(f"Bag subtype out of spec: {e.message}")
+            self.warning_messages.append("Bag subtype not recognized")
             warning = True
 
         # JSON structure
@@ -1150,6 +1173,7 @@ class ami_bag(bagit.Bag):
             self.check_bagstructure_json()
         except ami_bagError as e:
             LOGGER.error(f"Bag structure out of spec: {e.message}")
+            self.error_messages.append("JSON bag structure invalid")
             error = True
 
         # Check JSON filenames
@@ -1157,6 +1181,7 @@ class ami_bag(bagit.Bag):
             self.check_filenames_md_concordance_json()
         except ami_bagError as e:
             LOGGER.error(f"Metadata balance out of spec: {e.message}")
+            self.error_messages.append("Media basenames do not match JSON metadata")
             error = True
 
         # If user wants metadata checks, do them for JSON
@@ -1165,12 +1190,14 @@ class ami_bag(bagit.Bag):
                 self.check_metadata_json()
             except ami_bagError as e:
                 LOGGER.warning(f"JSON metadata out of spec: {e.message}")
+                self.warning_messages.append("JSON metadata out of spec")
                 warning = True
 
             try:
                 self.check_filenames_md_manifest_concordance_json()
             except ami_bagError as e:
                 LOGGER.error(f"JSON metadata out of spec: {e.message}")
+                self.error_messages.append("JSON mismatch in filenames vs. manifest")
                 error = True
 
         return warning, error
@@ -1464,12 +1491,15 @@ def process_single_bag(bagpath: str, args: argparse.Namespace) -> Dict[str, Any]
 
 def process_bags(bags: List[str], args: argparse.Namespace, directory_path: str) -> Dict[str, Any]:
     """
-    Loop over each bag in the provided list, track warnings/errors/valid bags, and return a summary dict.
+    Loop over each bag in the provided list, track warnings/errors/valid bags, 
+    and return a summary dict.
 
     :param bags: List of absolute paths to bag directories.
     :param args: CLI arguments controlling logging and metadata checks.
     :param directory_path: The top-level directory being processed (for summary).
-    :return: Dict with keys for 'directory', 'warning_bags', 'error_bags', 'valid_bags', 'total_bags'.
+    :return: Dict with keys for 'directory', 'warning_bags', 'error_bags', 
+             'valid_bags', 'total_bags', 'error_counter', 'warning_counter', 
+             and 'bag_details'.
     """
     LOGGER.info(f"Checking {len(bags)} folder(s) in {directory_path}")
     if args.quiet:
@@ -1479,59 +1509,132 @@ def process_bags(bags: List[str], args: argparse.Namespace, directory_path: str)
     error_bags = []
     valid_bags = []
 
+    # Collect counters for all error & warning messages
+    error_counter = {}
+    warning_counter = {}
+
+    bag_details = []
+
     for bagpath in tqdm(sorted(bags)):
         LOGGER.info(f"Checking: {bagpath}")
+
         try:
             bag = ami_bag(path=bagpath)
-            warning, error = bag.check_amibag(fast=args.slow, metadata=args.metadata)
-            if error:
-                print('hello' + error)
-                LOGGER.error(f"Invalid bag: {bagpath}")
-                error_bags.append(os.path.basename(bagpath))
-            elif warning:
-                LOGGER.warning(f"Bag may have issues: {bagpath}")
-                warning_bags.append(os.path.basename(bagpath))
-            else:
-                valid_bags.append(os.path.basename(bagpath))
-        except Exception as e:
+        except ami_bagError as e:
+            # Known error from ami_bag constructor
             LOGGER.error(f"Error loading {bagpath}: {e}")
+            # Keep a dictionary structure for each error message
+            if e.message not in error_counter:
+                error_counter[e.message] = {"count": 0, "bags": []}
+            error_counter[e.message]["count"] += 1
+            error_counter[e.message]["bags"].append(os.path.basename(bagpath))
             error_bags.append(os.path.basename(bagpath))
+            continue
+        except Exception as e:
+            # Unexpected exception
+            LOGGER.error(f"Error loading {bagpath}: {e}")
+            # If you want to track these generically:
+            emsg = str(e)
+            if emsg not in error_counter:
+                error_counter[emsg] = {"count": 0, "bags": []}
+            error_counter[emsg]["count"] += 1
+            error_counter[emsg]["bags"].append(os.path.basename(bagpath))
+            error_bags.append(os.path.basename(bagpath))
+            continue
+
+        # If we get here, the bag constructor succeeded
+        warning, error = bag.check_amibag(fast=args.slow, metadata=args.metadata)
+        
+        # Tally each error message
+        for emsg in bag.error_messages:
+            if emsg not in error_counter:
+                error_counter[emsg] = {"count": 0, "bags": []}
+            error_counter[emsg]["count"] += 1
+            error_counter[emsg]["bags"].append(os.path.basename(bagpath))
+
+        # Tally each warning message
+        for wmsg in bag.warning_messages:
+            if wmsg not in warning_counter:
+                warning_counter[wmsg] = {"count": 0, "bags": []}
+            warning_counter[wmsg]["count"] += 1
+            warning_counter[wmsg]["bags"].append(os.path.basename(bagpath))
+
+        if error:
+            LOGGER.error(f"Invalid bag: {bagpath}")
+            error_bags.append(os.path.basename(bagpath))
+        elif warning:
+            LOGGER.warning(f"Bag may have issues: {bagpath}")
+            warning_bags.append(os.path.basename(bagpath))
+        else:
+            valid_bags.append(os.path.basename(bagpath))
+
+        bag_details.append({
+            'bag_name': os.path.basename(bagpath),
+            'warnings': bag.warning_messages,
+            'errors': bag.error_messages
+        })
 
     return {
         'directory': directory_path,
         'warning_bags': warning_bags,
         'error_bags': error_bags,
         'valid_bags': valid_bags,
-        'total_bags': len(bags)
+        'total_bags': len(bags),
+
+        # Pass the counters so we can log them
+        'error_counter': error_counter,
+        'warning_counter': warning_counter,
+        # Bag_details for per-bag breakdown if desired
+        'bag_details': bag_details
     }
 
 
 def log_summary(results: List[Dict[str, Any]]) -> None:
     """
     After processing multiple directories, logs a summary for each.
-
-    :param results: A list of summary dictionaries from process_directory/process_single_bag.
+    Also logs aggregated error/warning message counts if available.
     """
     LOGGER.setLevel(logging.INFO)
     for result in results:
-        print("")
-        LOGGER.info(f"Summary for directory: {result['directory']}")
+        print("")  # blank line
+        directory = result['directory']
+        LOGGER.info(f"Summary for directory: {directory}")
+
         if 'summary' in result:
             LOGGER.info(result['summary'])
-        else:
-            total = result['total_bags']
-            ebags = result['error_bags']
-            wbags = result['warning_bags']
-            vbags = result['valid_bags']
-            if ebags:
-                LOGGER.info(f"{len(ebags)} of {total} bags NOT ready for ingest")
-                LOGGER.info("Bags not ready: " + ", ".join(ebags))
-            if wbags:
-                LOGGER.info(f"{len(wbags)} of {total} bags ready but with potential issues")
-                LOGGER.info("Bags with potential issues: " + ", ".join(wbags))
-            if vbags:
-                LOGGER.info(f"{len(vbags)} of {total} bags fully ready")
-                LOGGER.info("Bags ready: " + ", ".join(vbags))
+            continue
+
+        total = result['total_bags']
+        ebags = result['error_bags']
+        wbags = result['warning_bags']
+        vbags = result['valid_bags']
+
+        # Normal summary
+        if ebags:
+            LOGGER.info(f"{len(ebags)} of {total} bags NOT ready for ingest")
+            LOGGER.info("Bags not ready: " + ", ".join(ebags))
+        if wbags:
+            LOGGER.info(f"{len(wbags)} of {total} bags ready but with potential issues")
+            LOGGER.info("Bags with potential issues: " + ", ".join(wbags))
+        if vbags:
+            LOGGER.info(f"{len(vbags)} of {total} bags fully ready")
+            LOGGER.info("Bags ready: " + ", ".join(vbags))
+
+            # Detailed counts
+            error_counter = result.get('error_counter', {})
+            warning_counter = result.get('warning_counter', {})
+
+            if error_counter:
+                LOGGER.info("\nDetailed Error Counts:")
+                # sort by descending count
+                for emsg, data in sorted(error_counter.items(), key=lambda x: x[1]["count"], reverse=True):
+                    LOGGER.info(f"  {emsg} : {data['count']}  (bags: {', '.join(data['bags'])})")
+
+            if warning_counter:
+                LOGGER.info("\nDetailed Warning Counts:")
+                # similarly sorted
+                for wmsg, data in sorted(warning_counter.items(), key=lambda x: x[1]["count"], reverse=True):
+                    LOGGER.info(f"  {wmsg} : {data['count']}  (bags: {', '.join(data['bags'])})")
 
 
 def main() -> None:
