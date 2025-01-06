@@ -885,10 +885,24 @@ class ami_bag(bagit.Bag):
         """
         super().__init__(*args, **kwargs)
 
-        # lists for tracking encountered messages
+        # Lists for tracking encountered messages
         self.error_messages = []
         self.warning_messages = []
 
+        self.name = os.path.basename(self.path)
+        # 1) Gather every physical file in /data, plus see if it’s in the manifest
+        self.all_data_files = self._walk_bag_directory()
+        
+        # Gather payload filepaths from the bag's manifest
+        self.data_files = set(self.payload_entries().keys())
+        self.data_count = len(self.data_files)
+        self.data_exts = set(os.path.splitext(fn)[1].lower() for fn in self.data_files)
+        self.data_dirs = set(os.path.split(p)[0][5:] for p in self.data_files)
+
+        # 1) Identify & handle hidden macOS files BEFORE bag validation
+        self.handle_macos_hidden_files()
+
+        # 2) Now run completeness check
         try:
             self.validate(completeness_only=True)
         except bagit.BagValidationError as e:
@@ -896,49 +910,94 @@ class ami_bag(bagit.Bag):
             self.error_messages.append("Bag incomplete or invalid oxum")
             raise ami_bagError("Cannot load incomplete bag")
 
-        self.name = os.path.basename(self.path)
-        self.data_files = set(self.payload_entries().keys())
-        self.data_count = len(self.data_files)
-        self.data_exts = set(os.path.splitext(fn)[1].lower() for fn in self.data_files)
-
-        self.data_dirs = set(os.path.split(p)[0][5:] for p in self.data_files)
+        # 3) Continue normal checks (e.g., must have PreservationMasters directory)
         if PM_DIR not in self.data_dirs:
             self.error_messages.append("No PreservationMasters directory found in bag")
             raise ami_bagError("Payload does not contain a PreservationMasters directory")
 
-        # Determine media files
+        # Check if there are media files
         self.media_filepaths = {
             os.path.join(self.path, p) for p in self.data_files
             if any(p.lower().endswith(ext) for ext in MEDIA_EXTS_FULL)
         }
         if not self.media_filepaths:
             self.error_messages.append("No media files with accepted extensions found")
-            raise ami_bagError(f"Payload does not contain files with accepted extensions: {MEDIA_EXTS_FULL}")
+            raise ami_bagError(
+                f"Payload does not contain files with accepted extensions: {MEDIA_EXTS_FULL}"
+            )
+
+        self.mz_filepaths = {p for p in self.media_filepaths if '_mz.' in p}
+        self.em_filepaths = {p for p in self.media_filepaths if '_em.' in p}
+        self.sc_filepaths = {p for p in self.media_filepaths if '_sc.' in p}
 
         self.pm_filepaths = {p for p in self.media_filepaths if '_pm.' in p}
         if not self.pm_filepaths:
             self.error_messages.append("No preservation master files found")
             raise ami_bagError("Payload does not contain preservation master files")
 
-        self.mz_filepaths = {p for p in self.media_filepaths if '_mz.' in p}
-        self.em_filepaths = {p for p in self.media_filepaths if '_em.' in p}
-        self.sc_filepaths = {p for p in self.media_filepaths if '_sc.' in p}
-
+        # Then set compression, set_type, etc.
         self.set_compression()
-
-        # Because Excel is removed, we only handle JSON
         self.type = None
         self.set_type()
 
-        # Only JSON subtypes remain
         self.subtype = None
         self.set_subtype_json()
         self.set_metadata_json()
-
         self.set_tagged()
 
         LOGGER.info(f"{self.path} successfully loaded as {self.type} {self.subtype} bag")
 
+    def _walk_bag_directory(self) -> Set[str]:
+        """
+        Return a set of all relative file paths physically in the `data/` folder 
+        (not just what's in the manifest).
+        """
+        all_files = set()
+        for root, dirs, files in os.walk(self.path):
+            for f in files:
+                # compute relative path *within* the bag
+                full_path = os.path.join(root, f)
+                rel_path = os.path.relpath(full_path, start=self.path)
+                # e.g. "data/.DS_Store"
+                all_files.add(rel_path)
+        return all_files
+
+    def handle_macos_hidden_files(self) -> None:
+        def is_hidden_macos_file(fn: str) -> bool:
+            base = os.path.basename(fn)
+            return (base == ".DS_Store") or base.startswith("._")
+
+        hidden_in_manifest = []
+        hidden_postbag = []
+
+        for df in list(self.all_data_files):
+            if is_hidden_macos_file(df):
+                # Is it in the manifest?
+                if df in self.data_files:
+                    hidden_in_manifest.append(df)
+                else:
+                    hidden_postbag.append(df)
+
+        # 1) Flag errors for hidden files in the manifest
+        for hf in hidden_in_manifest:
+            msg = f"Hidden macOS file found in bag manifest: {hf}"
+            LOGGER.error(msg)
+            self.error_messages.append(msg)
+
+        # 2) Remove hidden files not in the manifest from disk
+        for hf in hidden_postbag:
+            full_path = os.path.join(self.path, hf)
+            try:
+                os.remove(full_path)
+                LOGGER.info(f"Removed hidden macOS file not in manifest: {full_path}")
+                # Also remove from our all_data_files set
+                self.all_data_files.remove(hf)
+            except Exception as e:
+                wmsg = f"Could not remove hidden macOS file {full_path}: {e}"
+                LOGGER.warning(wmsg)
+                self.warning_messages.append(wmsg)
+
+    
     def set_compression(self) -> None:
         """
         Check whether PM files are all in compressed, uncompressed, or uncompressable formats.
@@ -1400,7 +1459,7 @@ def _configure_logging(args: argparse.Namespace) -> None:
     """
     Configure the logger based on command-line arguments (log file or not).
     """
-    log_format = "%(name)s: %(asctime)s - %(levelname)s - %(message)s"
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
     if args.log:
         logging.basicConfig(filename=args.log, level=logging.INFO, format=log_format)
     else:
@@ -1625,13 +1684,13 @@ def log_summary(results: List[Dict[str, Any]]) -> None:
             warning_counter = result.get('warning_counter', {})
 
             if error_counter:
-                LOGGER.info("\nDetailed Error Counts:")
+                LOGGER.info("Detailed Error Counts:")
                 # sort by descending count
                 for emsg, data in sorted(error_counter.items(), key=lambda x: x[1]["count"], reverse=True):
                     LOGGER.info(f"  {emsg} : {data['count']}  (bags: {', '.join(data['bags'])})")
 
             if warning_counter:
-                LOGGER.info("\nDetailed Warning Counts:")
+                LOGGER.info("Detailed Warning Counts:")
                 # similarly sorted
                 for wmsg, data in sorted(warning_counter.items(), key=lambda x: x[1]["count"], reverse=True):
                     LOGGER.info(f"  {wmsg} : {data['count']}  (bags: {', '.join(data['bags'])})")
