@@ -573,6 +573,8 @@ class ami_json:
                             required fields), making it out of spec.
         """
         valid = True
+        errors = []
+
         LOGGER.info(f"Checking: {os.path.basename(self.filename)}")
 
         # Tech filename
@@ -614,12 +616,18 @@ class ami_json:
             try:
                 self.check_techmd_values()
             except AMIJSONError as e:
+                errors.append(e.message)
                 LOGGER.warning(f"JSON metadata out of spec: {e.message}")
                 valid = False
         else:
             LOGGER.warning("Cannot check technical metadata vs. media file—no media file location known.")
 
-        return valid
+        if not valid:
+            # Combine them into one big message if you have multiple
+            combined = "\n".join(errors) or "At least one JSON check failed — see logs for details."
+            raise AMIJSONError(combined)
+        else:
+            return True
 
     def check_techmd_fields(self) -> bool:
         """
@@ -863,7 +871,6 @@ class ami_json:
         Log and raise an AMIJSONError.
         :param msg: The error message.
         """
-        logging.error(msg + '\n')
         raise AMIJSONError(msg)
 
 
@@ -1248,9 +1255,16 @@ class ami_bag(bagit.Bag):
             try:
                 self.check_metadata_json()
             except ami_bagError as e:
-                LOGGER.warning(f"JSON metadata out of spec: {e.message}")
-                self.warning_messages.append("JSON metadata out of spec")
-                warning = True
+                # If it’s a mismatch, treat it as an error
+                if "Duration mismatch" in e.message:
+                    LOGGER.error(f"JSON metadata out of spec: {e.message}")
+                    self.error_messages.append("JSON metadata out of spec")
+                    error = True
+                else:
+                    # Keep other JSON issues as warnings
+                    LOGGER.warning(f"JSON metadata out of spec: {e.message}")
+                    self.warning_messages.append("JSON metadata out of spec")
+                    warning = True
 
             try:
                 self.check_filenames_md_manifest_concordance_json()
@@ -1401,25 +1415,42 @@ class ami_bag(bagit.Bag):
         return True
 
     def check_metadata_json(self) -> bool:
-        """
-        Validate each .json file in the bag using ami_json.validate_json.
-        Raises ami_bagError if any .json fails validation.
-        """
         if not self.metadata_files:
             raise ami_bagError("JSON bag has no .json files!")
+
         bad_js = []
+
         for fn in sorted(self.metadata_files):
             jpath = os.path.join(self.path, fn)
             j_obj = ami_json(filepath=jpath)
             ex = j_obj.dict["technical"]["extension"]
             j_obj.set_mediafilepath(jpath.replace('json', ex))
+
             try:
+                # Run your JSON validation
                 j_obj.validate_json()
+
+            except AMIJSONError as e:
+                # 1) Mark this JSON file as bad
+                bad_js.append(fn)
+
+                # 2) If it's specifically a duration mismatch, treat it as a *hard error*
+                if "Duration mismatch" in e.message:
+                    # Re-raise an ami_bagError right now
+                    raise ami_bagError(
+                        f"Duration mismatch in {fn}: {e.message}"
+                    )
+                else:
+                    # Otherwise keep it as a warning (no traceback)
+                    LOGGER.warning(f"Validation error for {fn}: {e}")
+
             except Exception as e:
                 bad_js.append(fn)
-                LOGGER.warning(f"Validation error for {fn}: {e}", exc_info=True)
+                LOGGER.warning(f"Other validation error for {fn}: {e}")
+
         if bad_js:
             raise ami_bagError(f"JSON files contain formatting errors: {bad_js}")
+
         return True
 
     def check_filenames_md_manifest_concordance_json(self) -> bool:
