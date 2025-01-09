@@ -132,10 +132,10 @@ Both the DAR and MDR forms include questions designed to determine the type of a
 #### Implications of Access Type
 
 - **External Access (Off-Site)**
-   - Items shared externally will be subject to a copyright review by the Rights and Legal departments. Legal may require a permissions agreement to be issued to the external party, and requesters will be contacted by the Rights department with further instructions in these cases. Requests that are not approved for VIP status due to copyright issues should be submitted to the [Permissions Department](https://www.nypl.org/help/get-what-you-need/audio-video-files).
+   - Items shared externally will be subject to a copyright review by the Rights and Legal departments. Legal may require a permissions agreement to be issued to the external party, and requesters will be contacted by the Rights department with further instructions in these cases. Requests that are not approved for Priority status due to copyright issues should be submitted to the [Permissions Department](https://www.nypl.org/help/get-what-you-need/audio-video-files).
 
 - **On-Site Access**
-   - On-site access is generally simpler and does not require the additional steps of rights clearance or VIP approval. The requested files can be made available more quickly since they remain within the Library's controlled environment.
+   - On-site access is generally simpler and does not require the additional steps of rights clearance or Priority approval. The requested files can be made available more quickly since they remain within the Library's controlled environment.
 
 
 ## When to Submit an MDR/DAR Form Yourself or When to Direct a Patron to the Permissions Team
@@ -151,10 +151,10 @@ It’s important to understand when to submit an MDR or DAR form yourself and wh
 - **On-Site Usage:**
   - **Simpler Process:** On-site usage of materials does not generally require the same level of permissions clearance. In these cases, you can submit a DAR or MDR form yourself, depending on whether the item is already digitized or needs to be digitized.
 
-## Handling VIP Requests
+## Handling Priority Requests
 
-### Special Considerations for VIP Requests
+### Special Considerations for Priority Requests
 
-Although the DAR and MDR forms do not include a designated field for noting a request's VIP status, choosing "Donor request" under item usage generally prompts further discussion on the necessary steps. Requesters are also encouraged to use the "Notes" field to provide additional details, which can help streamline the process.
+Although the DAR and MDR forms do not include a designated field for noting a request's priority status, choosing "Donor request" under item usage generally prompts further discussion on the necessary steps. Requesters are also encouraged to use the "Notes" field to provide additional details, which can help streamline the process.
 
-- **Process for VIP Requests:** While VIP requests are managed similarly to other requests, there are instances where the Rights Clearance process may be waived. This can occur with the express approval of Senior Leaders, who are part of a specific assignment group in ServiceNow. Once a request is flagged as VIP, these leaders will be involved through ticket assignment after an initial review.
+- **Process for Priority Requests:** While priority requests are managed similarly to other requests, there are instances where the Rights Clearance process may be waived. This can occur with the express approval of Senior Leaders, who are part of a specific assignment group in ServiceNow. Once a request is flagged as Priority, these leaders will be involved through ticket assignment after an initial review.
