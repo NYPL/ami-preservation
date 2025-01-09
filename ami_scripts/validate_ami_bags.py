@@ -139,27 +139,6 @@ def convert_dotKeyToNestedDict(tree: Dict[str, Any], key: str, value: Any) -> Di
     return tree
 
 
-def convert_nestedDictToDotKey(tree: Dict[str, Any],
-                               separator: str = ".",
-                               prefix: str = "") -> Dict[str, Any]:
-    """
-    Convert a nested dictionary into a dict of dot.keys.
-    
-    :param tree: The nested dictionary.
-    :param separator: The dot (or other) separator.
-    :param prefix: The prefix to prepend to keys.
-    :return: A flat dictionary with dot-separated keys.
-    """
-    new_tree = {}
-    for key, value in tree.items():
-        new_key = prefix + key
-        if isinstance(value, dict):
-            new_tree.update(convert_nestedDictToDotKey(value, separator, new_key + separator))
-        else:
-            new_tree[new_key] = value
-    return new_tree
-
-
 # =============================================================================
 #            ami_bag_constants (JSON only)
 # =============================================================================
@@ -1257,8 +1236,9 @@ class ami_bag(bagit.Bag):
             except ami_bagError as e:
                 # If it’s a mismatch, treat it as an error
                 if "Duration mismatch" in e.message:
-                    LOGGER.error(f"JSON metadata out of spec: {e.message}")
-                    self.error_messages.append("JSON metadata out of spec")
+                    detailed_msg = f"JSON metadata error: {e.message}"
+                    LOGGER.error(detailed_msg)
+                    self.error_messages.append(detailed_msg)
                     error = True
                 else:
                     # Keep other JSON issues as warnings
