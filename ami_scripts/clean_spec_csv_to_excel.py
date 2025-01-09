@@ -23,14 +23,32 @@ def get_args():
                         help='path to the config file', default='config.json', required=False)
     parser.add_argument('-v', '--vendor',
                         help='Use vendor mode (skips certain cleanup steps and uses default Excel writer)',
-                        action='store_true') 
+                        action='store_true')
+    parser.add_argument('-pt', '--project-type',
+                    help="Project type, must be one of: exhibition, programmatic, priority, public, researcher",
+                    choices=['exhibition', 'programmatic', 'priority', 'public', 'researcher'],
+                    required=False) 
     parser.add_argument('-t', '--trello', help='Create a Trello card for each unique Archival Box Barcode', action='store_true')
     parser.add_argument('--single-card', help='Create a single Trello card for the batch', action='store_true')
 
-
-
     args = parser.parse_args()
+
+    # Make the `-pt` argument required unless `-v` is used
+    if not args.vendor and not args.project_type:
+        parser.error("--project-type (-pt) is required unless --vendor (-v) is specified.")
+
     return args
+
+# Function to map project types to the desired text values
+def map_project_type(project_type):
+    mapping = {
+        'exhibition': 'Exhibition/Public Program',
+        'programmatic': 'Programmatic Digitization',
+        'priority': 'Priority',
+        'public': 'Public Order',
+        'researcher': 'Researcher Request'
+    }
+    return mapping.get(project_type, '')
 
 def detect_encoding(file_path):
     with open(file_path, 'rb') as file:
@@ -59,8 +77,6 @@ def determine_type_format(row):
     else:
         return None, None, ''
 
-    
-
 def map_division_code(vernacular_code):
     mapping = {
         'SCL': 'scb',
@@ -79,7 +95,6 @@ def map_division_code(vernacular_code):
 
     }
     return mapping.get(vernacular_code, '')  # Return empty string if no match
-
 
 def map_csv_columns(df):
 
@@ -158,12 +173,10 @@ def map_csv_columns(df):
 
     return df
 
-
 def read_config(config_path):
     with open(config_path, 'r') as f:
         config = json.load(f)
     return config
-
 
 def replace_characters(df, replacements):
     for column in df:
@@ -172,12 +185,10 @@ def replace_characters(df, replacements):
             new_char = replacement['replace']
             df[column] = df[column].apply(lambda x: re.sub(old_char, new_char, x) if isinstance(x, str) else x)
 
-
 def apply_format_fixes(df, format_fixes):
     for target_type, formats in format_fixes.items():
         for fmt in formats:
             df.loc[df['source.object.format'] == fmt, 'source.object.type'] = target_type
-
 
 def get_box_barcode(row, df):
     """
@@ -195,7 +206,6 @@ def get_box_barcode(row, df):
             break  # Stop after finding the first matching barcode
     
     return barcode_value
-
 
 def categorize_and_create_trello_cards(df, single_card=False):
     api_key = os.getenv('TRELLO_API_KEY')
@@ -248,7 +258,6 @@ def categorize_and_create_trello_cards(df, single_card=False):
         if not work_order_id:
             work_order_id = str(row.get('WorkOrderId', '')).strip()
 
-
     def generate_description(formats, titles):
         format_desc = "; ".join([f"{count} {f} media objects" for f, count in formats.items()])
         title_desc = "; ".join(titles)
@@ -281,8 +290,6 @@ def categorize_and_create_trello_cards(df, single_card=False):
     for category, barcodes in barcodes_per_category.items():
         print(f"{len(barcodes)} {category} Barcodes: {', '.join(str(barcode) for barcode in barcodes)}")
 
-
-
 def create_card(api_key, token, list_id, card_name, card_desc=""):
     """Create a card in a specified Trello list"""
     url = "https://api.trello.com/1/cards"
@@ -298,7 +305,6 @@ def create_card(api_key, token, list_id, card_name, card_desc=""):
         print(f"Card '{card_name}' created successfully!")
     else:
         print(f"Failed to create card. Status code: {response.status_code}, Response: {response.text}")
-
 
 def cleanup_csv(args):
     if args.source:
@@ -326,6 +332,10 @@ def cleanup_csv(args):
 
         # Assign the project code to all rows in the new column
         df['bibliographic.projectCode'] = args.projectcode
+        
+        # Add the projectType column based on the `-pt` argument
+        if args.project_type:
+            df['projectType'] = map_project_type(args.project_type)
 
         # Sort the DataFrame by 'bibliographic.primaryID'
         df.sort_values(by='bibliographic.primaryID', inplace=True)
@@ -358,8 +368,6 @@ def cleanup_csv(args):
                     writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
                     df.to_excel(writer, sheet_name='Sheet1')
                     writer.close()
-
-        
 
 def main():
     arguments = get_args()
