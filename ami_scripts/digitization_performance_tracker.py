@@ -24,8 +24,9 @@ def get_args():
                         help='Filter output by specific engineers (last names).')
     parser.add_argument('-H', '--historical', action='store_true',
                         help='Analyze data from all years instead of just the current year.')
-    parser.add_argument('-p', '--previous-fiscal', action='store_true',
-                    help='Analyze data from the previous fiscal year.')
+    parser.add_argument('-p', '--previous-fiscal', nargs='?', const='auto', default=None,
+                        help='Analyze data from the *previous* fiscal year (when used alone), '
+                             'or from a specified fiscal year (e.g. -p FY23, -p FY24).')
     return parser.parse_args()
 
 def fetch_data_from_jdbc():
@@ -51,7 +52,7 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
-        query = 'SELECT "asset.referenceFilename", "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "digitizationProcess.playbackDevice.model", "digitizationProcess.playbackDevice.serialNumber", "cmsCollectionTitle" FROM tbl_metadata'
+        query = 'SELECT "asset.referenceFilename", "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "digitizationProcess.playbackDevice.model", "digitizationProcess.playbackDevice.serialNumber", "cmsCollectionTitle", "projectType" FROM tbl_metadata'
         curs = conn.cursor()
         curs.execute(query)
 
@@ -96,40 +97,58 @@ def get_fiscal_year(date):
 
     return f"FY{str(fiscal_year)[2:]}"
 
-def process_data(df, args, fiscal=False, previous_fiscal=False):
+def process_data(df, args, fiscal=False):
     def convert_date(date_str):
         if "-" in str(date_str):
-            # YYYY-MM-DD format
+            # YYYY-MM-DD
             return pd.to_datetime(date_str, format='%Y-%m-%d', errors='coerce')
         else:
-            # M/D/Y format
+            # M/D/Y
             return pd.to_datetime(date_str, format='%m/%d/%Y', errors='coerce')
 
-    # Apply the function to the date column
+    # Convert date
     df['technical.dateCreated'] = df['technical.dateCreated'].apply(convert_date)
 
     # Filter by engineer if specified
     if args.engineer:
         df = df[df['digitizer.operator.lastName'].isin(args.engineer)].copy()
 
-    # Assigning calendar year, fiscal year, and month using .loc to avoid SettingWithCopyWarning
+    # Assign calendar/fiscal info
     df.loc[:, 'calendar_year'] = df['technical.dateCreated'].dt.year
     df.loc[:, 'fiscal_year'] = df['technical.dateCreated'].apply(get_fiscal_year)
-    df.loc[:, 'month'] = df['technical.dateCreated'].dt.strftime('%Y-%m')  # Year-Month format
+    df.loc[:, 'month'] = df['technical.dateCreated'].dt.strftime('%Y-%m')
 
     current_date = datetime.datetime.now()
     current_fiscal_year = get_fiscal_year(current_date)
-    previous_fiscal_year = f"FY{int(current_fiscal_year[2:]) - 1}"
+    prior_fiscal_year = f"FY{int(current_fiscal_year[2:]) - 1}"
 
-    if previous_fiscal:
-        df = df[df['fiscal_year'] == previous_fiscal_year].copy()
-    elif not args.historical:
-        if fiscal:
-            df = df[df['fiscal_year'] == current_fiscal_year].copy()
+    # 1) If user passed -H or --historical, skip year filtering
+    if args.historical:
+        # Use all data, no filtering needed
+        return df
+
+    # 2) If user specified -p with or without a year
+    if args.previous_fiscal is not None:
+        if args.previous_fiscal == 'auto':
+            # They just typed -p (no argument)
+            # so use prior_fiscal_year
+            df = df[df['fiscal_year'] == prior_fiscal_year].copy()
         else:
-            df = df[df['calendar_year'] == current_date.year].copy()
+            # They typed something like -p FY23 or -p FY24
+            # We'll assume they typed a valid string like "FY24"
+            chosen_fy = args.previous_fiscal
+            df = df[df['fiscal_year'] == chosen_fy].copy()
+        return df
 
+    # 3) If user explicitly wants the *current* fiscal year
+    if fiscal:
+        df = df[df['fiscal_year'] == current_fiscal_year].copy()
+        return df
+
+    # 4) Otherwise, default to calendar year
+    df = df[df['calendar_year'] == current_date.year].copy()
     return df
+
 
 def classify_media_types(df):
     # Create a new DataFrame to avoid modifying the original while it's being sliced
@@ -155,29 +174,30 @@ def classify_media_types(df):
     # Return the modified DataFrame
     return df_copy
 
-def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=False):
+def display_monthly_output_by_operator(df, args, fiscal=False):
+    
+    df_filtered = df.copy()
+    df_filtered['technical.fileSize.measure'] = pd.to_numeric(df_filtered['technical.fileSize.measure'], errors='coerce')
+
+    total_file_size = df_filtered['technical.fileSize.measure'].sum()
+    formatted_file_size = format_file_size(total_file_size)
+    
     df_pm = df[df['asset.fileRole'] == 'pm']
     df_pm = classify_media_types(df_pm) 
 
     current_date = datetime.datetime.now()
     current_fiscal_year = get_fiscal_year(current_date)
-    previous_fiscal_year = f"FY{int(current_fiscal_year[2:]) - 1}"
+    prior_fiscal_year = f"FY{int(current_fiscal_year[2:]) - 1}"
 
-    if previous_fiscal:
-        df_filtered = df[df['fiscal_year'] == previous_fiscal_year]
-        df_pm = df_pm[df_pm['fiscal_year'] == previous_fiscal_year]
-        year_label = previous_fiscal_year
-    elif args.historical:
-        df_filtered = df
-        df_pm = df_pm
+    if args.historical:
         year_label = "All Years"
+    elif args.previous_fiscal == 'auto':
+        year_label = prior_fiscal_year
+    elif args.previous_fiscal:  # e.g. "FY24"
+        year_label = args.previous_fiscal
     elif fiscal:
-        df_filtered = df[df['fiscal_year'] == current_fiscal_year]
-        df_pm = df_pm[df_pm['fiscal_year'] == current_fiscal_year]
         year_label = current_fiscal_year
     else:
-        df_filtered = df[df['calendar_year'] == current_date.year]
-        df_pm = df_pm[df_pm['calendar_year'] == current_date.year]
         year_label = str(current_date.year)
 
     combine_dict = {
@@ -188,6 +208,13 @@ def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=F
         'THE': 'THE + TOFT',
         'TOFT': 'THE + TOFT'
     }
+
+    total_counts_by_project_type = (
+        df_pm.groupby('projectType')['bibliographic.primaryID']
+        .nunique()
+        .reset_index()
+        .rename(columns={'bibliographic.primaryID': 'Unique Items'})
+    )
 
     # Group by media type, month, and division code, then count unique IDs
     monthly_media_counts = df_pm.groupby(['media_type', 'month', 'bibliographic.vernacularDivisionCode']).agg({
@@ -303,9 +330,6 @@ def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=F
     total_items_per_month_summed = output_sum['bibliographic.primaryID'].sum()
     print(f"Total digitized items (summed across months): {total_items_per_month_summed}")
 
-    df_filtered['technical.fileSize.measure'] = pd.to_numeric(df_filtered['technical.fileSize.measure'], errors='coerce')
-    total_file_size = df_filtered['technical.fileSize.measure'].sum()
-    formatted_file_size = format_file_size(total_file_size)
     print(f'\nTotal file size from all records: {formatted_file_size}')
     print(output_by_operator_summed)
 
@@ -324,31 +348,32 @@ def display_monthly_output_by_operator(df, args, fiscal=False, previous_fiscal=F
     plt.legend(title='Digitizer')
     plt.show()
 
-    return output_by_operator, year_label, total_items_per_month_summed, total_file_size, total_media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division
+    return output_by_operator, year_label, total_items_per_month_summed, total_file_size, total_media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type
 
 def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None, formatted_grand_total_duration=""):
     if 'digitizer.operator.lastName' not in df.columns:
         print("\nThe 'digitizer.operator.lastName' field is not present in the DataFrame. Skipping the function.\n")
         return
 
+    # 2) Just create the pm subset
     df_pm = df[df['asset.fileRole'] == 'pm']
 
+    # 3) Derive the chart title from the actual flags
     current_date = datetime.datetime.now()
     current_fiscal_year = get_fiscal_year(current_date)
-    previous_fiscal_year = f"FY{int(current_fiscal_year[2:]) - 1}"
+    prior_fiscal_year = f"FY{int(current_fiscal_year[2:]) - 1}"
 
-    if previous_fiscal:
-        df_pm = df_pm[df_pm['fiscal_year'] == previous_fiscal_year]
-        year_label = previous_fiscal_year
-    elif args.historical:
+    if args.historical:
         year_label = "All Years"
+    elif args.previous_fiscal == 'auto':
+        year_label = prior_fiscal_year
+    elif args.previous_fiscal:  # e.g. "FY23", "FY22"
+        year_label = args.previous_fiscal
     elif fiscal:
-        df_pm = df_pm[df_pm['fiscal_year'] == current_fiscal_year]
         year_label = current_fiscal_year
     else:
-        df_pm = df_pm[df_pm['calendar_year'] == current_date.year]
         year_label = str(current_date.year)
-    
+
     if args.engineer:
         df_pm = df_pm[df_pm['digitizer.operator.lastName'].isin(args.engineer)]
 
@@ -435,7 +460,7 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
 
     return filtered_data
 
-def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division):
+def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type):
     engineer_name = "_".join(args.engineer) if args.engineer else ""
     
     # Determine the report type based on the args
@@ -567,6 +592,34 @@ def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_
         pdf.savefig(fig)  # Save the full figure with all pie charts
         plt.close(fig)
 
+        fig, ax = plt.subplots(figsize=(12, 6))
+        # Sort by descending count if desired
+        total_counts_by_project_type = total_counts_by_project_type.sort_values('Unique Items', ascending=False)
+        
+        sns.barplot(
+            x='Unique Items',
+            y='projectType',
+            data=total_counts_by_project_type,
+            palette='Paired',  # or your favorite palette
+            ax=ax
+        )
+        ax.set_title(f'Objects Digitized by Project Type ({year_label})', fontsize=16)
+        ax.set_xlabel('Number of Unique Items')
+        ax.set_ylabel('Project Type')
+        
+        # Annotate each bar
+        for p in ax.patches:
+            width = p.get_width()
+            ax.annotate(f'{int(width)}',
+                        xy=(width, p.get_y() + p.get_height() / 2),
+                        xytext=(5, 0),  # offset
+                        textcoords='offset points',
+                        ha='left', va='center')
+        
+        plt.tight_layout()
+        pdf.savefig(fig)
+        plt.close(fig)
+
         # Items Digitized Per SPEC Collection ID
         # Cutting out text after comma characters for collection titles
         spec_collection_usage['SPEC Collection Title'] = spec_collection_usage['SPEC Collection Title'].str.split(',').str[0]
@@ -629,8 +682,8 @@ def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_
 def main():
     args = get_args()
     df = fetch_data_from_jdbc()
-    df_processed = process_data(df, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
-    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division = display_monthly_output_by_operator(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal)
+    df_processed = process_data(df, args, fiscal=args.fiscal)
+    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type = display_monthly_output_by_operator(df_processed, args, fiscal=args.fiscal)
     if line_data is None:
         print("Error: Missing data. Exiting the program.")
         return
@@ -641,7 +694,7 @@ def main():
     filtered_data = plot_objects_by_division_code(df_processed, year_label)
 
     bar_data = plot_object_format_counts(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal, formatted_file_size=formatted_file_size, total_items_per_month_summed=total_items_per_month_summed, media_counts=media_counts, formatted_grand_total_duration=formatted_grand_total_duration)
-    save_plot_to_pdf(line_data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division)
+    save_plot_to_pdf(line_data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type)
 
 if __name__ == "__main__":
     main()
