@@ -27,20 +27,23 @@ def get_args():
     parser.add_argument('-p', '--previous-fiscal', nargs='?', const='auto', default=None,
                         help='Analyze data from the *previous* fiscal year (when used alone), '
                              'or from a specified fiscal year (e.g. -p FY23, -p FY24).')
+    parser.add_argument('--vendor', action='store_true',
+                        help='Pull data from vendor table only.')
+    parser.add_argument('-c', '--combined', action='store_true',
+                        help='Pull data from both vendor and in-house.')
     return parser.parse_args()
 
-def fetch_data_from_jdbc():
-    # Load environment variables
+
+def fetch_data_from_jdbc(args):
+    # load environment
     server_ip = os.getenv('FM_SERVER')
     database_name = os.getenv('AMI_DATABASE')
     username = os.getenv('AMI_DATABASE_USERNAME')
     password = os.getenv('AMI_DATABASE_PASSWORD')
-
-    # Dynamically set the JDBC path
     jdbc_path = os.path.expanduser('~/Desktop/ami-preservation/ami_scripts/jdbc/fmjdbc.jar')
 
     conn = None
-    df = pd.DataFrame()  # Default empty DataFrame in case of issues
+    df = pd.DataFrame()
 
     try:
         conn = jaydebeapi.connect(
@@ -52,25 +55,94 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
-        query = 'SELECT "asset.referenceFilename", "bibliographic.primaryID", "technical.dateCreated", "technical.fileFormat", "technical.fileSize.measure", "technical.durationMilli.measure", "asset.fileRole", "digitizer.operator.lastName", "bibliographic.vernacularDivisionCode", "source.object.format", "source.object.type", "digitizationProcess.playbackDevice.model", "digitizationProcess.playbackDevice.serialNumber", "cmsCollectionTitle", "projectType" FROM tbl_metadata'
+        # -- If we want to optionally fetch vendor data, define it here:
+        vendor_query = '''
+        SELECT
+            "asset.referenceFilename",
+            "bibliographic.primaryID",
+            "technical.dateCreated",
+            "technical.fileFormat",
+            "technical.fileSize.measure",
+            "technical.durationMilli.measure",
+            "asset.fileRole",
+            "mediaType",
+            "bibliographic.vernacularDivisionCode",
+            "source.object.format",
+            "source.object.type",
+            "cmsCollectionTitle"
+        FROM tbl_vendor_mediainfo
+        '''
+
+        inhouse_query = '''
+        SELECT
+            "asset.referenceFilename",
+            "bibliographic.primaryID",
+            "technical.dateCreated",
+            "technical.fileFormat",
+            "technical.fileSize.measure",
+            "technical.durationMilli.measure",
+            "asset.fileRole",
+            "digitizer.operator.lastName",
+            "digitizationProcess.playbackDevice.model", 
+            "digitizationProcess.playbackDevice.serialNumber",
+            "bibliographic.vernacularDivisionCode",
+            "source.object.format",
+            "source.object.type",
+            "cmsCollectionTitle",
+            "projectType"
+        FROM tbl_metadata
+        '''
+
         curs = conn.cursor()
-        curs.execute(query)
 
-        columns = [desc[0] for desc in curs.description]
-        data = [dict(zip(columns, row)) for row in curs.fetchall()]
+        # If user wants vendor data only or combined
+        if args.vendor or args.combined:
+            # fetch vendor data
+            curs.execute(vendor_query)
+            columns = [desc[0] for desc in curs.description]
+            vendor_data = [dict(zip(columns, row)) for row in curs.fetchall()]
+            df_vendor = pd.DataFrame(vendor_data)
+            # Force these columns for vendor data
+            df_vendor['source'] = 'Vendor'
+            df_vendor['projectType'] = 'Programmatic Digitization'
+            
+            # **Add or fill** digitizer.operator.lastName => 'Vendor'
+            if 'digitizer.operator.lastName' not in df_vendor.columns:
+                df_vendor['digitizer.operator.lastName'] = 'Vendor'
+            else:
+                df_vendor['digitizer.operator.lastName'] = df_vendor['digitizer.operator.lastName'].fillna('Vendor')
+            
+            if args.combined:
+                # also fetch in-house
+                curs.execute(inhouse_query)
+                columns = [desc[0] for desc in curs.description]
+                inhouse_data = [dict(zip(columns, row)) for row in curs.fetchall()]
+                df_inhouse = pd.DataFrame(inhouse_data)
+                df_inhouse['source'] = 'In-House'
+                df = pd.concat([df_vendor, df_inhouse], ignore_index=True)
+            else:
+                # vendor only
+                df = df_vendor
+        else:
+            # default: in-house only
+            curs.execute(inhouse_query)
+            columns = [desc[0] for desc in curs.description]
+            data = [dict(zip(columns, row)) for row in curs.fetchall()]
+            df = pd.DataFrame(data)
+            df['source'] = 'In-House'
 
-        df = pd.DataFrame(data)
-        print("Data fetched successfully!")
-        print(f"Total records fetched: {len(df)}")  
-        
+        print(f"Data fetched successfully!")
+        print(f"Total records fetched: {len(df)}")
+
     except Exception as e:
         print(f"Failed to connect or execute query: {e}")
 
     finally:
         if conn:
             conn.close()
-    
+
     return df
+
 
 def format_file_size(total_bytes):
     units = ["Bytes", "KB", "MB", "GB", "TB", "PB"]
@@ -86,6 +158,7 @@ def format_file_size(total_bytes):
     else:
         return f"{size:.2f} {units[unit_index]}"  # Two decimal places for all other units
 
+
 def get_fiscal_year(date):
     year = date.year
     month = date.month
@@ -97,6 +170,7 @@ def get_fiscal_year(date):
 
     return f"FY{str(fiscal_year)[2:]}"
 
+
 def process_data(df, args, fiscal=False):
     def convert_date(date_str):
         if "-" in str(date_str):
@@ -106,7 +180,6 @@ def process_data(df, args, fiscal=False):
             # M/D/Y
             return pd.to_datetime(date_str, format='%m/%d/%Y', errors='coerce')
 
-    # Convert date
     df['technical.dateCreated'] = df['technical.dateCreated'].apply(convert_date)
 
     # Filter by engineer if specified
@@ -124,20 +197,30 @@ def process_data(df, args, fiscal=False):
 
     # 1) If user passed -H or --historical, skip year filtering
     if args.historical:
-        # Use all data, no filtering needed
         return df
 
     # 2) If user specified -p with or without a year
     if args.previous_fiscal is not None:
         if args.previous_fiscal == 'auto':
             # They just typed -p (no argument)
-            # so use prior_fiscal_year
             df = df[df['fiscal_year'] == prior_fiscal_year].copy()
         else:
-            # They typed something like -p FY23 or -p FY24
-            # We'll assume they typed a valid string like "FY24"
-            chosen_fy = args.previous_fiscal
-            df = df[df['fiscal_year'] == chosen_fy].copy()
+            # They typed something like -p FY20 or -p 2020
+            chosen_val = args.previous_fiscal
+            if chosen_val.upper().startswith("FY"):
+                # e.g. "FY24", "FY20"
+                df = df[df['fiscal_year'] == chosen_val.upper()].copy()
+            else:
+                # Interpret as a calendar year integer
+                # e.g. "2020" => 2020
+                try:
+                    cal_year = int(chosen_val)
+                    df = df[df['calendar_year'] == cal_year].copy()
+                except ValueError:
+                    print(f"Warning: '{chosen_val}' is not a valid FY or year. No filtering applied.")
+                    # or you could exit, or revert to an unfiltered df
+                    # for now let's revert to unfiltered or skip
+                    pass
         return df
 
     # 3) If user explicitly wants the *current* fiscal year
@@ -145,7 +228,7 @@ def process_data(df, args, fiscal=False):
         df = df[df['fiscal_year'] == current_fiscal_year].copy()
         return df
 
-    # 4) Otherwise, default to calendar year
+    # 4) Otherwise, default to the current calendar year
     df = df[df['calendar_year'] == current_date.year].copy()
     return df
 
@@ -174,7 +257,7 @@ def classify_media_types(df):
     # Return the modified DataFrame
     return df_copy
 
-def display_monthly_output_by_operator(df, args, fiscal=False):
+def display_monthly_output(df, args, fiscal=False):
     
     df_filtered = df.copy()
     df_filtered['technical.fileSize.measure'] = pd.to_numeric(df_filtered['technical.fileSize.measure'], errors='coerce')
@@ -183,6 +266,13 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     formatted_file_size = format_file_size(total_file_size)
     
     df_pm = df[df['asset.fileRole'] == 'pm']
+        # Ensure 'digitizer.operator.lastName' column exists, even if vendor data doesn't have it
+    if 'digitizer.operator.lastName' not in df_pm.columns:
+        df_pm['digitizer.operator.lastName'] = 'Vendor'
+    else:
+        # If the column exists (e.g. combined data), fill any missing rows with 'Vendor'
+        df_pm['digitizer.operator.lastName'] = df_pm['digitizer.operator.lastName'].fillna('Vendor')
+
     df_pm = classify_media_types(df_pm) 
 
     current_date = datetime.datetime.now()
@@ -203,10 +293,17 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     combine_dict = {
         'MUS': 'MUS + RHA',
         'RHA': 'MUS + RHA',
+        'mym': 'MUS + RHA',
+        'myh': 'MUS + RHA',
         'SCM': 'SCH',
         'SCL': 'SCH',
+        'scb': 'SCH',
+        'scd': 'SCH',
         'THE': 'THE + TOFT',
-        'TOFT': 'THE + TOFT'
+        'TOFT': 'THE + TOFT',
+        'myt': 'THE + TOFT',
+        'DAN': 'DAN',
+        'myd': 'DAN'
     }
 
     total_counts_by_project_type = (
@@ -294,11 +391,28 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
 
     print(f"Total duration of all digitized items (HH:MM:SS): {formatted_grand_total_duration}")
 
-    # Equipment usage, ensure each model-serial combination is handled as a unique entity
-    equipment_usage = df_pm.groupby(['digitizationProcess.playbackDevice.model', 'digitizationProcess.playbackDevice.serialNumber'])['bibliographic.primaryID'].nunique().reset_index()
-    equipment_usage.columns = ['Device Model', 'Serial Number', 'Unique Items']
-    equipment_usage['Label'] = equipment_usage['Device Model'] + " (" + equipment_usage['Serial Number'] + ")"
-    equipment_usage = equipment_usage.sort_values(by='Unique Items', ascending=False)
+    # 1) Check if the columns exist in df_pm
+    has_equipment_cols = (
+        'digitizationProcess.playbackDevice.model' in df_pm.columns and
+        'digitizationProcess.playbackDevice.serialNumber' in df_pm.columns
+    )
+
+    if has_equipment_cols:
+        # 2) Perform the grouping if columns exist
+        equipment_usage = (
+            df_pm.groupby(['digitizationProcess.playbackDevice.model', 'digitizationProcess.playbackDevice.serialNumber'])
+                ['bibliographic.primaryID']
+                .nunique()
+                .reset_index()
+        )
+        equipment_usage.columns = ['Device Model', 'Serial Number', 'Unique Items']
+        equipment_usage['Label'] = equipment_usage['Device Model'] + " (" + equipment_usage['Serial Number'] + ")"
+        equipment_usage = equipment_usage.sort_values(by='Unique Items', ascending=False)
+        print("\nEquipment usage has been successfully grouped!")
+    else:
+        # 3) Otherwise, skip or create an empty DataFrame
+        print("\nSkipping Equipment usage grouping (not available in vendor-only data).")
+        equipment_usage = pd.DataFrame(columns=['Device Model', 'Serial Number', 'Unique Items', 'Label'])
 
     # Calculate unique items per SPEC Collection ID
     spec_collection_usage = df_pm.groupby('cmsCollectionTitle')['bibliographic.primaryID'].nunique().reset_index()
@@ -333,10 +447,49 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     print(f'\nTotal file size from all records: {formatted_file_size}')
     print(output_by_operator_summed)
 
+    # Decide what "hue" to use based on vendor/combined
+    if args.combined or args.vendor:
+        # We want lines by source
+        hue_column = 'source'
+        legend_title = 'Source'
+    else:
+        # In-house only => lines by operator
+        hue_column = 'digitizer.operator.lastName'
+        legend_title = 'Digitizer'
+
+    if hue_column == 'source':
+        # group by month + source
+        output_line = (
+            df_pm.groupby(['month', 'source'])['bibliographic.primaryID']
+                .nunique()
+                .reset_index()
+                .rename(columns={'bibliographic.primaryID': 'Items'})
+        )
+    else:
+        # group by month + operator
+        output_line = (
+            df_pm.groupby(['month', 'digitizer.operator.lastName'])['bibliographic.primaryID']
+                .nunique()
+                .reset_index()
+                .rename(columns={'bibliographic.primaryID': 'Items'})
+        )
+
+    output_line['month'] = pd.to_datetime(output_line['month'])
+    output_line = output_line.sort_values('month')
+
+    # Now for the lineplot:
     sns.set_style("whitegrid")
     plt.figure(figsize=(12, 6) if not args.historical else (18, 6))
-    sns.lineplot(data=output_by_operator, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2)
-    title = f'Monthly Digitization Output by Operator (PM role only) - {year_label}'
+    sns.lineplot(
+        data=output_line,
+        x='month',
+        y='Items',
+        hue=hue_column,
+        marker='o',
+        linewidth=2
+    )
+
+    title = f'Monthly Digitization Output (PM role only) - {year_label}'
     plt.title(title)
     plt.xlabel('')
     plt.ylabel('Items Digitized')
@@ -345,15 +498,16 @@ def display_monthly_output_by_operator(df, args, fiscal=False):
     else:
         plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.legend(title='Digitizer')
+    plt.legend(title=legend_title)
     plt.show()
 
-    return output_by_operator, year_label, total_items_per_month_summed, total_file_size, total_media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type
+    return output_line, year_label, total_items_per_month_summed, total_file_size, total_media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator
 
 def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None, formatted_grand_total_duration=""):
     if 'digitizer.operator.lastName' not in df.columns:
         print("\nThe 'digitizer.operator.lastName' field is not present in the DataFrame. Skipping the function.\n")
-        return
+        # Return an empty DataFrame with the columns we expect for plotting
+        return pd.DataFrame(columns=['Format', 'Count'])
 
     # 2) Just create the pm subset
     df_pm = df[df['asset.fileRole'] == 'pm']
@@ -418,19 +572,25 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
         'bibliographic.primaryID': 'nunique'
     }).reset_index()
 
-    # Combine division codes based on specified groups
+    # Define the combinations as a dictionary
     combine_dict = {
-        'MUS + RHA': ['MUS', 'RHA'],
-        'SCH': ['SCM', 'SCL'],
-        'THE + TOFT': ['THE', 'TOFT']
+        'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh'],
+        'SCH': ['SCM', 'SCL', 'scb', 'scd'],
+        'THE + TOFT': ['THE', 'TOFT', 'myt'],
+        'DAN': ['DAN', 'myd']
     }
-    reverse_combine_dict = {v: k for k, values in combine_dict.items() for v in values}
-    objects_by_division_code['bibliographic.vernacularDivisionCode'] = objects_by_division_code['bibliographic.vernacularDivisionCode'].map(reverse_combine_dict).fillna(objects_by_division_code['bibliographic.vernacularDivisionCode'])
 
-    # Re-aggregate after combining division codes
-    objects_by_division_code = objects_by_division_code.groupby('bibliographic.vernacularDivisionCode').agg({
-        'bibliographic.primaryID': 'sum'
-    }).reset_index()
+    # Iterate over the dictionary to combine the codes
+    for new_code, old_codes in combine_dict.items():
+        combined_count = objects_by_division_code.loc[objects_by_division_code['bibliographic.vernacularDivisionCode'].isin(old_codes), 'bibliographic.primaryID'].sum()
+        # Remove the old codes rows
+        objects_by_division_code = objects_by_division_code.loc[~objects_by_division_code['bibliographic.vernacularDivisionCode'].isin(old_codes)]
+        # Add a new row for the combined codes
+        new_row = pd.DataFrame({
+            'bibliographic.vernacularDivisionCode': [new_code],
+            'bibliographic.primaryID': [combined_count]
+        })
+        objects_by_division_code = pd.concat([objects_by_division_code, new_row], ignore_index=True)
 
     # Calculate the total and percentage
     total_objects = objects_by_division_code['bibliographic.primaryID'].sum()
@@ -460,10 +620,24 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
 
     return filtered_data
 
-def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type):
+def save_plot_to_pdf(
+    line_data,
+    bar_data,
+    filtered_data,
+    args,
+    total_items_per_month_summed,
+    formatted_file_size,
+    year_label,
+    media_counts,
+    equipment_usage,
+    spec_collection_usage,
+    formatted_grand_total_duration,
+    total_media_counts_by_division,
+    total_counts_by_project_type,
+    output_by_operator
+):
     engineer_name = "_".join(args.engineer) if args.engineer else ""
     
-    # Determine the report type based on the args
     if args.historical:
         report_type = "Historical"
     elif args.fiscal:
@@ -472,67 +646,100 @@ def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_
         report_type = "Previous_Fiscal_Year"
     else:
         report_type = "Calendar_Year"
-    
-    # Generate the filename
-    if engineer_name:
-        pdf_filename = f"Digitization_Report_{engineer_name}_{report_type}_{year_label}.pdf"
+
+    # Decide the PDF filename
+    if args.combined:
+        pdf_filename = f"Combined_AMI_Digitization_Report_{year_label}.pdf"
+    elif args.vendor:
+        pdf_filename = f"Vendor_AMI_Digitization_Report_{year_label}.pdf"
     else:
-        pdf_filename = f"Digitization_Report_{report_type}_{year_label}.pdf"
-    
+        if engineer_name:
+            pdf_filename = f"Digitization_Report_{engineer_name}_{report_type}_{year_label}.pdf"
+        else:
+            pdf_filename = f"Digitization_Report_{report_type}_{year_label}.pdf"
+
     pdf_path = os.path.join(os.path.expanduser("~"), 'Desktop', pdf_filename)
 
     with PdfPages(pdf_path) as pdf:
-        # Adjust plot size based on historical flag
         fig_size = (18, 6) if args.historical else (10, 5)
         xticks_rotation = 90 if args.historical else 45
 
-        # Plot for line data
+        # --- 1) LINE CHART from line_data
+        if args.combined or args.vendor:
+            hue_column = 'source'
+            legend_title = 'Source'
+        else:
+            hue_column = 'digitizer.operator.lastName'
+            legend_title = 'Digitizer'
+
         fig, ax = plt.subplots(figsize=fig_size)
-        sns.lineplot(data=data, x='month', y='bibliographic.primaryID', hue='digitizer.operator.lastName', marker='o', linewidth=2, ax=ax)
-        plt.title(f'Monthly Digitization Output by Operator - {year_label}')
+        sns.lineplot(
+            data=line_data,
+            x='month',
+            y='Items',
+            hue=hue_column,
+            marker='o',
+            linewidth=2,
+            ax=ax
+        )
+        plt.title(f'Monthly Digitization Output - {year_label}')
         plt.xlabel('')
         plt.ylabel('Items Digitized')
         plt.xticks(rotation=xticks_rotation)
-        plt.legend(title='Digitizer')
+        plt.legend(title=legend_title)
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
 
-        # Data table for summary by month and year
+        # --- 2) SUMMARY TABLE from output_by_operator
         if args.historical:
-            # Additional adjustments for historical data
-            years = data['month'].dt.year.unique()
+            years = output_by_operator['month'].dt.year.unique()
             for year in sorted(years):
-                year_data = data[data['month'].dt.year == year]
+                year_data = output_by_operator[output_by_operator['month'].dt.year == year]
                 summary_df = year_data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
                 summary_df.columns = ['Month', 'Total Items Digitized']
-                summary_df['Month'] = summary_df['Month'].dt.strftime('%Y-%m')  # Format month
-                yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
+                summary_df['Month'] = summary_df['Month'].dt.strftime('%Y-%m')
+                yearly_total = pd.DataFrame([{
+                    'Month': 'Year Total',
+                    'Total Items Digitized': summary_df['Total Items Digitized'].sum()
+                }])
                 summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
 
-                fig, ax = plt.subplots(figsize=(12, len(summary_df) * 0.5))  # Dynamic height based on number of rows
+                fig, ax = plt.subplots(figsize=(12, len(summary_df) * 0.5))
                 ax.axis('off')
-                table = ax.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center', cellLoc='center')
+                table = ax.table(
+                    cellText=summary_df.values,
+                    colLabels=summary_df.columns,
+                    loc='center',
+                    cellLoc='center'
+                )
                 table.auto_set_font_size(True)
-                table.scale(1.2, 1.5)  # Adjust scaling for better readability
+                table.scale(1.2, 1.5)
                 pdf.savefig(fig)
                 plt.close(fig)
         else:
-            # For non-historical data
-            summary_df = data.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
+            summary_df = output_by_operator.groupby('month').agg({'bibliographic.primaryID': 'sum'}).reset_index()
             summary_df.columns = ['Month', 'Total Items Digitized']
-            summary_df['Month'] = summary_df['Month'].dt.strftime('%Y-%m')  # Format month
-            yearly_total = pd.DataFrame([{'Month': 'Year Total', 'Total Items Digitized': summary_df['Total Items Digitized'].sum()}])
+            summary_df['Month'] = summary_df['Month'].dt.strftime('%Y-%m')
+            yearly_total = pd.DataFrame([{
+                'Month': 'Year Total',
+                'Total Items Digitized': summary_df['Total Items Digitized'].sum()
+            }])
             summary_df = pd.concat([summary_df, yearly_total], ignore_index=True)
 
             fig, ax = plt.subplots(figsize=(10, 5))
             ax.axis('off')
-            table = ax.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center', cellLoc='center')
+            table = ax.table(
+                cellText=summary_df.values,
+                colLabels=summary_df.columns,
+                loc='center',
+                cellLoc='center'
+            )
             table.auto_set_font_size(True)
             table.scale(1.2, 1.2)
             pdf.savefig(fig)
             plt.close(fig)
-        
+  
         media_text = ""
         for index, row in media_counts.iterrows():
             media_text += f"\n{row['media_type'].title()}: {row['Total Items Per Media']}"
@@ -662,28 +869,36 @@ def save_plot_to_pdf(data, bar_data, filtered_data, args, total_items_per_month_
         pdf.savefig(fig)
         plt.close(fig)
 
-        # Generate a palette that matches the number of items being displayed
-        num_display = 15  # Number of items you are displaying
-        palette = sns.cubehelix_palette(n_colors=num_display, start=1.5, rot=-0.5, dark=0.3, light=0.8, reverse=True)
+        if equipment_usage.empty:
+            print("No equipment usage data to plot.")
+        else:
+            # Generate a palette that matches the number of items being displayed
+            num_display = 15  # Number of items you are displaying
+            palette = sns.cubehelix_palette(n_colors=num_display, start=1.5, rot=-0.5, dark=0.3, light=0.8, reverse=True)
 
-        fig, ax = plt.subplots(figsize=(12, 8))
-        # Apply the palette by using the hue parameter
-        # Assuming 'Label' is what you're differentiating by color
-        sns.barplot(x='Unique Items', y='Label', data=equipment_usage.head(num_display), palette=palette, hue='Label', ax=ax, legend=False)
-        plt.title('Top Equipment Used', fontsize=16)
-        plt.xlabel('Number of Unique Items Processed')
-        plt.ylabel('Equipment Model and Serial Number')
-        plt.tight_layout()
-        pdf.savefig(fig)
-        plt.close(fig)
+            fig, ax = plt.subplots(figsize=(12, 8))
+            # Apply the palette by using the hue parameter
+            # Assuming 'Label' is what you're differentiating by color
+            sns.barplot(x='Unique Items', y='Label', data=equipment_usage.head(num_display), palette=palette, hue='Label', ax=ax, legend=False)
+            plt.title('Top Equipment Used (In-House)', fontsize=16)
+            plt.xlabel('Number of Unique Items Processed')
+            plt.ylabel('Equipment Model and Serial Number')
+            plt.tight_layout()
+            pdf.savefig(fig)
+            plt.close(fig)
 
     print(f"PDF report has been saved to {pdf_path}.")
 
 def main():
     args = get_args()
-    df = fetch_data_from_jdbc()
+    df = fetch_data_from_jdbc(args)
+
+    if df.empty:
+        print("No data retrieved from the FileMaker database. Please check your network connection or host settings.")
+        return  # or sys.exit(1)
+    
     df_processed = process_data(df, args, fiscal=args.fiscal)
-    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type = display_monthly_output_by_operator(df_processed, args, fiscal=args.fiscal)
+    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator = display_monthly_output(df_processed, args, fiscal=args.fiscal)
     if line_data is None:
         print("Error: Missing data. Exiting the program.")
         return
@@ -694,7 +909,7 @@ def main():
     filtered_data = plot_objects_by_division_code(df_processed, year_label)
 
     bar_data = plot_object_format_counts(df_processed, args, fiscal=args.fiscal, previous_fiscal=args.previous_fiscal, formatted_file_size=formatted_file_size, total_items_per_month_summed=total_items_per_month_summed, media_counts=media_counts, formatted_grand_total_duration=formatted_grand_total_duration)
-    save_plot_to_pdf(line_data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type)
+    save_plot_to_pdf(line_data, bar_data, filtered_data, args, total_items_per_month_summed, formatted_file_size, year_label, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator)
 
 if __name__ == "__main__":
     main()
