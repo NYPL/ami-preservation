@@ -303,7 +303,9 @@ def display_monthly_output(df, args, fiscal=False):
         'TOFT': 'THE + TOFT',
         'myt': 'THE + TOFT',
         'DAN': 'DAN',
-        'myd': 'DAN'
+        'myd': 'DAN',
+        'mao': 'MSS',
+        'MSS': 'MSS'
     }
 
     total_counts_by_project_type = (
@@ -577,7 +579,8 @@ def plot_objects_by_division_code(df, year_label, min_percentage=1):
         'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh'],
         'SCH': ['SCM', 'SCL', 'scb', 'scd'],
         'THE + TOFT': ['THE', 'TOFT', 'myt'],
-        'DAN': ['DAN', 'myd']
+        'DAN': ['DAN', 'myd'],
+        'MSS': ['MSS', 'mao']
     }
 
     # Iterate over the dictionary to combine the codes
