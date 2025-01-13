@@ -284,7 +284,7 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
         return None
 
     if width == 720 and height == 486:  # NTSC
-        video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4"
+        video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=4/3"
     elif width == 720 and height == 576:  # PAL
         video_filter = "idet,bwdif=1"
     else:
