@@ -7,6 +7,7 @@
     - [ami\_file\_sync.py](#ami_file_syncpy)
     - [ami\_record\_exporter\_and\_analyzer.py](#ami_record_exporter_and_analyzerpy)
     - [append\_eoy\_report\_intro.py](#append_eoy_report_intropy)
+    - [audio\_concat\_and\_bag.py](#audio_concat_and_bagpy)
     - [audio\_processing.py](#audio_processingpy)
     - [audio\_to\_mp4\_converter.py](#audio_to_mp4_converterpy)
     - [clean\_spec\_csv\_to\_excel.py](#clean_spec_csv_to_excelpy)
@@ -16,17 +17,21 @@
     - [create\_media\_json.py](#create_media_jsonpy)
     - [create\_object\_bags.py](#create_object_bagspy)
     - [digitization\_performance\_tracker.py](#digitization_performance_trackerpy)
+    - [duplicate\_filemaker\_records.py](#duplicate_filemaker_recordspy)
+    - [export\_s3\_to\_csv.py](#export_s3_to_csvpy)
     - [filemaker\_to\_json\_validator.py](#filemaker_to_json_validatorpy)
     - [film\_processing.py](#film_processingpy)
     - [generate\_test\_media.py](#generate_test_mediapy)
     - [hflip\_film\_packages.py](#hflip_film_packagespy)
-    - [iso\_transcoder.py](#iso_transcoderpy)
+    - [iso\_checker.py](#iso_checkerpy)
+    - [iso\_creator.py](#iso_creatorpy)
+    - [iso\_transcoder\_cat\_mkvmerge.py](#iso_transcoder_cat_mkvmergepy)
+    - [iso\_transcoder\_makemkv.py](#iso_transcoder_makemkvpy)
     - [json\_to\_csv.py](#json_to_csvpy)
     - [json\_updater.py](#json_updaterpy)
     - [json\_validator.py](#json_validatorpy)
     - [make\_anamorphic\_scs.py](#make_anamorphic_scspy)
     - [media\_metrics\_aggregator.py](#media_metrics_aggregatorpy)
-    - [media\_production\_stats.py](#media_production_statspy)
     - [mediaconch\_checker.py](#mediaconch_checkerpy)
     - [mediainfo\_extractor.py](#mediainfo_extractorpy)
     - [migrated\_media\_file\_checker.py](#migrated_media_file_checkerpy)
@@ -38,11 +43,13 @@
     - [rsync\_and\_organize\_json.py](#rsync_and_organize_jsonpy)
     - [rsync\_validator.py](#rsync_validatorpy)
     - [spec\_csv\_summary\_to\_excel.py](#spec_csv_summary_to_excelpy)
+    - [test\_jdbc.py](#test_jdbcpy)
     - [trello\_engineer\_notifier.py](#trello_engineer_notifierpy)
     - [trello\_list\_ids.py](#trello_list_idspy)
     - [trello\_qcqueue\_mover.py](#trello_qcqueue_moverpy)
     - [trim\_and\_transcode.py](#trim_and_transcodepy)
     - [unbag\_objects.py](#unbag_objectspy)
+    - [validate\_ami\_bags.py](#validate_ami_bagspy)
     - [video\_processing.py](#video_processingpy)
 
 
@@ -142,6 +149,37 @@ Script Functionality:
     * -s or --stats: Path to the existing statistics PDF report.
     * -o or --output: (Optional) Path to the output PDF file. If not provided, the script will save the merged PDF to the desktop with a default filename.
 
+### audio_concat_and_bag.py
+
+This script processes audio files within a directory, concatenates FLAC files, updates associated JSON metadata, and creates BagIt-compliant directories for repackaging. It supports both single and multiple bag directories as input.
+
+```python3 audio_concat_and_bag.py -b /path/to/bag -o /path/to/output_directory```
+
+```python3 audio_concat_and_bag.py -d /path/to/directory_of_bags -o /path/to/output_directory```
+
+Usage:
+
+Required Arguments:
+* -o, --output: Output directory where processed files and bags will be stored.
+
+Mutually Exclusive Options:
+* -b, --bag: Path to a single bag directory to process.
+* -d, --directory: Path to a directory containing multiple bags to process.
+
+The script performs the following steps:
+
+1. Input Validation:
+    * Checks the input directory structure for required subdirectories and files.
+    * Ensures the output directory exists or creates it.
+2. FLAC File Concatenation:
+    * Generates a concatenated .flac file in EditMasters or PreservationMasters based on the file type.
+3. JSON Metadata Update:
+    * Copies JSON metadata files and updates fields to match the new concatenated audio file.
+4. Image File Handling:
+    * Copies .JPG files from the input Images directory to the corresponding output directory.
+5. BagIt Bag Creation:
+    * Generates a BagIt bag for each processed directory with manifest files for integrity checks.
+
 ### audio_processing.py
 
 This script automates the process of transcoding WAV files to FLAC, organizing the files into appropriate directories, updating metadata in JSON files, and creating BagIt bags.
@@ -178,7 +216,17 @@ Script Functionality:
 
 This script prepares and cleans a SPEC CSV file for import into AMIDB by performing various data transformation and cleanup operations. It allows for adding work order and project code to the new Excel file, offers a vendor mode for specific processing, and can optionally interact with Trello for project management purposes.
 
-```python3 clean_cms_export.py -s /path/to/source_excel.xlsx -w WORKORDER_ID -d /path/to/destination_directory -c /path/to/config.json [-v]```
+```python3 clean_spec_csv_to_excel.py -s /path/to/source_csv.csv -w WORKORDER_ID -p PROJECT_CODE -d /path/to/destination_directory -c /path/to/config.json -pt PROJECT_TYPE [-v] [-t] [--single-card]```
+
+Updated Features:
+1. Improved Command-Line Arguments:
+* -p, --projectcode: Mandatory project code for identifying the project in AMIDB.
+* -pt, --project-type: Adds a descriptive project type, now required unless vendor mode is enabled. Supported types:
+    * exhibition
+    * programmatic
+    * priority
+    * public
+    * researcher
 
 This script performs the following steps:
 
@@ -223,7 +271,7 @@ Key Features:
 
 This script copies specific files (Service Copy Videos and Edit Master Audio) from a given directory of BagIt bags to an AWS S3 bucket.
 
-```python3 copy_to_s3.py -d /path/to/directory/of/bags```
+```python3 copy_to_s3.py -d /path/to/directory/of/bags OR additional /path/to/directory/of/bags```
 
 This script performs the following steps:
 
@@ -303,7 +351,10 @@ Options:
 * -f, --fiscal: Optional. Organize statistics and visualizations by fiscal year instead of the default calendar year.
 * -e, --engineer: Optional. Filter the output to include only specific engineers. This should be followed by one or more last names.
 * -H, --historical: Optional. Analyze data from all available years instead of just the current year.
-* -p, --previous-fiscal: Optional. Analyze data from the previous fiscal year.
+* -p, --previous-fiscal: Focuses on the previous fiscal year or a specified calendar year (e.g., -p FY23 or -p 2020).
+* --vendor: Pulls data exclusively from the vendor table.
+* --c, -combined: Combines data from both vendor and in-house sources.
+
 
 This script performs the following steps:
 
@@ -325,6 +376,55 @@ This script performs the following steps:
 6. Error Handling and Logging:
 * Provides feedback on the success of data fetching and connection issues.
 * Logs and displays errors related to data processing or file generation.
+
+### duplicate_filemaker_records.py
+
+This script duplicates FileMaker database records for MP4 derivatives based on corresponding ISO records. It identifies and processes files in a specified directory, extracts metadata from the original ISO records, and inserts new records for the MP4 derivatives.
+
+```python3 duplicate_filemaker_records.py -d <directory_path> [--dev-server]```
+
+Arguments:
+* -d, --directory: (Required) Path to the directory containing ISO and MP4 files.
+* --dev-server: (Optional) Connect to the DEV server instead of the production server.
+
+This script performs the following steps:
+
+1. Connect to Database:
+    * Establishes a JDBC connection to the FileMaker database.
+2. Crawl Directory:
+    * Scans the specified directory for ISO and MP4 files.
+    * Maps ISO files to their associated MP4 derivatives.
+3. Fetch Original Record:
+    * Retrieves the database record for each ISO file using its reference filename.
+4. Insert New Records:
+    * Creates new records in the database for each MP4 file with:
+    * Updated metadata from the original ISO record.
+    * Additional fields specific to the MP4 derivatives.
+5. Close Connection:
+    * Ensures the database connection is closed after processing.
+
+### export_s3_to_csv.py
+
+This script exports the contents of an Amazon S3 bucket to a CSV file, listing each object's key, last modified date, and size.
+
+```python3 export_s3_to_csv.py -b <bucket_name> -o <output_file>```
+
+Arguments:
+* -b, --bucket: (Required) Name of the S3 bucket to export.
+* -o, --out: (Required) Path and filename for the output CSV file.
+
+This script performs the following steps:
+
+1. Initialize S3 Client:
+    * Uses the AWS SDK (boto3) to interact with S3.
+2. Fetch Object Metadata:
+    * Retrieves object details using the list_objects_v2 API.
+    * Handles pagination to fetch all objects in the bucket.
+3. Write to CSV:
+    * Creates a CSV file and writes the object details to it.
+    * Includes headers for better readability.
+4. Print Summary:
+    * Displays the total number of files exported to the console.
 
 ### filemaker_to_json_validator.py
 
@@ -403,28 +503,107 @@ This script performs the following steps:
 3. Metadata Update: Edits associated JSON metadata files to document the horizontal flip and update technical details like dateCreated and fileSize based on the modified media files.
 4. Unbagging and Rebagging: Following modifications, the script temporarily removes BagIt structure for processing and then reapplies it, ensuring the package remains compliant with BagIt specifications.
 
+### iso_checker.py
 
-### iso_transcoder.py
+This script processes .iso files using Isolyzer, a tool for validating ISO images. It analyzes the file system types, checks the image size consistency, and generates a detailed report of the findings.
 
-This script facilitates the transcoding of video object (VOB) files extracted from ISO images into H.264 MP4 format, ensuring compatibility and ease of access for video content. It mounts the ISO, identifies relevant VOB files, and employs FFmpeg for transcoding, with optional settings for splitting and concatenation.
-
-```python3 iso_transcoder.py -i /path/to/input -o /path/to/output [-s] [-f]```
+```python3 iso_checker.py -d /path/to/iso/files```
 
 This script performs the following steps:
 
-1. Pre-Check: Verifies the installation of necessary tools (mkvmerge from MKVToolNix and FFmpeg) on the system.
-2. Mount ISO Image: Automatically mounts the ISO image to access the VOB files within.
-3. Identify VOB Files: Scans the mounted ISO for VOB files, specifically targeting those relevant for transcoding.
-4. Transcode VOB to MP4: Utilizes FFmpeg to transcode identified VOB files to the H.264 MP4 format, with options for resolution scaling and audio channel mapping as necessary.
-5. Unmount ISO Image: Safely unmounts the ISO image post-processing.
-6. Verification: Optionally, verifies the success of the transcoding process by checking for the expected output files.
+1. Recursive Directory Search:
+    * Automatically detects all .iso files in the specified directory and its subdirectories.
+2. File System Detection:
+    * Extracts and lists file system types (e.g., ISO 9660, UDF) from each ISO image.
+3. Validation:
+    * Checks if the ISO file's size matches the expected size:
+    * Reports ISO files with "unexpected" sizes or errors.
+4. Error Handling:
+    * Catches and displays errors for ISO files that fail validation or processing.
+5. Summary Report that Provides:
+    * Total number of ISO files processed.
+    * Counts of images with expected and unexpected sizes.
+    * A breakdown of detected file system types.
 
-Key Features:
+### iso_creator.py
 
-* Flexible File Handling: Supports both individual ISO files and directories containing multiple ISO images.
-* Splitting and Concatenation Options: Offers the ability to split each VOB file into separate MP4 files or concatenate all VOBs from an ISO into a single MP4, based on user preference.
-* Resolution and Audio Channel Adjustment: Automatically adjusts the resolution of the output MP4 files and maps audio channels to ensure compatibility and quality.
-* Robust Error Handling and Logging: Provides detailed logging throughout the process and implements error handling for common issues, such as mounting failures or transcoding errors.
+This script facilitates the creation of ISO image backups from DVDs using ddrescue. It includes functionality for opening and closing the disc tray, unmounting and remounting DVDs, and handling errors during the backup process.
+
+```python3 iso_creator.py```
+
+This script performs the following steps:
+
+1. Start the Script:
+    * Opens the disc tray and prompts the user to insert a DVD.
+2. Prepare the Backup:
+    * Asks the user to specify a destination directory and filename for the ISO file.
+3. Run ddrescue:
+    * Backs up the DVD to an ISO file and logs progress in real time.
+    * Runs up to 4 rescue passes (-r4) with a block size of 2048 bytes (-b 2048).
+4. Post-Backup Actions:
+    * Remounts and ejects the DVD after backup.
+    * Logs failed attempts for troubleshooting.
+5. Repeat or Exit:
+    * Asks the user if they want to back up another DVD.
+    * Provides a summary of the session upon exit.
+
+
+### iso_transcoder_cat_mkvmerge.py
+
+This script processes ISO images to transcode their VOB files into H.264 MP4 format, with an emphasis on handling complex DVD structures. It prioritizes cat for concatenation and uses mkvmerge as a fallback if cat fails.
+
+```python3 iso_transcoder_cat_mkvmerge.py -i /path/to/input -o /path/to/output [-s] [-f]```
+
+Arguments
+
+* -i, --input	Required. Path to the directory containing ISO files or individual ISO file paths.
+* -o, --output	Optional. Path to the directory where the output MP4 files will be saved (default: input).
+* -s, --split	Optional. Split each VOB file into separate MP4 files (default: concatenate VOB files).
+* -f, --force-concat	Optional. Force concatenation of all VOB files into one MP4 file.
+
+This script performs the following steps:
+
+1. Tries cat first for VOB concatenation.
+2. Falls back to mkvmerge if cat fails to concatenate the files.
+3. Flexible Transcoding Options:
+    * Split Mode (-s): Creates individual MP4 files for each VOB.
+    * Concatenation Mode:
+    * Combines all VOB files into a single MP4, prioritizing cat and using mkvmerge as fallback.
+    * Robust Error Handling:
+    * Handles mounting/unmounting errors and fallback scenarios for concatenation and transcoding.
+4. Detailed Logging:
+    * Provides comprehensive logs for each step, including errors and processing summaries.
+5. Post-Processing Verification:
+    * Confirms successful creation of expected MP4 files and logs any failures.
+6. Automatic Cleanup:
+    * Cleans up temporary files and mount points after processing.
+
+### iso_transcoder_makemkv.py
+
+This script facilitates the transcoding of video object (VOB) files extracted from ISO images into H.264 MP4 format using MakeMKV for initial ISO processing and FFmpeg for transcoding. It provides enhanced compatibility, better video quality, and ease of access for archived video content.
+
+```python3 iso_transcoder_makemkv.py -i /path/to/input -o /path/to/output [-f]```
+
+This script performs the following steps:
+
+1. Pre-Check:
+    * Verifies that makemkvcon (MakeMKV) and ffmpeg are installed and accessible in the system's PATH.
+2. ISO Processing:
+    * MakeMKV extracts MKV files from ISO images.
+    * Handles failures by logging errors and skipping problematic ISOs.
+3. MKV Transcoding:
+    * Uses FFmpeg to transcode MKV files into H.264 MP4 format with optimal settings:
+    * Video: H.264 codec, 3.5 Mbps bitrate, deinterlacing (yadif), and pixel format yuv420p.
+    * Audio: AAC codec, 320 kbps bitrate, and 48 kHz sampling rate.
+4. Concatenation (Optional):
+    * Combines multiple MKV files into a single MKV using mkvmerge before transcoding, if requested.
+5. Verification:
+    * Ensures all expected MP4 files are created and categorizes them based on resolution, aspect ratio, and frame rate.
+6. Post-Processing Check:
+    * Classifies MP4 files using predefined categories (e.g., NTSC DVD SD, PAL Widescreen).
+    * Identifies and logs outliers that do not match any category.
+7. Cleanup:
+    * Removes temporary files and directories created during the process.
 
 ### json_to_csv.py
 
@@ -510,28 +689,6 @@ This script performs the following steps:
 3. Data Aggregation: Groups media files by their physical object and format, computing the average duration and file size for each group.
 4. Conversion and Formatting: Converts metrics like duration from milliseconds to a human-readable format and file size to both base 1024 (e.g., KiB, MiB) and base 1000 (e.g., GB) human-readable formats.
 5. Output Generation: Produces a summary CSV file containing the calculated averages for duration and file size by media format, alongside their human-readable representations.
-
-
-### media_production_stats.py
-
-This script leverages Python to parse, analyze, and visualize media production statistics derived from AMIDB MER files (FileMaker CSV w/ header row). It offers insights into the volume of production, categorizing stats by fiscal or calendar year, and generates comprehensive visualizations to illustrate trends over time.
-
-```python3 media_production_stats.py -s /path/to/MER_file.csv [-f]```
-
-This script performs the following steps:
-
-1. Data Parsing and Preparation: Loads the MER file into a pandas DataFrame, parsing dates and categorizing entries by either calendar or fiscal year based on the user's selection.
-2. Statistical Analysis: Calculates summary statistics including the count of unique media objects, average file sizes, and total durations, organized by media type and year.
-3. Visualizations: Generates a series of plots using seaborn and matplotlib, including:
-
-* Annual digitization output trends over time.
-* Monthly digitization output distribution.
-* Operator-specific production volumes highlighting top contributors.
-* Distribution of objects digitized by division code.
-
-Count of the top source object formats.
-4. Interactive Reporting: Presents interactive visualizations and tables directly to the user for exploration and analysis.
-
 
 ### mediaconch_checker.py
 
@@ -740,6 +897,26 @@ Constructs a summary DataFrame containing overall statistics such as the total n
 6. Prepares and exports detailed box-related information to the 'Summary' sheet, providing insights into barcode counts per box and their respective locations.
 7. Output Generation: The script then compiles all the gathered information into a well-organized Excel file with two sheets, facilitating easy access and analysis of the data.
 
+### test_jdbc.py
+
+This script is a utility for testing JDBC connections to a FileMaker server. It dynamically determines whether to connect to the production server or the development server based on command-line arguments.
+
+```python3 test_jdbc.py [--use-dev]```
+
+1. Load Environment Variables:
+2. Retrieves connection details such as server IP, database name, username, and password from the environment variables:
+    * FM_SERVER (Production Server IP)
+    * FM_DEV_SERVER (Development Server IP)
+    * AMI_DATABASE (Database Name)
+    * AMI_DATABASE_USERNAME (Username)
+    * AMI_DATABASE_PASSWORD (Password)
+2. Dynamic JDBC Path:
+3. Uses the JDBC driver located at ~/Desktop/ami-preservation/ami_scripts/jdbc/fmjdbc.jar.
+4. Print Connection Details:
+    * Prints the selected server, database, and username for transparency.
+5. Attempt Connection:
+    * Attempts to connect to the specified server using the JayDeBeApi library.
+
 ### trello_engineer_notifier.py
 
 This script facilitates task management in Trello by automatically moving specified cards to engineer-specific lists, notifying engineers via card comments, and assigning them to the cards. It utilizes Trello's API to interact with cards based on command line inputs and environmental configurations.
@@ -819,6 +996,26 @@ This script performs the following steps:
 6. Iterate through the directories in the source directory to find any empty directories.
 7. If an empty directory is found, delete it.
 
+### validate_ami_bags.py
+
+This script is a tool for validating AMI (Audio/Moving Image) bags. These bags contain JSON metadata and various types of media files, organized into a structured BagIt format. The script ensures that the bags conform to specific structural, content, and metadata requirements.
+
+```python3 validate_ami_bags.py -d /path/to/bag_directory OR -b /path/to/bag [--metadata] [--slow] [-log]
+
+1. Validation of Bag Structure:
+    * Checks for the presence of required directories and files.
+    * Ensures compliance with BagIt specifications, including Oxum and checksum validation.
+2. Media File Validation:
+    * Ensures media files have valid formats (e.g., .mov, .wav, .flac).
+    * Verifies preservation master files (_pm) are present and correctly located.
+3. JSON Metadata Validation:
+    * Ensures JSON metadata files match the associated media files.
+    * Validates the structure, required fields, and values of JSON metadata files.
+4. Customizable Checks:
+    * Includes options for fast validation (skipping checksum recalculation) and deep metadata checks.
+5. Logging and Summaries:
+    * Provides detailed logs and summaries, including warnings and errors, for each bag.
+    * Tracks and aggregates specific issues across multiple bags.
 
 ### video_processing.py
 
