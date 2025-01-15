@@ -25,8 +25,7 @@ def convert_to_mp4(input_file, input_directory):
         "-c:v", "libx264",
         "-movflags", "faststart",
         "-pix_fmt", "yuv420p",
-        "-b:v", "8000000", "-bufsize", "5000000", "-maxrate", "8000000",
-        "-vf", "yadif",
+        "-crf", "21",
         "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file)
     ]
     subprocess.run(command)
