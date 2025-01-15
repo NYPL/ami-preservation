@@ -1000,7 +1000,7 @@ This script performs the following steps:
 
 This script is a tool for validating AMI (Audio/Moving Image) bags. These bags contain JSON metadata and various types of media files, organized into a structured BagIt format. The script ensures that the bags conform to specific structural, content, and metadata requirements.
 
-```python3 validate_ami_bags.py -d /path/to/bag_directory OR -b /path/to/bag [--metadata] [--slow] [-log]
+```python3 validate_ami_bags.py -d /path/to/bag_directory OR -b /path/to/bag [--metadata] [--slow] [-log]```
 
 1. Validation of Bag Structure:
     * Checks for the presence of required directories and files.
