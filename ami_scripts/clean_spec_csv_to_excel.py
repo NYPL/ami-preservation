@@ -313,8 +313,9 @@ def cleanup_csv(args):
 
         # Detect file encoding
         file_encoding = detect_encoding(args.source)
-
-        df = pd.read_csv(args.source, encoding=file_encoding)
+        # Instead of passing `errors` to `read_csv()`, open the file in text mode:
+        with open(args.source, mode='r', encoding=file_encoding, errors='replace') as df:
+            df = pd.read_csv(df)
         
         # Convert 'format_1' to lowercase to ensure consistency in processing
         df['format_1'] = df['format_1'].str.lower()
@@ -363,10 +364,12 @@ def cleanup_csv(args):
             if os.path.exists(args.destination):
                 output_file_path = os.path.join(args.destination, clean_name)
                 if args.vendor:  
-                    df.to_excel(output_file_path, sheet_name='Sheet1', index=False)  
+                    df.to_excel(output_file_path, sheet_name='Sheet1', index=False)
+                    print(f"{clean_name} successfully written to {args.destination}")
                 else: 
                     writer = pd.ExcelWriter(output_file_path, engine='xlsxwriter')
                     df.to_excel(writer, sheet_name='Sheet1')
+                    print(f"{clean_name} successfully written to {args.destination}")
                     writer.close()
 
 def main():
