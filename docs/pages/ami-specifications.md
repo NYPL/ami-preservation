@@ -316,7 +316,7 @@ Files that exceed the Broadcast Wave Format 4GB file size limitation should be c
 <a name="audio-pms"></a>
 #### Preservation master
   * Technical guidelines: The production of preservation master files will comply with the technical recommendations, practices and strategies outlined by the International Association of Sound and Audiovisual Archives
-  * Strategic guidelines - IASA-TC 03, version 3: The production of preservation master files will comply with the ethical recommendations, practices and strategies outlined by the International Association of Sounds and Audiovisual Archives.
+  * Strategic guidelines - IASA-TC 03, version 3: The production of preservation master files will comply with the ethical recommendations, practices and strategies outlined by the International Association of Sound and Audiovisual Archives.
   * Optimal signal extraction from analog sources seeks to be complete, and includes the transfer of the “lead-in” and “play-out” portions of a recording.
   * Analog signals will be converted to a digital bitstream by means of an Analog-to-Digital converter which complies with the specifications in FADGI’s Audio Analog-to-Digital Converter Performance Specification and Test Method.
   * No signal processing will be applied to the Analog-to-Digital converter’s digital bitstream, including, but not limited to equalization, level adjustment, dither, noise reduction.
