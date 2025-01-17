@@ -15,28 +15,48 @@
   <rule name="Video/Format is AVC" value="Format" tracktype="Video" occurrence="*" operator="=">AVC</rule>
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
   <rule name="Video/Width is 720" value="Width" tracktype="Video" occurrence="*" operator="=">720</rule>
+
   <policy type="or" name="NTSC or PAL specs">
+    
     <policy type="and" name="NTSC specs">
-      <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
-      <rule name="Video/Height is 486" value="Height" tracktype="Video" occurrence="*" operator="=">486</rule>
-      <rule name="Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=">NTSC</rule>
-      <policy type="or" name="NTSC DAR + PAR (various settings)">
-        <policy type="and" name="NTSC DAR + PAR: old 4:3 settings">
-          <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
-          <rule name="Video/PixelAspectRatio is 0.900" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
-        </policy>
-        <policy type="and" name="NTSC DAR + PAR: new 4:3 settings">
-          <rule name="Video/DisplayAspectRatio is 1.347" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.347</rule>
-          <rule name="Video/PixelAspectRatio is 0.909" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.909</rule>
-        </policy>
-        <!-- <policy type="and" name="NTSC DAR + PAR: old 16:9 settings">
+      <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule>
+      <policy type="or" name="NTSC specs v1/2/3">
+        <policy type="and" name="NTSC specs v1/2">
+          <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
+          <rule name="Video/Height is 486" value="Height" tracktype="Video" occurrence="*" operator="=">486</rule>
+          <policy type="or" name="NTSC DAR + PAR v1/2">
+            <policy type="and" name="NTSC DAR + PAR 4:3 v1">
+              <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+              <rule name="Video/PixelAspectRatio is 0.900" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.900</rule>
+            </policy>
+            <policy type="and" name="NTSC DAR + PAR 4:3 v2">
+              <rule name="Video/DisplayAspectRatio is 1.347" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.347</rule>
+              <rule name="Video/PixelAspectRatio is 0.909" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.909</rule>
+            </policy>
+            <!-- <policy type="and" name="NTSC DAR + PAR 16:9 v1">
 
-        </policy> -->
-        <!-- <policy type="and" name="NTSC DAR + PAR: new 16:9 settings">
+            </policy> -->
+            <!-- <policy type="and" name="NTSC DAR + PAR 16:9 v2">
 
-        </policy> -->
+            </policy> -->
+          </policy>
+        </policy>
+        <policy type="and" name="NTSC specs v3">
+          <rule name="Video/FrameRate is 59.940" value="FrameRate" tracktype="Video" occurrence="*" operator="=">59.940</rule>
+          <rule name="Video/Height is 480" value="Height" tracktype="Video" occurrence="*" operator="=">480</rule>
+          <policy type="or" name="NTSC DAR + PAR v3">
+            <policy type="and" name="NTSC DAR + PAR 4:3 v3">
+              <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+              <rule name="Video/PixelAspectRatio is 0.889" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.889</rule>
+            </policy>
+            <!-- <policy type="and" name="NTSC DAR + PAR 16:9 v3">
+
+            </policy> -->
+          </policy>
+        </policy>
       </policy>
     </policy>
+
     <policy type="and" name="PAL specs">
       <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
       <rule name="Video/Height is 576" value="Height" tracktype="Video" occurrence="*" operator="=">576</rule>
@@ -58,5 +78,6 @@
         </policy> -->
       </policy>
     </policy>
+    
   </policy>
 </policy>
