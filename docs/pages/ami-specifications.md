@@ -315,14 +315,14 @@ Files that exceed the Broadcast Wave Format 4GB file size limitation should be c
 
 <a name="audio-pms"></a>
 #### Preservation master
-  * Technical guidelines: The production of preservation master files will comply with the technical recommendations, practices and strategies outlined by the International Association of Audiovisual Archives
-  * Strategic guidelines - IASA-TC 03, version 3: The production of preservation master files will comply with the ethical recommendations, practices and strategies outlined by the International Association of Audiovisual Archives.
+  * Technical guidelines: The production of preservation master files will comply with the technical recommendations, practices and strategies outlined by the International Association of Sound and Audiovisual Archives
+  * Strategic guidelines - IASA-TC 03, version 3: The production of preservation master files will comply with the ethical recommendations, practices and strategies outlined by the International Association of Sound and Audiovisual Archives.
   * Optimal signal extraction from analog sources seeks to be complete, and includes the transfer of the “lead-in” and “play-out” portions of a recording.
   * Analog signals will be converted to a digital bitstream by means of an Analog-to-Digital converter which complies with the specifications in FADGI’s Audio Analog-to-Digital Converter Performance Specification and Test Method.
   * No signal processing will be applied to the Analog-to-Digital converter’s digital bitstream, including, but not limited to equalization, level adjustment, dither, noise reduction.
 
 #### Signal Extraction
-  * Signal extraction from analog original audio recordings will comply with the technical recommendations, practices and strategies outlined by the International Association of Audiovisual Archives.
+  * Signal extraction from analog original audio recordings will comply with the technical recommendations, practices and strategies outlined by the International Association of Sound and Audiovisual Archives.
   * Optimal signal extraction for the production of preservation master files should aim to capture the complete dynamic and frequency ranges of the original recording.
   * Signal extraction must be carried out using the equipment and accessories that are appropriate and intended for the original format characteristics.
       * Example: a full-track mono recording on an open reel audio tape must be transferred using a full-track audio head (rather than a stereo head).
