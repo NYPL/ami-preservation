@@ -301,10 +301,8 @@ def build_ffmpeg_command(input_file, output_file, channel_layout):
         "-c:v", "libx264",
         "-movflags", "faststart",
         "-pix_fmt", "yuv420p",
-        "-b:v", "3500000",
-        "-bufsize", "1750000",
-        "-maxrate", "3500000",
-        "-vf", "yadif",
+        "-crf", "21", 
+        "-vf", "idet,bwdif=1",
         "-c:a", "aac",
         "-b:a", "320000",
         "-ar", "48000"
