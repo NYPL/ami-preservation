@@ -54,8 +54,8 @@
             </policy> -->
             <policy type="and" name="NTSC DAR + PAR 4:3 v3 -- TEMP ALLOW FOR FILES CREATED BEFORE 2025-01-13">
               <rule name="General/File_Modified_Date is less than 2025-01-14 00:00:00 UTC" value="File_Modified_Date" tracktype="General" occurrence="*" operator="&lt;">2025-01-14 00:00:00 UTC</rule>
-              <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.364</rule>
-              <rule name="Video/PixelAspectRatio is 0.889" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.909</rule>
+              <rule name="Video/DisplayAspectRatio is 1.364" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.364</rule>
+              <rule name="Video/PixelAspectRatio is 0.909" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.909</rule>
             </policy>
           </policy>
         </policy>
