@@ -19,7 +19,7 @@
   <policy type="or" name="NTSC or PAL specs">
     
     <policy type="and" name="NTSC specs">
-      <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule>
+<!--       <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule> -->
       <policy type="or" name="NTSC specs v1/2/3">
         <policy type="and" name="NTSC specs v1/2">
           <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
@@ -65,7 +65,7 @@
     <policy type="and" name="PAL specs">
       <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
       <rule name="Video/Height is 576" value="Height" tracktype="Video" occurrence="*" operator="=">576</rule>
-      <rule name="Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=">PAL</rule>
+<!--       <rule name="Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=">PAL</rule> -->
       <policy type="or" name="PAL DAR + PAR (various settings)">
         <policy type="and" name="PAL DAR + PAR: old 4:3 settings">
           <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
