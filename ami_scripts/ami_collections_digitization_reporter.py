@@ -33,14 +33,15 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
-        # Modified query with CAST to ensure data types match and add vernacularDivisionCode
+        # Modified query - add projectType
         query = '''
             SELECT 
                 CAST("asset.referenceFilename" AS VARCHAR(255)) AS referenceFilename, 
                 CAST("bibliographic.primaryID" AS VARCHAR(255)) AS primaryID, 
                 CAST("technical.dateCreated" AS VARCHAR(50)) AS dateCreated, 
                 CAST("cmsCollectionTitle" AS VARCHAR(255)) AS cmsCollectionTitle,
-                CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode
+                CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode,
+                'Programmatic Digitization' AS projectType
             FROM tbl_vendor_mediainfo
             UNION ALL
             SELECT 
@@ -48,7 +49,8 @@ def fetch_data_from_jdbc():
                 CAST("bibliographic.primaryID" AS VARCHAR(255)) AS primaryID, 
                 CAST("technical.dateCreated" AS VARCHAR(50)) AS dateCreated, 
                 CAST("cmsCollectionTitle" AS VARCHAR(255)) AS cmsCollectionTitle,
-                CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode
+                CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode,
+                CAST("projectType" AS VARCHAR(255)) AS projectType
             FROM tbl_metadata
         '''
 
@@ -116,7 +118,7 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
     start_date = end_date - pd.DateOffset(months=overall_months)
     df = df[df['dateCreated'] >= start_date].copy()
 
-    # 5) Summary table: Unique items by collection (sorted descending)
+    # 5) Summary table: Unique items by collection
     spec_collection_usage = (
         df.groupby('cmsCollectionTitle')['primaryID']
           .nunique()
@@ -130,12 +132,10 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
     df['month'] = df['dateCreated'].dt.to_period('M')
     monthly_trend = df.groupby(['month', 'cmsCollectionTitle'])['primaryID'].nunique().unstack(fill_value=0)
 
-    # 7) Filter to only show data for the last N months (default 3)
+    # 7) Filter to last N months for the bar chart
     if not monthly_trend.empty:
-        # If the user says recent_months=3, take the last 3 months from monthly_trend's index
         last_n_months = monthly_trend.index[-recent_months:]
         monthly_trend_filtered = monthly_trend.loc[last_n_months]
-        # Filter out collections with fewer than 5 items across the last N months
         monthly_trend_filtered = monthly_trend_filtered.loc[
             :, monthly_trend_filtered.sum(axis=0) >= 5
         ]
@@ -145,13 +145,28 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
     # 8) Build a friendly month-year label for the PDF filename/title
     start_month_year = start_date.strftime("%B %Y")
 
-    return spec_collection_usage, monthly_trend_filtered, start_month_year
+    # 9) For the new pie chart: group by projectType
+    #    We use nunique of primaryID to get the # of unique items
+    project_type_counts = (
+        df.groupby('projectType')['primaryID']
+          .nunique()
+          .reset_index(name='Unique Items')
+          .sort_values('Unique Items', ascending=False)
+    )
 
-def generate_pdf_report(spec_collection_usage, monthly_trend_filtered, start_month_year, division=None):
+    return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts
+
+def generate_pdf_report(
+    spec_collection_usage, 
+    monthly_trend_filtered, 
+    start_month_year, 
+    project_type_counts,
+    division=None
+):
     # 1) Decide the PDF output path
     desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
     if division:
-        # Use regex to turn "MUS + RHA" or "THE + TOFT" into "MUS_RHA" or "THE_TOFT"
+        # Use regex to turn "MUS + RHA" -> "MUS_RHA", etc.
         safe_division = re.sub(r"\s*\+\s*", "_", division.strip())
         safe_division = re.sub(r"\s+", "_", safe_division)
         output_file = os.path.join(
@@ -185,24 +200,24 @@ def generate_pdf_report(spec_collection_usage, monthly_trend_filtered, start_mon
                 kind='bar', stacked=True, figsize=(24, 10), colormap=cmap
             )
             plt.title('Recent AMI Digitization Activity (Last Few Months)', 
-                    fontsize=18, color='#333333')
+                      fontsize=18, color='#333333')
             plt.xlabel('Collection', fontsize=14, color='#333333')
             plt.ylabel('Number of Unique Items Digitized', fontsize=14, color='#333333')
             plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
             plt.yticks(fontsize=12, color='#333333')
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout(rect=[0, 0, 1, 0.95])
-            
-            # 1) Compute total items for each collection across the recent months
+
+            # 1) Compute total items for each collection across recent months
             collection_sums = monthly_trend_filtered.sum(axis=0).astype(int)
-            
+
             # 2) Build custom labels: "collection (count)"
             new_labels = [f"{col} ({collection_sums[col]})" for col in monthly_trend_filtered.columns]
-            
-            # 3) Apply these labels to the x-axis ticks
+
+            # 3) Apply these labels to the x-axis
             ax.set_xticks(range(len(monthly_trend_filtered.columns)))
             ax.set_xticklabels(new_labels, rotation=45, ha='right')
-            
+
             plt.legend(loc='best', frameon=False, fontsize=12)
             pdf.savefig()
             plt.close()
@@ -215,7 +230,48 @@ def generate_pdf_report(spec_collection_usage, monthly_trend_filtered, start_mon
             pdf.savefig()
             plt.close()
 
-        # C) Paginated Table
+        # C) New Pie Chart: Project Type Distribution (overall timeframe)
+        if not project_type_counts.empty:
+            plt.figure(figsize=(11, 8.5))
+            plt.title(
+                f'Project Type Distribution ({start_month_year} - Present)',
+                fontsize=18,
+                color='#333333',
+                pad=20
+            )
+
+            # Use the 'Unique Items' column for the pie
+            sizes = project_type_counts['Unique Items']
+            labels = project_type_counts['projectType']
+
+            # Generate a list of colors, or you can use another colormap if desired
+            colors = plt.get_cmap('Accent')(range(len(labels)))
+
+            # Construct the pie chart
+            patches, texts, autotexts = plt.pie(
+                sizes,
+                labels=labels,
+                colors=colors,
+                autopct='%1.1f%%',
+                startangle=140,
+                textprops={'color':'#333333', 'fontsize': 12}
+            )
+            for autotext in autotexts:
+                autotext.set_color('white')
+
+            plt.axis('equal')  # Equal aspect ratio ensures the pie is circular.
+            pdf.savefig()
+            plt.close()
+        else:
+            # No project type data to display
+            plt.figure(figsize=(11, 8.5))
+            plt.text(0.5, 0.5, 'No project type data to display.', 
+                     ha='center', va='center', fontsize=16)
+            plt.axis('off')
+            pdf.savefig()
+            plt.close()
+
+        # D) Paginated Table (existing logic)
         if not spec_collection_usage.empty:
             for i in range(0, len(spec_collection_usage), rows_per_page):
                 plt.figure(figsize=(11, 8.5))
@@ -277,7 +333,10 @@ def main():
 
     df = fetch_data_from_jdbc()
     if not df.empty:
-        spec_collection_usage, monthly_trend_filtered, start_month_year = process_data(
+        (spec_collection_usage, 
+         monthly_trend_filtered, 
+         start_month_year, 
+         project_type_counts) = process_data(
             df,
             division=args.division,
             overall_months=args.overall_months,
@@ -286,7 +345,8 @@ def main():
         generate_pdf_report(
             spec_collection_usage, 
             monthly_trend_filtered, 
-            start_month_year, 
+            start_month_year,
+            project_type_counts,   # <--- pass it here
             division=args.division
         )
     else:
