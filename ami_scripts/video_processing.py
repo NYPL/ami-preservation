@@ -37,9 +37,9 @@ def convert_mkv_dv_to_mp4(input_directory, audio_pan):
         convert_to_mp4(file, input_directory, audio_pan)
 
 
-def process_mov_files(input_directory):
-    for file in input_directory.glob("*.mov"):
-        convert_mov_file(file, input_directory)
+def process_mov_files(input_directory, audio_pan):
+    for mov_file in input_directory.glob("*.mov"):
+        convert_mov_file(mov_file, input_directory, audio_pan)
 
 
 def process_dv_files(input_directory):
@@ -321,27 +321,108 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
     return output_file
 
 
-def convert_mov_file(input_file, input_directory):
-    """Convert a MOV file to FFV1 and MP4 formats using FFmpeg"""    
-    output_file1 = input_directory / f"{pathlib.Path(input_file).stem}.mkv"
-    output_file2 = input_directory / f"{input_file.stem.replace('_pm', '')}_sc.mp4"
-    command1 = [
+def convert_mov_file(input_file, input_directory, audio_pan):
+    """
+    Convert a MOV file to an FFV1 MKV (Preservation Master), then call
+    convert_to_mp4 to generate a Service Copy. This approach ensures
+    we reuse the same MP4 creation logic (including audio pan).
+    """
+
+    def get_video_resolution(path):
+        ffprobe_command = [
+            "ffprobe", "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=p=0", str(path)
+        ]
+        result = subprocess.run(ffprobe_command, capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            w, h = map(int, result.stdout.strip().split(","))
+            return w, h
+        else:
+            raise ValueError(f"Could not determine video resolution for {path}")
+
+    width, height = get_video_resolution(input_file)
+
+    # Decide field ordering, color metadata, etc. for standard def
+    # If HD (or anything else), we skip these for simplicity.
+    if width == 720 and height == 486:
+        # NTSC (bottom-field-first)
+        field_order       = "bt"
+        set_field_filter  = "bff"
+        dar_filter        = "4/3"
+        color_primaries   = "smpte170m"
+        color_range       = "tv"
+        color_trc         = "bt709"
+        colorspace        = "smpte170m"
+
+    elif width == 720 and height == 576:
+        # PAL (top-field-first)
+        field_order       = "tb"
+        set_field_filter  = "tff"
+        dar_filter        = "4/3"
+        color_primaries   = "bt470bg"
+        color_range       = "tv"
+        color_trc         = "bt709"
+        colorspace        = "bt470bg"
+
+    else:
+        # HD or non‐standard
+        field_order       = None
+        set_field_filter  = None
+        dar_filter        = None
+        color_primaries   = None
+        color_range       = None
+        color_trc         = None
+        colorspace        = None
+
+    # Build FFmpeg command for MKV (Preservation Master)
+    mkv_output = input_directory / f"{input_file.stem}.mkv"
+    ffv1_cmd = [
         "ffmpeg",
-        "-i", input_file,
-        "-map", "0", "-dn", "-c:v", "ffv1", "-level", "3", "-g", "1", "-slicecrc", "1",
-        "-slices", "24", "-field_order", "bt", "-vf", "setfield=bff,setdar=4/3",
-        "-color_primaries", "smpte170m", "-color_range", "tv", "-color_trc", "bt709",
-        "-colorspace", "smpte170m", "-c:a", "copy", str(output_file1)
+        "-i", str(input_file),
+        "-map", "0",      # Map all streams
+        "-dn",            # No data streams
+        "-c:v", "ffv1",
+        "-level", "3",
+        "-g", "1",
+        "-slicecrc", "1",
+        "-slices", "24",
+        "-c:a", "copy"    # Copy all audio bit-for-bit
     ]
-    subprocess.run(command1)
-    command2 = [
-        "ffmpeg",
-        "-i", input_file,
-        "-map", "0", "-dn", "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p",
-        "-crf", "21", "-vf", "idet,bwdif=1,crop=w=720:h=480:x=0:y=4",
-        "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file2)
-    ]
-    subprocess.run(command2)
+
+    # Apply field_order if defined
+    if field_order:
+        ffv1_cmd += ["-field_order", field_order]
+
+    # Build a -vf filter if we have setfield/dar
+    vf_filters = []
+    if set_field_filter:
+        vf_filters.append(f"setfield={set_field_filter}")
+    if dar_filter:
+        vf_filters.append(f"setdar={dar_filter}")
+    if vf_filters:
+        ffv1_cmd += ["-vf", ",".join(vf_filters)]
+
+    # Insert color metadata if relevant
+    if color_primaries:
+        ffv1_cmd += ["-color_primaries", color_primaries]
+    if color_range:
+        ffv1_cmd += ["-color_range", color_range]
+    if color_trc:
+        ffv1_cmd += ["-color_trc", color_trc]
+    if colorspace:
+        ffv1_cmd += ["-colorspace", colorspace]
+
+    ffv1_cmd.append(str(mkv_output))
+
+    print("Running MKV (FFV1) command:", " ".join(ffv1_cmd))
+    subprocess.run(ffv1_cmd, check=True)
+    print(f"Created Preservation Master: {mkv_output}")
+
+    # Now create a Service Copy by calling your existing MP4 function,
+    # which supports the audio_pan logic (auto, left, right, center, etc.)
+    convert_to_mp4(input_file, input_directory, audio_pan)
 
 
 def create_directories(input_directory, directories):
@@ -486,7 +567,7 @@ def main():
     convert_mkv_dv_to_mp4(input_dir, args.audio_pan)
 
     print("Processing MOV files...")
-    process_mov_files(input_dir)
+    process_mov_files(input_dir, args.audio_pan)
 
     print("Generating framemd5 files...")
     generate_framemd5_files(input_dir)
