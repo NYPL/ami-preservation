@@ -185,15 +185,24 @@ def generate_pdf_report(spec_collection_usage, monthly_trend_filtered, start_mon
                 kind='bar', stacked=True, figsize=(24, 10), colormap=cmap
             )
             plt.title('Recent AMI Digitization Activity (Last Few Months)', 
-                      fontsize=18, color='#333333')
+                    fontsize=18, color='#333333')
             plt.xlabel('Collection', fontsize=14, color='#333333')
             plt.ylabel('Number of Unique Items Digitized', fontsize=14, color='#333333')
             plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
             plt.yticks(fontsize=12, color='#333333')
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout(rect=[0, 0, 1, 0.95])
+            
+            # 1) Compute total items for each collection across the recent months
+            collection_sums = monthly_trend_filtered.sum(axis=0).astype(int)
+            
+            # 2) Build custom labels: "collection (count)"
+            new_labels = [f"{col} ({collection_sums[col]})" for col in monthly_trend_filtered.columns]
+            
+            # 3) Apply these labels to the x-axis ticks
             ax.set_xticks(range(len(monthly_trend_filtered.columns)))
-            ax.set_xticklabels(monthly_trend_filtered.columns, rotation=45, ha='right')
+            ax.set_xticklabels(new_labels, rotation=45, ha='right')
+            
             plt.legend(loc='best', frameon=False, fontsize=12)
             pdf.savefig()
             plt.close()
