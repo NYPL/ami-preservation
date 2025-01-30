@@ -9,6 +9,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import ListedColormap
 import argparse
 import re  
+import itertools
+
 
 def fetch_data_from_jdbc():
     # Load environment variables
@@ -240,33 +242,60 @@ def generate_pdf_report(
                 pad=20
             )
 
-            # Use the 'Unique Items' column for the pie
+            # Grab data from the project_type_counts DataFrame
             sizes = project_type_counts['Unique Items']
             labels = project_type_counts['projectType']
 
-            # Generate a list of colors, or you can use another colormap if desired
-            colors = plt.get_cmap('Accent')(range(len(labels)))
+            # ---- Optionally, sort slices by size (descending or ascending) ----
+            #    If you want to see slices in order of largest→smallest around the pie:
+            # project_type_counts_sorted = project_type_counts.sort_values(
+            #     by='Unique Items', ascending=False
+            # ).reset_index(drop=True)
+            #
+            # sizes = project_type_counts_sorted['Unique Items']
+            # labels = project_type_counts_sorted['projectType']
 
-            # Construct the pie chart
+            # Reuse your custom ListedColormap, cycling if needed
+            colors = list(itertools.islice(itertools.cycle(cmap.colors), len(labels)))
+
+            # Compute fraction of each slice wrt the total
+            total = sizes.sum()
+            fractions = sizes / total
+
+            # We'll define a base explode (for large slices) and an additional explode for smaller slices
+            base_explode = 0.03  # minimal explode
+            max_extra = 0.12     # how much more we explode the smallest slice(s)
+
+            # For each fraction, the explode is base + (some fraction of max_extra)
+            # smaller fraction => bigger explode
+            # (1 - fraction) makes small slices get a bigger chunk of max_extra
+            explode = [base_explode + max_extra * (1 - frac) for frac in fractions]
+
             patches, texts, autotexts = plt.pie(
                 sizes,
                 labels=labels,
                 colors=colors,
                 autopct='%1.1f%%',
                 startangle=140,
-                textprops={'color':'#333333', 'fontsize': 12}
+                textprops={'color': '#333333', 'fontsize': 12},
+                labeldistance=1.4,  # Move the slice labels further out 
+                pctdistance=0.8,    # Move the % labels inward
+                wedgeprops={'linewidth': 1, 'edgecolor': 'white'},
+                explode=explode
             )
+
+            # Optionally change the color of the percentage text
             for autotext in autotexts:
                 autotext.set_color('white')
 
-            plt.axis('equal')  # Equal aspect ratio ensures the pie is circular.
+            plt.axis('equal')  # Make sure the pie is a circle
             pdf.savefig()
             plt.close()
         else:
             # No project type data to display
             plt.figure(figsize=(11, 8.5))
             plt.text(0.5, 0.5, 'No project type data to display.', 
-                     ha='center', va='center', fontsize=16)
+                    ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
