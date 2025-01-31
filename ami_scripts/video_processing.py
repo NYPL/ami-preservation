@@ -33,7 +33,11 @@ def rename_files(input_directory, extensions):
 
 
 def convert_mkv_dv_to_mp4(input_directory, audio_pan):
-    for file in itertools.chain(input_directory.glob("*.mkv"), input_directory.glob("*.dv")):
+    # Sort the files so they are processed in alphabetical order
+    mkv_files = sorted(input_directory.glob("*.mkv"))
+    dv_files  = sorted(input_directory.glob("*.dv"))
+    
+    for file in itertools.chain(mkv_files, dv_files):
         convert_to_mp4(file, input_directory, audio_pan)
 
 
@@ -66,7 +70,10 @@ def process_dv_files(input_directory):
 
 
 def generate_framemd5_files(input_directory):
-    for file in input_directory.glob("*.mkv"):
+    # Sort the files so they are processed in alphabetical order
+    mkv_files = sorted(input_directory.glob("*.mkv"))
+
+    for file in mkv_files:
         output_file = input_directory / f"{file.stem}.framemd5"
         if not output_file.exists():
             command = [
