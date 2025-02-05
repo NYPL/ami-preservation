@@ -35,7 +35,6 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
-        # Modified query - add projectType
         query = '''
             SELECT 
                 CAST("asset.referenceFilename" AS VARCHAR(255)) AS referenceFilename, 
@@ -75,12 +74,12 @@ def fetch_data_from_jdbc():
 
     return df
 
+
 def combine_division_codes(df):
     """
     Combine the vernacular division codes into broader categories, in-place.
     For example:
         'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh']
-        etc.
     Adjust this dictionary as needed for your data.
     """
     combine_dict = {
@@ -91,13 +90,14 @@ def combine_division_codes(df):
         'MSS': ['MSS', 'mao']
     }
 
-    # Create a new column for "combined" codes so we don’t lose the original
+    # Create a new column so we don’t lose the original codes
     df['combinedDivisionCode'] = df['vernacularDivisionCode']
 
     for new_label, old_labels in combine_dict.items():
         df.loc[df['combinedDivisionCode'].isin(old_labels), 'combinedDivisionCode'] = new_label
 
     return df
+
 
 def process_data(df, division=None, overall_months=18, recent_months=3):
     """
@@ -147,8 +147,7 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
     # 8) Build a friendly month-year label for the PDF filename/title
     start_month_year = start_date.strftime("%B %Y")
 
-    # 9) For the new pie chart: group by projectType
-    #    We use nunique of primaryID to get the # of unique items
+    # 9) For the project type distribution: count unique items by projectType
     project_type_counts = (
         df.groupby('projectType')['primaryID']
           .nunique()
@@ -157,6 +156,7 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
     )
 
     return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts
+
 
 def generate_pdf_report(
     spec_collection_usage, 
@@ -168,7 +168,6 @@ def generate_pdf_report(
     # 1) Decide the PDF output path
     desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
     if division:
-        # Use regex to turn "MUS + RHA" -> "MUS_RHA", etc.
         safe_division = re.sub(r"\s*\+\s*", "_", division.strip())
         safe_division = re.sub(r"\s+", "_", safe_division)
         output_file = os.path.join(
@@ -181,9 +180,7 @@ def generate_pdf_report(
             f'Digitized_AMI_Items_{start_month_year.replace(" ", "_")}_to_present.pdf'
         )
 
-    # 2) Create PDF pages
     rows_per_page = 25
-    cmap = ListedColormap(["#386641", "#6a994e", "#a7c957"])
 
     with PdfPages(output_file) as pdf:
         # A) Title Page
@@ -195,11 +192,22 @@ def generate_pdf_report(
         pdf.savefig()
         plt.close()
 
-        # B) Recent Trend Visualization
+        # B) Recent Trend Visualization - use dynamic color list based on recent_months
         if not monthly_trend_filtered.empty:
-            plt.figure(figsize=(26, 10))
+            num_recent_months = len(monthly_trend_filtered.index)
+            if num_recent_months <= 3:
+                recent_colors = ["#386641", "#6a994e", "#a7c957"]
+            elif num_recent_months <= 6:
+                # Extended palette: original three plus three extra complementary colors
+                recent_colors = ["#386641", "#6a994e", "#a7c957", "#F4D35E", "#EE964B", "#F95738"][:num_recent_months]
+            else:
+                cmap_dynamic = plt.get_cmap("tab20")
+                recent_colors = [cmap_dynamic(i) for i in range(num_recent_months)]
+            
+            plt.figure(figsize=(24, 10))
+            # Plot the stacked bar chart using our chosen colors
             ax = monthly_trend_filtered.T.plot(
-                kind='bar', stacked=True, figsize=(24, 10), colormap=cmap
+                kind='bar', stacked=True, figsize=(24, 10), color=recent_colors
             )
             plt.title('Recent AMI Digitization Activity (Last Few Months)', 
                       fontsize=18, color='#333333')
@@ -210,13 +218,9 @@ def generate_pdf_report(
             plt.grid(axis='y', linestyle='--', alpha=0.7)
             plt.tight_layout(rect=[0, 0, 1, 0.95])
 
-            # 1) Compute total items for each collection across recent months
+            # Update the x-axis labels to include total counts per collection
             collection_sums = monthly_trend_filtered.sum(axis=0).astype(int)
-
-            # 2) Build custom labels: "collection (count)"
             new_labels = [f"{col} ({collection_sums[col]})" for col in monthly_trend_filtered.columns]
-
-            # 3) Apply these labels to the x-axis
             ax.set_xticks(range(len(monthly_trend_filtered.columns)))
             ax.set_xticklabels(new_labels, rotation=45, ha='right')
 
@@ -224,15 +228,14 @@ def generate_pdf_report(
             pdf.savefig()
             plt.close()
         else:
-            # If there's no data to visualize
-            plt.figure(figsize=(11, 8.5))
+            plt.figure(figsize=(11, 10))
             plt.text(0.5, 0.5, 'No recent data to display.', 
                      ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
 
-        # C) New Pie Chart: Project Type Distribution (overall timeframe)
+        # C) Horizontal Bar Chart: Project Type Distribution (replacing the pie chart)
         if not project_type_counts.empty:
             plt.figure(figsize=(11, 8.5))
             plt.title(
@@ -242,60 +245,34 @@ def generate_pdf_report(
                 pad=20
             )
 
-            # Grab data from the project_type_counts DataFrame
-            sizes = project_type_counts['Unique Items']
-            labels = project_type_counts['projectType']
+            # Sort so that the largest count appears at the top
+            pt_sorted = project_type_counts.sort_values(by='Unique Items', ascending=True)
+            labels = pt_sorted['projectType']
+            sizes = pt_sorted['Unique Items']
 
-            # ---- Optionally, sort slices by size (descending or ascending) ----
-            #    If you want to see slices in order of largest→smallest around the pie:
-            # project_type_counts_sorted = project_type_counts.sort_values(
-            #     by='Unique Items', ascending=False
-            # ).reset_index(drop=True)
-            #
-            # sizes = project_type_counts_sorted['Unique Items']
-            # labels = project_type_counts_sorted['projectType']
-
-            # Reuse your custom ListedColormap, cycling if needed
-            colors = list(itertools.islice(itertools.cycle(cmap.colors), len(labels)))
-
-            # Compute fraction of each slice wrt the total
-            total = sizes.sum()
-            fractions = sizes / total
-
-            # We'll define a base explode (for large slices) and an additional explode for smaller slices
-            base_explode = 0.03  # minimal explode
-            max_extra = 0.12     # how much more we explode the smallest slice(s)
-
-            # For each fraction, the explode is base + (some fraction of max_extra)
-            # smaller fraction => bigger explode
-            # (1 - fraction) makes small slices get a bigger chunk of max_extra
-            explode = [base_explode + max_extra * (1 - frac) for frac in fractions]
-
-            patches, texts, autotexts = plt.pie(
-                sizes,
-                labels=labels,
-                colors=colors,
-                autopct='%1.1f%%',
-                startangle=140,
-                textprops={'color': '#333333', 'fontsize': 12},
-                labeldistance=1.4,  # Move the slice labels further out 
-                pctdistance=0.8,    # Move the % labels inward
-                wedgeprops={'linewidth': 1, 'edgecolor': 'white'},
-                explode=explode
-            )
-
-            # Optionally change the color of the percentage text
-            for autotext in autotexts:
-                autotext.set_color('white')
-
-            plt.axis('equal')  # Make sure the pie is a circle
+            # Define a complementary color palette (feel free to adjust these hex codes)
+            base_project_type_colors = ["#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600", "#ff8c42"]
+            num_project_types = len(pt_sorted)
+            project_type_colors = base_project_type_colors[:num_project_types]
+            
+            # Create horizontal bar chart
+            bars = plt.barh(range(len(pt_sorted)), sizes, color=project_type_colors, edgecolor='white')
+            plt.yticks(range(len(pt_sorted)), labels, fontsize=12, color='#333333')
+            plt.xlabel('Number of Unique Items', fontsize=14, color='#333333')
+            
+            # Annotate each bar with its value
+            for i, bar in enumerate(bars):
+                width = bar.get_width()
+                plt.text(width + max(sizes)*0.01, bar.get_y() + bar.get_height()/2,
+                         f'{sizes.iloc[i]}', va='center', fontsize=12, color='#333333')
+            
+            plt.tight_layout()
             pdf.savefig()
             plt.close()
         else:
-            # No project type data to display
             plt.figure(figsize=(11, 8.5))
             plt.text(0.5, 0.5, 'No project type data to display.', 
-                    ha='center', va='center', fontsize=16)
+                     ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
@@ -305,7 +282,6 @@ def generate_pdf_report(
             for i in range(0, len(spec_collection_usage), rows_per_page):
                 plt.figure(figsize=(11, 8.5))
                 plt.axis('off')
-                # Title for the first page
                 if i == 0:
                     t = (f'Digitized AMI Items per SPEC Collection, {start_month_year} - Present, Ranked'
                          + (f'\nDivision: {division}' if division else ''))
@@ -334,6 +310,7 @@ def generate_pdf_report(
             plt.close()
 
         print(f"PDF report generated successfully: {output_file}")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -375,11 +352,12 @@ def main():
             spec_collection_usage, 
             monthly_trend_filtered, 
             start_month_year,
-            project_type_counts,   # <--- pass it here
+            project_type_counts,
             division=args.division
         )
     else:
         print("No data returned from the database. Exiting.")
+
 
 if __name__ == "__main__":
     main()
