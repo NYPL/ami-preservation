@@ -10,6 +10,7 @@ from matplotlib.colors import ListedColormap
 import argparse
 import re  
 import itertools
+import seaborn as sns  # NEW: Import seaborn for the new chart
 
 
 def fetch_data_from_jdbc():
@@ -35,6 +36,7 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
+        # UPDATED QUERY: Add source.object.format to both parts of the UNION.
         query = '''
             SELECT 
                 CAST("asset.referenceFilename" AS VARCHAR(255)) AS referenceFilename, 
@@ -42,6 +44,7 @@ def fetch_data_from_jdbc():
                 CAST("technical.dateCreated" AS VARCHAR(50)) AS dateCreated, 
                 CAST("cmsCollectionTitle" AS VARCHAR(255)) AS cmsCollectionTitle,
                 CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode,
+                CAST("source.object.format" AS VARCHAR(255)) AS format,
                 'Programmatic Digitization' AS projectType
             FROM tbl_vendor_mediainfo
             UNION ALL
@@ -51,6 +54,7 @@ def fetch_data_from_jdbc():
                 CAST("technical.dateCreated" AS VARCHAR(50)) AS dateCreated, 
                 CAST("cmsCollectionTitle" AS VARCHAR(255)) AS cmsCollectionTitle,
                 CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode,
+                CAST("source.object.format" AS VARCHAR(255)) AS format,
                 CAST("projectType" AS VARCHAR(255)) AS projectType
             FROM tbl_metadata
         '''
@@ -90,7 +94,7 @@ def combine_division_codes(df):
         'MSS': ['MSS', 'mao']
     }
 
-    # Create a new column so we don’t lose the original codes
+    # Create a new column for "combined" codes so we don’t lose the original
     df['combinedDivisionCode'] = df['vernacularDivisionCode']
 
     for new_label, old_labels in combine_dict.items():
@@ -102,8 +106,8 @@ def combine_division_codes(df):
 def process_data(df, division=None, overall_months=18, recent_months=3):
     """
     Filters and aggregates data based on user-selected months.
-    - overall_months: how many months to include for the table ranking
-    - recent_months : how many months to include for the recent-activity bar chart
+    - overall_months: how many months to include for the table ranking and overall aggregations.
+    - recent_months : how many months to include for the recent-activity bar chart.
     """
     # 1) Convert dateCreated to datetime
     df['dateCreated'] = pd.to_datetime(df['dateCreated'], errors='coerce')
@@ -147,7 +151,7 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
     # 8) Build a friendly month-year label for the PDF filename/title
     start_month_year = start_date.strftime("%B %Y")
 
-    # 9) For the project type distribution: count unique items by projectType
+    # 9) Project Type Distribution: count unique items by projectType
     project_type_counts = (
         df.groupby('projectType')['primaryID']
           .nunique()
@@ -155,7 +159,18 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
           .sort_values('Unique Items', ascending=False)
     )
 
-    return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts
+    # 10) NEW: Items Digitized by Format for the overall timeframe.
+    # Here we show the top 10 formats by unique primaryID.
+    top_n = 10
+    format_counts = (
+        df.groupby('format')['primaryID']
+          .nunique()
+          .nlargest(top_n)
+          .reset_index()
+          .rename(columns={'format': 'Format', 'primaryID': 'Count'})
+    )
+
+    return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts, format_counts
 
 
 def generate_pdf_report(
@@ -163,6 +178,7 @@ def generate_pdf_report(
     monthly_trend_filtered, 
     start_month_year, 
     project_type_counts,
+    format_counts,
     division=None
 ):
     # 1) Decide the PDF output path
@@ -205,7 +221,6 @@ def generate_pdf_report(
                 recent_colors = [cmap_dynamic(i) for i in range(num_recent_months)]
             
             plt.figure(figsize=(24, 10))
-            # Plot the stacked bar chart using our chosen colors
             ax = monthly_trend_filtered.T.plot(
                 kind='bar', stacked=True, figsize=(24, 10), color=recent_colors
             )
@@ -228,24 +243,22 @@ def generate_pdf_report(
             pdf.savefig()
             plt.close()
         else:
-            plt.figure(figsize=(11, 10))
+            plt.figure(figsize=(11, 8.5))
             plt.text(0.5, 0.5, 'No recent data to display.', 
                      ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
 
-        # C) Horizontal Bar Chart: Project Type Distribution (replacing the pie chart)
+        # C) Horizontal Bar Chart: Project Type Distribution
         if not project_type_counts.empty:
-            plt.figure(figsize=(11, 8.5))
+            plt.figure(figsize=(15, 8.5))
             plt.title(
                 f'Project Type Distribution ({start_month_year} - Present)',
                 fontsize=18,
                 color='#333333',
                 pad=20
             )
-
-            # Sort so that the largest count appears at the top
             pt_sorted = project_type_counts.sort_values(by='Unique Items', ascending=True)
             labels = pt_sorted['projectType']
             sizes = pt_sorted['Unique Items']
@@ -254,30 +267,66 @@ def generate_pdf_report(
             base_project_type_colors = ["#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600", "#ff8c42"]
             num_project_types = len(pt_sorted)
             project_type_colors = base_project_type_colors[:num_project_types]
-            
-            # Create horizontal bar chart
+
             bars = plt.barh(range(len(pt_sorted)), sizes, color=project_type_colors, edgecolor='white')
             plt.yticks(range(len(pt_sorted)), labels, fontsize=12, color='#333333')
             plt.xlabel('Number of Unique Items', fontsize=14, color='#333333')
-            
+
             # Annotate each bar with its value
             for i, bar in enumerate(bars):
                 width = bar.get_width()
                 plt.text(width + max(sizes)*0.01, bar.get_y() + bar.get_height()/2,
                          f'{sizes.iloc[i]}', va='center', fontsize=12, color='#333333')
             
+            plt.subplots_adjust(right=0.9)
             plt.tight_layout()
             pdf.savefig()
             plt.close()
         else:
-            plt.figure(figsize=(11, 8.5))
+            plt.figure(figsize=(15, 8.5))
             plt.text(0.5, 0.5, 'No project type data to display.', 
                      ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
 
-        # D) Paginated Table (existing logic)
+        # D) Items Digitized by Format (Overall Months)
+        if not format_counts.empty:
+            plt.figure(figsize=(15, 6))
+            # Using seaborn's barplot for a polished look.
+            ax = sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis',
+                            hue='Format', dodge=False, legend=False)
+            plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
+            plt.xlabel('Format', fontsize=14, color='#333333')
+            plt.ylabel('Count', fontsize=14, color='#333333')
+            # Updated title: fontsize 18, no bold
+            plt.title(f'Top {len(format_counts)} Formats - Items Digitized ({start_month_year} - Present)', 
+                    fontsize=18, color='#333333')
+            
+            # Adjust the subplots so long labels are visible and add extra space at the top
+            plt.subplots_adjust(bottom=0.35, top=0.9)
+            # Increase the y-limit to add headroom for the annotations
+            current_ylim = ax.get_ylim()
+            ax.set_ylim(0, current_ylim[1] * 1.15)
+            
+            # Annotate each bar with its count
+            for p in ax.patches:
+                ax.annotate(f'{int(p.get_height())}', 
+                            (p.get_x() + p.get_width() / 2., p.get_height()),
+                            ha='center', va='bottom', color='black', 
+                            xytext=(0, 5), textcoords='offset points')
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close()
+        else:
+            plt.figure(figsize=(15, 6))
+            plt.text(0.5, 0.5, 'No digitized format data to display.', 
+                    ha='center', va='center', fontsize=16)
+            plt.axis('off')
+            pdf.savefig()
+            plt.close()
+
+        # E) Paginated Table (existing logic)
         if not spec_collection_usage.empty:
             for i in range(0, len(spec_collection_usage), rows_per_page):
                 plt.figure(figsize=(11, 8.5))
@@ -286,7 +335,6 @@ def generate_pdf_report(
                     t = (f'Digitized AMI Items per SPEC Collection, {start_month_year} - Present, Ranked'
                          + (f'\nDivision: {division}' if division else ''))
                     plt.text(0.5, 0.95, t, ha='center', va='center', fontsize=18, color='#333333')
-
                 col_widths = [0.75, 0.15]
                 table = plt.table(
                     cellText=spec_collection_usage.iloc[i:i+rows_per_page].values,
@@ -298,7 +346,6 @@ def generate_pdf_report(
                 table.auto_set_font_size(False)
                 table.set_fontsize(10)
                 table.scale(1.3, 1.2)
-                
                 pdf.savefig()
                 plt.close()
         else:
@@ -342,7 +389,8 @@ def main():
         (spec_collection_usage, 
          monthly_trend_filtered, 
          start_month_year, 
-         project_type_counts) = process_data(
+         project_type_counts,
+         format_counts) = process_data(
             df,
             division=args.division,
             overall_months=args.overall_months,
@@ -353,6 +401,7 @@ def main():
             monthly_trend_filtered, 
             start_month_year,
             project_type_counts,
+            format_counts,
             division=args.division
         )
     else:
