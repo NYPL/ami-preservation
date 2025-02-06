@@ -220,32 +220,42 @@ def generate_pdf_report(
                 cmap_dynamic = plt.get_cmap("tab20")
                 recent_colors = [cmap_dynamic(i) for i in range(num_recent_months)]
             
-            plt.figure(figsize=(24, 10))
-            ax = monthly_trend_filtered.T.plot(
-                kind='bar', stacked=True, figsize=(24, 10), color=recent_colors
+            # Create figure and axis explicitly
+            fig, ax = plt.subplots(figsize=(28, 12))
+            
+            # Plot using the existing axis
+            monthly_trend_filtered.T.plot(
+                kind='bar', stacked=True, ax=ax, color=recent_colors
             )
-            plt.title('Recent AMI Digitization Activity (Last Few Months)', 
-                      fontsize=18, color='#333333')
-            plt.xlabel('Collection', fontsize=14, color='#333333')
-            plt.ylabel('Number of Unique Items Digitized', fontsize=14, color='#333333')
-            plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
-            plt.yticks(fontsize=12, color='#333333')
-            plt.grid(axis='y', linestyle='--', alpha=0.7)
-            plt.tight_layout(rect=[0, 0, 1, 0.95])
-
+            
+            # Set title, labels, and their padding
+            ax.set_title('Recent AMI Digitization Activity (Last Few Months)', fontsize=18, color='#333333')
+            ax.set_xlabel('Collection', fontsize=14, color='#333333', labelpad=40)  # Increased labelpad
+            ax.set_ylabel('Number of Unique Items Digitized', fontsize=14, color='#333333')
+            
+            # Rotate the tick labels and set tick parameters
+            ax.tick_params(axis='x', labelrotation=45, labelsize=12, colors='#333333')
+            ax.tick_params(axis='y', labelsize=12, colors='#333333')
+            
+            ax.grid(axis='y', linestyle='--', alpha=0.7)
+            
             # Update the x-axis labels to include total counts per collection
             collection_sums = monthly_trend_filtered.sum(axis=0).astype(int)
             new_labels = [f"{col} ({collection_sums[col]})" for col in monthly_trend_filtered.columns]
             ax.set_xticks(range(len(monthly_trend_filtered.columns)))
             ax.set_xticklabels(new_labels, rotation=45, ha='right')
-
-            plt.legend(loc='best', frameon=False, fontsize=12)
-            pdf.savefig()
-            plt.close()
+            
+            ax.legend(loc='best', frameon=False, fontsize=12)
+            
+            # Adjust the subplot to provide enough space at the bottom
+            fig.subplots_adjust(bottom=0.4, top=0.95)  # Increase bottom margin
+            
+            pdf.savefig(fig)
+            plt.close(fig)
         else:
             plt.figure(figsize=(11, 8.5))
             plt.text(0.5, 0.5, 'No recent data to display.', 
-                     ha='center', va='center', fontsize=16)
+                    ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
