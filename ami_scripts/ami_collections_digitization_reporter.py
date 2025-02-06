@@ -278,7 +278,7 @@ def generate_pdf_report(
                 plt.text(width + max(sizes)*0.01, bar.get_y() + bar.get_height()/2,
                          f'{sizes.iloc[i]}', va='center', fontsize=12, color='#333333')
             
-            plt.subplots_adjust(right=0.9)
+            plt.subplots_adjust(right=0.95)
             plt.tight_layout()
             pdf.savefig()
             plt.close()
@@ -292,7 +292,7 @@ def generate_pdf_report(
 
         # D) Items Digitized by Format (Overall Months)
         if not format_counts.empty:
-            plt.figure(figsize=(15, 6))
+            plt.figure(figsize=(15, 8.5))
             # Using seaborn's barplot for a polished look.
             ax = sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis',
                             hue='Format', dodge=False, legend=False)
@@ -300,14 +300,14 @@ def generate_pdf_report(
             plt.xlabel('Format', fontsize=14, color='#333333')
             plt.ylabel('Count', fontsize=14, color='#333333')
             # Updated title: fontsize 18, no bold
-            plt.title(f'Top {len(format_counts)} Formats - Items Digitized ({start_month_year} - Present)', 
+            plt.title(f'Top {len(format_counts)} Formats Digitized ({start_month_year} - Present)', 
                     fontsize=18, color='#333333')
             
             # Adjust the subplots so long labels are visible and add extra space at the top
             plt.subplots_adjust(bottom=0.35, top=0.9)
             # Increase the y-limit to add headroom for the annotations
             current_ylim = ax.get_ylim()
-            ax.set_ylim(0, current_ylim[1] * 1.15)
+            ax.set_ylim(0, current_ylim[1] * 1.10)
             
             # Annotate each bar with its count
             for p in ax.patches:
