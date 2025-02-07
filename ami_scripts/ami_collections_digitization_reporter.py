@@ -360,7 +360,7 @@ def generate_pdf_report(
                     title_text = f"Chronological View of Digitized AMI Items\n({start_month_year} - Present)"
                     if division:
                         title_text += f"\nDivision: {division}"
-                    plt.text(0.5, 0.98, title_text, ha='center', va='center', fontsize=18, color='#333333')
+                    plt.text(0.5, 0.95, title_text, ha='center', va='center', fontsize=18, color='#333333')
                 # Adjust column widths: widen the SPEC Collection Title column a bit less and narrow the other columns.
                 col_widths = [0.55, 0.15, 0.15]
                 table = plt.table(
@@ -413,14 +413,14 @@ def main():
         type=int,
         default=18
     )
-    # NEW: Option to supply a CSV as input, bypassing the JDBC fetch.
+    # Option to supply a CSV as input, bypassing the JDBC fetch.
     parser.add_argument(
         '--input_csv',
         help='Path to a CSV file to use as input instead of fetching from the database.',
         type=str,
         default=None
     )
-    # NEW: Option to output the fetched data as CSV for future testing.
+    # Option to output the fetched data as CSV for future testing.
     parser.add_argument(
         '--output_csv',
         help='Path to output the fetched database data as CSV (only applicable if --input_csv is not used).',
