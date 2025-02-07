@@ -10,7 +10,7 @@ from matplotlib.colors import ListedColormap
 import argparse
 import re  
 import itertools
-import seaborn as sns  # NEW: Import seaborn for the new chart
+import seaborn as sns
 
 
 def fetch_data_from_jdbc():
@@ -36,7 +36,6 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
-        # UPDATED QUERY: Add source.object.format to both parts of the UNION.
         query = '''
             SELECT 
                 CAST("asset.referenceFilename" AS VARCHAR(255)) AS referenceFilename, 
@@ -84,7 +83,6 @@ def combine_division_codes(df):
     Combine the vernacular division codes into broader categories, in-place.
     For example:
         'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh']
-    Adjust this dictionary as needed for your data.
     """
     combine_dict = {
         'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh'],
@@ -159,15 +157,14 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
           .sort_values('Unique Items', ascending=False)
     )
 
-    # 10) NEW: Items Digitized by Format for the overall timeframe.
-    # Here we show the top 10 formats by unique primaryID.
+    # 10) Items Digitized by Format for the overall timeframe (top 10 formats)
     top_n = 10
     format_counts = (
         df.groupby('format')['primaryID']
           .nunique()
           .nlargest(top_n)
           .reset_index()
-          .rename(columns={'format': 'Format', 'primaryID': 'Count'})
+          .rename(columns={'format': 'Format', 'primaryID': 'Items Digitized'})
     )
 
     return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts, format_counts
@@ -208,54 +205,42 @@ def generate_pdf_report(
         pdf.savefig()
         plt.close()
 
-        # B) Recent Trend Visualization - use dynamic color list based on recent_months
+        # B) Recent Trend Visualization
         if not monthly_trend_filtered.empty:
             num_recent_months = len(monthly_trend_filtered.index)
             if num_recent_months <= 3:
                 recent_colors = ["#386641", "#6a994e", "#a7c957"]
             elif num_recent_months <= 6:
-                # Extended palette: original three plus three extra complementary colors
                 recent_colors = ["#386641", "#6a994e", "#a7c957", "#F4D35E", "#EE964B", "#F95738"][:num_recent_months]
             else:
                 cmap_dynamic = plt.get_cmap("tab20")
                 recent_colors = [cmap_dynamic(i) for i in range(num_recent_months)]
             
-            # Create figure and axis explicitly
-            fig, ax = plt.subplots(figsize=(28, 12))
-            
-            # Plot using the existing axis
-            monthly_trend_filtered.T.plot(
-                kind='bar', stacked=True, ax=ax, color=recent_colors
+            plt.figure(figsize=(24, 10))
+            ax = monthly_trend_filtered.T.plot(
+                kind='bar', stacked=True, figsize=(24, 10), color=recent_colors
             )
-            
-            # Set title, labels, and their padding
-            ax.set_title('Recent AMI Digitization Activity (Last Few Months)', fontsize=18, color='#333333')
-            ax.set_xlabel('Collection', fontsize=14, color='#333333', labelpad=40)  # Increased labelpad
-            ax.set_ylabel('Number of Unique Items Digitized', fontsize=14, color='#333333')
-            
-            # Rotate the tick labels and set tick parameters
-            ax.tick_params(axis='x', labelrotation=45, labelsize=12, colors='#333333')
-            ax.tick_params(axis='y', labelsize=12, colors='#333333')
-            
-            ax.grid(axis='y', linestyle='--', alpha=0.7)
-            
+            plt.title('Recent AMI Digitization Activity (Last Few Months)', fontsize=18, color='#333333')
+            plt.xlabel('Collection', fontsize=14, color='#333333', labelpad=10)
+            plt.ylabel('Number of Items Digitized', fontsize=14, color='#333333')
+            plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
+            plt.yticks(fontsize=12, color='#333333')
+            plt.grid(axis='y', linestyle='--', alpha=0.7)
+            plt.subplots_adjust(bottom=0.05)
+            plt.tight_layout(rect=[0.02, 0.02, 1, 0.95])
+
             # Update the x-axis labels to include total counts per collection
             collection_sums = monthly_trend_filtered.sum(axis=0).astype(int)
             new_labels = [f"{col} ({collection_sums[col]})" for col in monthly_trend_filtered.columns]
             ax.set_xticks(range(len(monthly_trend_filtered.columns)))
             ax.set_xticklabels(new_labels, rotation=45, ha='right')
-            
-            ax.legend(loc='best', frameon=False, fontsize=12)
-            
-            # Adjust the subplot to provide enough space at the bottom
-            fig.subplots_adjust(bottom=0.4, top=0.95)  # Increase bottom margin
-            
-            pdf.savefig(fig)
-            plt.close(fig)
+
+            plt.legend(loc='best', frameon=False, fontsize=12)
+            pdf.savefig()
+            plt.close()
         else:
             plt.figure(figsize=(11, 8.5))
-            plt.text(0.5, 0.5, 'No recent data to display.', 
-                    ha='center', va='center', fontsize=16)
+            plt.text(0.5, 0.5, 'No recent data to display.', ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
@@ -263,26 +248,19 @@ def generate_pdf_report(
         # C) Horizontal Bar Chart: Project Type Distribution
         if not project_type_counts.empty:
             plt.figure(figsize=(15, 8.5))
-            plt.title(
-                f'Project Type Distribution ({start_month_year} - Present)',
-                fontsize=18,
-                color='#333333',
-                pad=20
-            )
+            plt.title(f'Project Type Distribution ({start_month_year} - Present)', fontsize=18, color='#333333', pad=20)
             pt_sorted = project_type_counts.sort_values(by='Unique Items', ascending=True)
             labels = pt_sorted['projectType']
             sizes = pt_sorted['Unique Items']
 
-            # Define a complementary color palette (feel free to adjust these hex codes)
             base_project_type_colors = ["#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600", "#ff8c42"]
             num_project_types = len(pt_sorted)
             project_type_colors = base_project_type_colors[:num_project_types]
 
             bars = plt.barh(range(len(pt_sorted)), sizes, color=project_type_colors, edgecolor='white')
             plt.yticks(range(len(pt_sorted)), labels, fontsize=12, color='#333333')
-            plt.xlabel('Number of Unique Items', fontsize=14, color='#333333')
+            plt.xlabel('Number of Items Digitized', fontsize=14, color='#333333')
 
-            # Annotate each bar with its value
             for i, bar in enumerate(bars):
                 width = bar.get_width()
                 plt.text(width + max(sizes)*0.01, bar.get_y() + bar.get_height()/2,
@@ -294,8 +272,7 @@ def generate_pdf_report(
             plt.close()
         else:
             plt.figure(figsize=(15, 8.5))
-            plt.text(0.5, 0.5, 'No project type data to display.', 
-                     ha='center', va='center', fontsize=16)
+            plt.text(0.5, 0.5, 'No project type data to display.', ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
@@ -303,40 +280,29 @@ def generate_pdf_report(
         # D) Items Digitized by Format (Overall Months)
         if not format_counts.empty:
             plt.figure(figsize=(15, 8.5))
-            # Using seaborn's barplot for a polished look.
-            ax = sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis',
-                            hue='Format', dodge=False, legend=False)
+            ax = sns.barplot(x='Format', y='Items Digitized', data=format_counts, palette='viridis',
+                             hue='Format', dodge=False, legend=False)
             plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
             plt.xlabel('Format', fontsize=14, color='#333333')
-            plt.ylabel('Count', fontsize=14, color='#333333')
-            # Updated title: fontsize 18, no bold
-            plt.title(f'Top {len(format_counts)} Formats Digitized ({start_month_year} - Present)', 
-                    fontsize=18, color='#333333')
-            
-            # Adjust the subplots so long labels are visible and add extra space at the top
+            plt.ylabel('Number of Items Digitized', fontsize=14, color='#333333')
+            plt.title(f'Top {len(format_counts)} Formats Digitized ({start_month_year} - Present)', fontsize=18, color='#333333')
             plt.subplots_adjust(bottom=0.35, top=0.9)
-            # Increase the y-limit to add headroom for the annotations
             current_ylim = ax.get_ylim()
             ax.set_ylim(0, current_ylim[1] * 1.10)
-            
-            # Annotate each bar with its count
             for p in ax.patches:
-                ax.annotate(f'{int(p.get_height())}', 
-                            (p.get_x() + p.get_width() / 2., p.get_height()),
-                            ha='center', va='bottom', color='black', 
-                            xytext=(0, 5), textcoords='offset points')
+                ax.annotate(f'{int(p.get_height())}', (p.get_x() + p.get_width() / 2., p.get_height()),
+                            ha='center', va='bottom', color='black', xytext=(0, 5), textcoords='offset points')
             plt.tight_layout()
             pdf.savefig()
             plt.close()
         else:
             plt.figure(figsize=(15, 6))
-            plt.text(0.5, 0.5, 'No digitized format data to display.', 
-                    ha='center', va='center', fontsize=16)
+            plt.text(0.5, 0.5, 'No digitized format data to display.', ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
 
-        # E) Paginated Table (existing logic)
+        # E) Paginated Table
         if not spec_collection_usage.empty:
             for i in range(0, len(spec_collection_usage), rows_per_page):
                 plt.figure(figsize=(11, 8.5))
@@ -360,8 +326,7 @@ def generate_pdf_report(
                 plt.close()
         else:
             plt.figure(figsize=(11, 8.5))
-            plt.text(0.5, 0.5, 'No data available to display.', 
-                     ha='center', va='center', fontsize=16)
+            plt.text(0.5, 0.5, 'No data available to display.', ha='center', va='center', fontsize=16)
             plt.axis('off')
             pdf.savefig()
             plt.close()
@@ -370,9 +335,7 @@ def generate_pdf_report(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate AMI PDF report"
-    )
+    parser = argparse.ArgumentParser(description="Generate AMI PDF report")
     parser.add_argument(
         '-d', '--division',
         help='Only generate report for the specified division (one of: DAN, MSS, MUS + RHA, SCH, THE + TOFT).',
@@ -392,9 +355,33 @@ def main():
         type=int,
         default=18
     )
+    # Option to supply a CSV as input, bypassing the JDBC fetch.
+    parser.add_argument(
+        '--input_csv',
+        help='Path to a CSV file to use as input instead of fetching from the database.',
+        type=str,
+        default=None
+    )
+    # Option to output the fetched data as CSV for future testing.
+    parser.add_argument(
+        '--output_csv',
+        help='Path to output the fetched database data as CSV (only applicable if --input_csv is not used).',
+        type=str,
+        default=None
+    )
     args = parser.parse_args()
 
-    df = fetch_data_from_jdbc()
+    # If an input CSV is provided, load data from that file.
+    if args.input_csv:
+        print(f"Using input CSV: {args.input_csv}")
+        df = pd.read_csv(args.input_csv)
+    else:
+        df = fetch_data_from_jdbc()
+        # If output_csv is specified and we fetched from the database, write the DataFrame to CSV.
+        if not df.empty and args.output_csv:
+            df.to_csv(args.output_csv, index=False)
+            print(f"CSV output written to: {args.output_csv}")
+
     if not df.empty:
         (spec_collection_usage, 
          monthly_trend_filtered, 
@@ -415,7 +402,7 @@ def main():
             division=args.division
         )
     else:
-        print("No data returned from the database. Exiting.")
+        print("No data returned. Exiting.")
 
 
 if __name__ == "__main__":
