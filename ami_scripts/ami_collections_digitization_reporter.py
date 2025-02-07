@@ -10,7 +10,7 @@ from matplotlib.colors import ListedColormap
 import argparse
 import re  
 import itertools
-import seaborn as sns
+import seaborn as sns  # NEW: Import seaborn for the new chart
 
 
 def fetch_data_from_jdbc():
@@ -36,6 +36,7 @@ def fetch_data_from_jdbc():
         print("Connection to AMIDB successful!")
         print("Now Fetching Data (Expect 2-3 minutes)")
 
+        # UPDATED QUERY: Add source.object.format to both parts of the UNION.
         query = '''
             SELECT 
                 CAST("asset.referenceFilename" AS VARCHAR(255)) AS referenceFilename, 
@@ -83,6 +84,7 @@ def combine_division_codes(df):
     Combine the vernacular division codes into broader categories, in-place.
     For example:
         'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh']
+    Adjust this dictionary as needed for your data.
     """
     combine_dict = {
         'MUS + RHA': ['MUS', 'RHA', 'mym', 'myh'],
@@ -164,10 +166,23 @@ def process_data(df, division=None, overall_months=18, recent_months=3):
           .nunique()
           .nlargest(top_n)
           .reset_index()
-          .rename(columns={'format': 'Format', 'primaryID': 'Items Digitized'})
+          .rename(columns={'format': 'Format', 'primaryID': 'Count'})
     )
 
-    return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts, format_counts
+    # 11) Chronological Table: Merge overall counts with the most recent digitization date per collection.
+    if not spec_collection_usage.empty:
+        recent_activity = (
+            df.groupby('cmsCollectionTitle')['dateCreated']
+              .max()
+              .reset_index()
+              .rename(columns={'cmsCollectionTitle': 'SPEC Collection Title', 'dateCreated': 'Most Recent Date'})
+        )
+        chronological_table = pd.merge(spec_collection_usage, recent_activity, on='SPEC Collection Title')
+        chronological_table = chronological_table.sort_values(by='Most Recent Date', ascending=False)
+    else:
+        chronological_table = pd.DataFrame()
+
+    return spec_collection_usage, monthly_trend_filtered, start_month_year, project_type_counts, format_counts, chronological_table
 
 
 def generate_pdf_report(
@@ -176,6 +191,7 @@ def generate_pdf_report(
     start_month_year, 
     project_type_counts,
     format_counts,
+    chronological_table,
     division=None
 ):
     # 1) Decide the PDF output path
@@ -259,7 +275,7 @@ def generate_pdf_report(
 
             bars = plt.barh(range(len(pt_sorted)), sizes, color=project_type_colors, edgecolor='white')
             plt.yticks(range(len(pt_sorted)), labels, fontsize=12, color='#333333')
-            plt.xlabel('Number of Items Digitized', fontsize=14, color='#333333')
+            plt.xlabel('Number of Unique Items', fontsize=14, color='#333333')
 
             for i, bar in enumerate(bars):
                 width = bar.get_width()
@@ -280,11 +296,11 @@ def generate_pdf_report(
         # D) Items Digitized by Format (Overall Months)
         if not format_counts.empty:
             plt.figure(figsize=(15, 8.5))
-            ax = sns.barplot(x='Format', y='Items Digitized', data=format_counts, palette='viridis',
+            ax = sns.barplot(x='Format', y='Count', data=format_counts, palette='viridis',
                              hue='Format', dodge=False, legend=False)
             plt.xticks(rotation=45, ha='right', fontsize=12, color='#333333')
             plt.xlabel('Format', fontsize=14, color='#333333')
-            plt.ylabel('Number of Items Digitized', fontsize=14, color='#333333')
+            plt.ylabel('Count', fontsize=14, color='#333333')
             plt.title(f'Top {len(format_counts)} Formats Digitized ({start_month_year} - Present)', fontsize=18, color='#333333')
             plt.subplots_adjust(bottom=0.35, top=0.9)
             current_ylim = ax.get_ylim()
@@ -302,7 +318,7 @@ def generate_pdf_report(
             pdf.savefig()
             plt.close()
 
-        # E) Paginated Table
+        # E) Paginated Table: Overall Count by Collection (Ranked)
         if not spec_collection_usage.empty:
             for i in range(0, len(spec_collection_usage), rows_per_page):
                 plt.figure(figsize=(11, 8.5))
@@ -331,6 +347,43 @@ def generate_pdf_report(
             pdf.savefig()
             plt.close()
 
+        # F) Chronological Table: Chronological View of Digitized Items
+        if not chronological_table.empty:
+            # Format the Most Recent Date column to display only YYYY-MM-DD
+            chronological_table['Most Recent Date'] = pd.to_datetime(chronological_table['Most Recent Date']) \
+                                                       .dt.strftime('%Y-%m-%d')
+            for i in range(0, len(chronological_table), rows_per_page):
+                plt.figure(figsize=(11, 8.5))
+                plt.axis('off')
+                if i == 0:
+                    # Build the title on multiple lines to avoid cutting off the Division text.
+                    title_text = f"Chronological View of Digitized AMI Items\n({start_month_year} - Present)"
+                    if division:
+                        title_text += f"\nDivision: {division}"
+                    plt.text(0.5, 0.98, title_text, ha='center', va='center', fontsize=18, color='#333333')
+                # Adjust column widths: widen the SPEC Collection Title column a bit less and narrow the other columns.
+                col_widths = [0.55, 0.15, 0.15]
+                table = plt.table(
+                    cellText=chronological_table.iloc[i:i+rows_per_page].values,
+                    colLabels=chronological_table.columns,
+                    cellLoc='left',
+                    colWidths=col_widths,
+                    loc='center'
+                )
+                table.auto_set_font_size(False)
+                table.set_fontsize(10)
+                # Reduce the horizontal scaling factor to ensure the right border is visible.
+                table.scale(1.1, 1.2)
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close()
+        else:
+            plt.figure(figsize=(11, 8.5))
+            plt.text(0.5, 0.5, 'No chronological data to display.', ha='center', va='center', fontsize=16)
+            plt.axis('off')
+            pdf.savefig()
+            plt.close()
+
         print(f"PDF report generated successfully: {output_file}")
 
 
@@ -355,14 +408,14 @@ def main():
         type=int,
         default=18
     )
-    # Option to supply a CSV as input, bypassing the JDBC fetch.
+    # NEW: Option to supply a CSV as input, bypassing the JDBC fetch.
     parser.add_argument(
         '--input_csv',
         help='Path to a CSV file to use as input instead of fetching from the database.',
         type=str,
         default=None
     )
-    # Option to output the fetched data as CSV for future testing.
+    # NEW: Option to output the fetched data as CSV for future testing.
     parser.add_argument(
         '--output_csv',
         help='Path to output the fetched database data as CSV (only applicable if --input_csv is not used).',
@@ -387,7 +440,8 @@ def main():
          monthly_trend_filtered, 
          start_month_year, 
          project_type_counts,
-         format_counts) = process_data(
+         format_counts,
+         chronological_table) = process_data(
             df,
             division=args.division,
             overall_months=args.overall_months,
@@ -399,6 +453,7 @@ def main():
             start_month_year,
             project_type_counts,
             format_counts,
+            chronological_table,
             division=args.division
         )
     else:
