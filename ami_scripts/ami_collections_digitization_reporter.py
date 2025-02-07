@@ -397,6 +397,11 @@ def main():
         default=None
     )
     parser.add_argument(
+        '--all',
+        help='Generate separate reports for all divisions (DAN, MSS, MUS + RHA, SCH, THE + TOFT).',
+        action='store_true'
+    )
+    parser.add_argument(
         '--recent_months',
         help='Number of months to include in the "Recent Activity" bar chart (default: 3).',
         type=int,
@@ -435,7 +440,38 @@ def main():
             df.to_csv(args.output_csv, index=False)
             print(f"CSV output written to: {args.output_csv}")
 
-    if not df.empty:
+    if df.empty:
+        print("No data returned. Exiting.")
+        return
+
+    # If --all flag is used, generate a separate report for each division.
+    if args.all:
+        divisions = ["DAN", "MSS", "MUS + RHA", "SCH", "THE + TOFT"]
+        for div in divisions:
+            print(f"Generating report for division: {div}")
+            (spec_collection_usage, 
+             monthly_trend_filtered, 
+             start_month_year, 
+             project_type_counts,
+             format_counts,
+             chronological_table) = process_data(
+                df,
+                division=div,
+                overall_months=args.overall_months,
+                recent_months=args.recent_months
+            )
+            generate_pdf_report(
+                spec_collection_usage, 
+                monthly_trend_filtered, 
+                start_month_year,
+                project_type_counts,
+                format_counts,
+                chronological_table,
+                division=div
+            )
+    else:
+        # Otherwise, generate a single report (for the specified division or for all data if no division is given)
+        division = args.division
         (spec_collection_usage, 
          monthly_trend_filtered, 
          start_month_year, 
@@ -443,7 +479,7 @@ def main():
          format_counts,
          chronological_table) = process_data(
             df,
-            division=args.division,
+            division=division,
             overall_months=args.overall_months,
             recent_months=args.recent_months
         )
@@ -454,10 +490,8 @@ def main():
             project_type_counts,
             format_counts,
             chronological_table,
-            division=args.division
+            division=division
         )
-    else:
-        print("No data returned. Exiting.")
 
 
 if __name__ == "__main__":
