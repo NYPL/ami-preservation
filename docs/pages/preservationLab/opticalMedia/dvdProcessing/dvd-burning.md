@@ -4,7 +4,6 @@ layout: default
 nav_order: 3
 parent: DVD Processing
 grand_parent: Optical Media
-
 ---
 
 # Burning ISO Disc Images to Disc
@@ -38,72 +37,38 @@ This guide walks you through converting a video file into a DVD-Video compatible
 ## Step 1: Transcoding the Source Video with FFmpeg
 DVD-Video requires MPEG-2 video, AC-3 audio, a resolution of 720x480 (NTSC), and specific formatting. If your source is not already DVD-compliant, you must transcode it.
 
-### Example Command
-
-```bash
-ffmpeg -i "path/to/source_video.mp4" \
-       -vcodec mpeg2video -pix_fmt yuv420p -flags +ildct+ilme -top 1 \
-       -b:v 6000k -minrate 6000k -maxrate 8000k -bufsize 1835k \
-       -vf "scale=720:480,setsar=32/27" -r 24000/1001 \
-       -g 15 -bf 2 -dc 10 \
-       -acodec ac3 -b:a 192k -ar 48000 -ac 2 \
-       -output_ts_offset 0 \
-       output_widescreen.mpg
-```
-
-### What This Does
-- Encodes video as MPEG-2, interlaced, with a DVD-friendly bitrate.
-- Rescales and sets the aspect ratio for 16:9 widescreen.
-- Sets the frame rate at 23.976 fps. Later, the DVD player will apply pulldown for 29.97 fps NTSC output.
-- Encodes audio as AC-3 stereo at 48kHz and 192 kbps.
-
-### Note on Scaling
-If your source video is already at a suitable resolution (e.g., already DVD resolution), you may omit the scaling and `setsar` filters.
-
 ### Simplified Command
 ```bash
-ffmpeg -i "path/to/source_video.mp4" \
-       -target ntsc-dvd -aspect 16:9 \
-       -b:v 4500k -b:a 192k \
-       dvd_compliant.mpg
-```
-This uses presets for DVD output. Adjust `-b:v` if the final file is too large.
-
-## Step 2: Authoring the DVD Structure with dvdauthor
-After transcoding, create the DVD file structure (VIDEO_TS and AUDIO_TS directories, IFO/BUP files).
-
-```bash
-dvdauthor -o /path/to/dvd_structure -t dvd_compliant.mpg
-export VIDEO_FORMAT=NTSC
-dvdauthor -o /path/to/dvd_structure -T
+ffmpeg -i "path/to/source_video.mp4" -target ntsc-dvd dvd_compliant.mpg
 ```
 
 ### What This Does
-- Creates the initial DVD title set.
-- Sets the `VIDEO_FORMAT` environment variable to NTSC before finalizing, ensuring a proper VIDEO_TS directory.
-- Finalizes the structure, resulting in a properly authored DVD folder structure.
+- Uses FFmpeg’s `-target ntsc-dvd` preset, ensuring the correct video format, frame rate, and bitrate.
+- Encodes audio as **AC-3 stereo**.
+- FFmpeg automatically applies **telecine (2:3 pulldown)** if the source is 23.976 fps, ensuring smooth playback at 29.97 fps on NTSC DVD players.
+
+### Notes
+- PAL users should replace `ntsc-dvd` with `pal-dvd`.
+
+## Step 2: Authoring the DVD Structure with dvdauthor
+After transcoding, create the DVD file structure (VIDEO_TS and AUDIO_TS directories, IFO/BUP files) and include chapters.
+
+```bash
+dvdauthor -o /Users/benjaminturkus/Desktop/dvd_structure -t -c 0,5:00,10:00,15:00,20:00,25:00,30:00,35:00,40:00,45:00,50:00,55:00,1:00:00,1:05:00,1:10:00,1:15:00,1:20:00,1:25:00,1:30:00,1:35:00,1:40:00,1:45:00,1:50:00,1:55:00,2:00:00,2:05:00,2:10:00,2:15:00,2:20:00,2:25:00,2:30:00,2:35:00,2:40:00,2:45:00 dvd_compliant.mpg
+```
+
+```bash
+export VIDEO_FORMAT=NTSC
+```
+
+```bash
+dvdauthor -o /Users/benjaminturkus/Desktop/dvd_structure -T
+```
 
 ## Step 3: Creating the ISO Image with mkisofs
-Once the DVD structure is ready, convert it into an ISO image.
-
 ```bash
-mkisofs -dvd-video -V "MyDVDTitle" -o dvd.iso /path/to/dvd_structure
+mkisofs -dvd-video -V "MyDVDTitle" -o dvd.iso /Users/benjaminturkus/Desktop/dvd_structure
 ```
-
-### Options
-- `-dvd-video`: Ensures a DVD-Video compliant ISO.
-- `-V "MyDVDTitle"`: Sets the volume label displayed by DVD players.
-- `-o dvd.iso`: Specifies the output ISO file.
-
-### Adding Chapters
-Chapters must be set during the `dvdauthor` step, using `-c`:
-
-```bash
-dvdauthor -o /path/to/dvd_structure \
-          -t -c 0,5:00,10:00,... dvd_compliant.mpg
-dvdauthor -o /path/to/dvd_structure -T
-```
-Replace the times as needed. Then run `mkisofs` as above.
 
 ## Step 4: Burning the ISO to a Physical DVD
 ### On macOS
@@ -117,4 +82,3 @@ Test the burned DVD on a standalone DVD player (e.g., a Pioneer DVD player) to e
 
 ## Additional Notes
 - **File Size Considerations**: If the final MPEG-2 file is larger than 4.7GB, reduce `-b:v` (video bitrate) in FFmpeg so the final ISO fits on a single-layer DVD.
-- **Aspect Ratio and Scaling**: Adjust scaling and aspect ratio parameters to match your source. The provided commands assume a widescreen (16:9) target and scaling from a higher resolution source to standard DVD resolution.
