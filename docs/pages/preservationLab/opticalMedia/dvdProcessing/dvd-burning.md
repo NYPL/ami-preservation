@@ -54,11 +54,11 @@ ffmpeg -i "path/to/source_video.mp4" -target ntsc-dvd dvd_compliant.mpg
 After transcoding, create the DVD file structure (VIDEO_TS and AUDIO_TS directories, IFO/BUP files) and include chapters.
 
 ```bash
-dvdauthor -o dvd_structure -t -c 0,5:00,10:00,15:00,20:00,25:00,30:00,35:00,40:00,45:00,50:00,55:00,1:00:00,1:05:00,1:10:00,1:15:00,1:20:00,1:25:00,1:30:00,1:35:00,1:40:00,1:45:00,1:50:00,1:55:00,2:00:00,2:05:00,2:10:00,2:15:00,2:20:00,2:25:00,2:30:00,2:35:00,2:40:00,2:45:00 dvd_compliant.mpg
+export VIDEO_FORMAT=NTSC [or PAL]
 ```
 
 ```bash
-export VIDEO_FORMAT=NTSC
+dvdauthor -o dvd_structure -t -c 0,5:00,10:00,15:00,20:00,25:00,30:00,35:00,40:00,45:00,50:00,55:00,1:00:00,1:05:00,1:10:00,1:15:00,1:20:00,1:25:00,1:30:00,1:35:00,1:40:00,1:45:00,1:50:00,1:55:00,2:00:00,2:05:00,2:10:00,2:15:00,2:20:00,2:25:00,2:30:00,2:35:00,2:40:00,2:45:00 dvd_compliant.mpg
 ```
 
 ```bash
