@@ -31,6 +31,12 @@ def get_args():
                         help='Pull data from vendor table only.')
     parser.add_argument('-c', '--combined', action='store_true',
                         help='Pull data from both vendor and in-house.')
+    parser.add_argument('--input_csv',
+                        help='Path to a CSV file to use as input instead of fetching from the database.',
+                        type=str, default=None)
+    parser.add_argument('--output_csv',
+                        help='Path to output the fetched database data as CSV.',
+                        type=str, default=None)
     return parser.parse_args()
 
 
@@ -894,11 +900,19 @@ def save_plot_to_pdf(
 
 def main():
     args = get_args()
-    df = fetch_data_from_jdbc(args)
-
+    #If an input CSV is provided, use it; otherwise, fetch data via JDBC.
+    if args.input_csv:
+        print(f"Using input CSV: {args.input_csv}")
+        df = pd.read_csv(args.input_csv)
+    else:
+        df = fetch_data_from_jdbc(args)
+        if not df.empty and args.output_csv:
+            df.to_csv(args.output_csv, index=False)
+            print(f"CSV output written to: {args.output_csv}")
+    
     if df.empty:
         print("No data retrieved from the FileMaker database. Please check your network connection or host settings.")
-        return  # or sys.exit(1)
+        return
     
     df_processed = process_data(df, args, fiscal=args.fiscal)
     line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator = display_monthly_output(df_processed, args, fiscal=args.fiscal)
@@ -906,7 +920,6 @@ def main():
         print("Error: Missing data. Exiting the program.")
         return
     
-    # Format the file size here
     formatted_file_size = format_file_size(total_file_size)
 
     filtered_data = plot_objects_by_division_code(df_processed, year_label)
