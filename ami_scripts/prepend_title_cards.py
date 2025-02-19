@@ -76,11 +76,11 @@ def build_audio_chain(a, num_title, audio_count, title_duration=5.5, xfade_durat
     if num_title > 1:
         silent_segments = []
         for i in range(num_title):
-            # Calculate the input index for the silent source:
-            # Inputs: 0 .. (num_title - 1) are title images,
-            # Input num_title is the main video,
-            # Then silent sources follow.
-            # For each title card, with multiple audio streams, add the channel offset 'a'.
+            # Inputs:
+            #   indices 0 .. (num_title-1) are title images,
+            #   index num_title is the main video,
+            #   then silent sources follow.
+            # For each title card (with multiple audio streams), add the channel offset 'a'.
             seg_index = num_title + 1 + (i * audio_count) + a
 
             # Adjust duration for subsequent title cards due to xfade overlap.
@@ -199,18 +199,28 @@ def process_video(video_path, asset_flag=False):
     ffmpeg_cmd.extend(["-i", video_path])
     total_silent = num_title * audio_count
     for _ in range(total_silent):
-        ffmpeg_cmd.extend(["-f", "lavfi", "-t", str(title_duration), "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"])
+        ffmpeg_cmd.extend(["-f", "lavfi", "-t", str(title_duration), "-i", "anullsrc=channel_layout=stereo:sample_rate=48000,aformat=sample_fmts=s32"])
     ffmpeg_cmd.extend(["-filter_complex", filter_complex])
     ffmpeg_cmd.extend(["-map", "[outv]"])
     for a in range(audio_count):
         ffmpeg_cmd.extend(["-map", f"[outa{a}]"])
     base_name, ext = os.path.splitext(video_path)
     output_file = base_name + "_with_title" + ext
-    ffmpeg_cmd.extend([
-        "-c:v", "libx264", "-crf", "21", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-ar", "48000", "-b:a", "320k",
-        output_file
-    ])
+
+    # Choose output encoding based on file extension.
+    if ext.lower() == ".mov":
+        # For ProRes HQ MOV, use prores_ks for video and PCM for audio.
+        ffmpeg_cmd.extend([
+            "-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le",
+            "-c:a", "pcm_s24le",
+            output_file
+        ])
+    else:
+        ffmpeg_cmd.extend([
+            "-c:v", "libx264", "-crf", "21", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-ar", "48000", "-b:a", "320k",
+            output_file
+        ])
 
     print("Running command:")
     print(" ".join(ffmpeg_cmd))
@@ -232,10 +242,14 @@ def main():
     if args.file:
         process_video(args.file, asset_flag=args.asset)
     elif args.directory:
-        video_files = glob.glob(os.path.join(args.directory, "*.mp4"))
+        # Process both MP4 and MOV files.
+        video_files = sorted(
+            glob.glob(os.path.join(args.directory, "*.mp4")) +
+            glob.glob(os.path.join(args.directory, "*.mov"))
+        )
         if not video_files:
-            print("No MP4 files found in the specified directory.")
-        for video_file in sorted(video_files):
+            print("No MP4 or MOV files found in the specified directory.")
+        for video_file in video_files:
             process_video(video_file, asset_flag=args.asset)
     else:
         parser.print_help()
