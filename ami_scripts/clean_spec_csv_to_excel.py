@@ -80,6 +80,7 @@ def determine_type_format(row):
 def map_division_code(vernacular_code):
     mapping = {
         'SCL': 'scb',
+        'SCM': 'scb',
         'DAN': 'myd',
         'RHA': 'myh',
         'MUS': 'mym',
