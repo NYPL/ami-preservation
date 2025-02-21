@@ -14,16 +14,6 @@ def prepare_test_files(args):
         video_res = '720x486'
         frame_rate = '30000/1001'
         dv_pixel_format = 'yuv411p'
-    else:
-        video_res = '720x576'
-        frame_rate = '25'
-        dv_pixel_format = 'yuv420p'
-
-def prepare_test_files(args):
-    if args.region == 'ntsc':
-        video_res = '720x486'
-        frame_rate = '30000/1001'
-        dv_pixel_format = 'yuv411p'
         dv_video_res = '720x480'
     else:
         video_res = '720x576'
@@ -107,7 +97,7 @@ def prepare_test_files(args):
         {
             'name': 'prores_hq__pcm_s24le_48kHz',
             'video_codec': 'prores_ks',
-            'video_options': '-profile:v 3 -pix_fmt yuv422p10le',
+            'video_options': '-profile:v 3 -pix_fmt yuv422p10le',  # ProRes HQ in 4:2:2
             'audio_codec': 'pcm_s24le',
             'video_res': video_res,
             'frame_rate': frame_rate,
@@ -140,6 +130,12 @@ def prepare_test_files(args):
             'audio_freq2': '500'
         }
     ]
+
+    # Prepend "pal_" to the file name if region is pal.
+    if args.region == 'pal':
+        for file_def in test_files:
+            file_def['name'] = "pal_" + file_def['name']
+
     return test_files
 
 def generate_test_files(destination_dir, test_files):
@@ -195,7 +191,7 @@ def generate_test_files(destination_dir, test_files):
                     output_file
                 ]
         elif 'pix_fmt' in test_file:
-            # DPX generation: output is a directory of frames, then processed by rawcooked.
+            # Handle DPX test file generation.
             dpx_dir = os.path.join(destination_dir, test_file['name'])
             os.makedirs(dpx_dir, exist_ok=True)
             command = [
@@ -206,8 +202,7 @@ def generate_test_files(destination_dir, test_files):
                 '-y', os.path.join(dpx_dir, f"{test_file['name']}_%06d{test_file['ext']}")
             ]
             subprocess.run(command, check=True)
-
-            # Convert DPX frames to FFV1/MKV with rawcooked.
+            # Convert DPX frames with rawcooked.
             command = [
                 'rawcooked',
                 '--no-check-padding',
@@ -220,7 +215,7 @@ def generate_test_files(destination_dir, test_files):
                     os.remove(os.path.join(dpx_dir, dpx_file))
             if not os.listdir(dpx_dir):
                 os.rmdir(dpx_dir)
-            continue  # Skip further processing for DPX cases.
+            continue
         else:
             # Audio-only file generation.
             command = [
