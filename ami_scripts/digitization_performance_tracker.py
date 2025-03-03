@@ -277,7 +277,7 @@ def display_monthly_output(df, args, fiscal=False):
         df_pm['digitizer.operator.lastName'] = 'Vendor'
     else:
         # If the column exists (e.g. combined data), fill any missing rows with 'Vendor'
-        df_pm['digitizer.operator.lastName'] = df_pm['digitizer.operator.lastName'].fillna('Vendor')
+        df_pm.loc[:, 'digitizer.operator.lastName'] = df_pm['digitizer.operator.lastName'].fillna('Vendor')
 
     df_pm = classify_media_types(df_pm) 
 
@@ -811,18 +811,25 @@ def save_plot_to_pdf(
         fig, ax = plt.subplots(figsize=(12, 6))
         # Sort by descending count if desired
         total_counts_by_project_type = total_counts_by_project_type.sort_values('Unique Items', ascending=False)
-        
+
         sns.barplot(
             x='Unique Items',
             y='projectType',
             data=total_counts_by_project_type,
-            palette='Paired',  # or your favorite palette
-            ax=ax
+            hue='projectType',           # assign hue for multicolor mapping
+            palette='Paired',
+            ax=ax,
+            dodge=False
         )
+
+        # Remove the legend since each bar is uniquely colored.
+        if ax.get_legend() is not None:
+            ax.get_legend().remove()
+
         ax.set_title(f'Objects Digitized by Project Type ({year_label})', fontsize=16)
         ax.set_xlabel('Number of Unique Items')
         ax.set_ylabel('Project Type')
-        
+
         # Annotate each bar
         for p in ax.patches:
             width = p.get_width()
@@ -831,10 +838,11 @@ def save_plot_to_pdf(
                         xytext=(5, 0),  # offset
                         textcoords='offset points',
                         ha='left', va='center')
-        
+
         plt.tight_layout()
         pdf.savefig(fig)
         plt.close(fig)
+
 
         # Items Digitized Per SPEC Collection ID
         # Cutting out text after comma characters for collection titles
@@ -903,7 +911,8 @@ def main():
     #If an input CSV is provided, use it; otherwise, fetch data via JDBC.
     if args.input_csv:
         print(f"Using input CSV: {args.input_csv}")
-        df = pd.read_csv(args.input_csv)
+        df = pd.read_csv(args.input_csv, low_memory=False)
+        df['technical.durationMilli.measure'] = pd.to_numeric(df['technical.durationMilli.measure'], errors='coerce')
     else:
         df = fetch_data_from_jdbc(args)
         if not df.empty and args.output_csv:
