@@ -111,30 +111,27 @@ def transcribe_directory(input_directory, model, output_format):
             output_writer(transcription_response, file.stem)
 
 
-def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120):
+def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120, match_threshold=5):
     """
-    Detect LTC (Linear Timecode) in a specific channel of an audio stream.
-    This uses `ffmpeg` to isolate one channel and pipe it to `ltcdump`.
-    If LTC is detected, returns True, else False.
+    Detect LTC in a specific channel. Now, in addition to detecting a timecode pattern,
+    we require at least `match_threshold` matches to consider the channel as containing LTC.
     """
-
     # channel_map: c0=c0 for left channel only, c0=c1 for right channel only
     if channel == 'left':
         pan_filter = 'pan=mono|c0=c0'
     else:
         pan_filter = 'pan=mono|c0=c1'
 
-    # Use a WAV container instead of raw s16le
-    # This gives ltcdump a proper audio header to interpret
+    # Use a WAV container so ltcdump can correctly interpret the header
     ffmpeg_command = [
         "ffmpeg",
         "-t", str(probe_duration),
         "-i", str(input_file),
         "-map", f"0:{stream_index}",
         "-af", pan_filter,
-        "-ar", "48000",     # set sample rate
-        "-ac", "1",          # set to mono
-        "-f", "wav",         # produce a WAV file to stdout
+        "-ar", "48000",  # sample rate
+        "-ac", "1",      # mono
+        "-f", "wav",     # WAV output
         "pipe:1"
     ]
 
@@ -142,24 +139,23 @@ def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120)
 
     ffmpeg_proc = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ltcdump_proc = subprocess.Popen(ltcdump_command, stdin=ffmpeg_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-    ffmpeg_proc.stdout.close()  # let ffmpeg_proc get SIGPIPE if ltcdump_proc exits
+    ffmpeg_proc.stdout.close()  # allow ffmpeg_proc to receive SIGPIPE
     ltcdump_out, ltcdump_err = ltcdump_proc.communicate()
-    print(ltcdump_out)
     ffmpeg_proc.wait()
 
-    # Check for LTC timecode pattern
-    if ltcdump_out and re.search(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out):
+    # Use regex to extract all timecode matches of the form HH:MM:SS:FF
+    matches = re.findall(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out)
+    print("ltcdump output:", ltcdump_out)
+    print("Found LTC matches:", matches)
+
+    # Only consider LTC valid if we see enough matches (e.g., at least 5)
+    if len(matches) >= match_threshold:
         return True
 
     return False
 
 
 def detect_audio_pan(input_file, audio_pan, probe_duration=120):
-    """
-    Extended version: detect mono-only audio or LTC timecode on one channel.
-    If LTC is detected on a channel, we will pan the other channel center.
-    """
     # Use ffprobe to get the number of audio streams
     ffprobe_command = [
         "ffprobe", "-i", str(input_file),
@@ -172,7 +168,10 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=120):
     print(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
 
     pan_filters = []
-    for i, stream_index in enumerate(audio_streams):
+    pan_filter_idx = 0  # separate counter for pan filters
+    silence_threshold = -60.0  # dB
+
+    for stream_index in audio_streams:
         print(f"Analyzing audio stream: {stream_index}")
 
         # Analyze left channel volume
@@ -207,37 +206,42 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=120):
             print(f"Stream {stream_index}: Unable to analyze audio. Skipping this stream.")
             continue
 
-        silence_threshold = -60.0  # dB
-
-        # After determining mean volumes for left and right:
+        # Initialize LTC detection flags
         left_has_ltc = False
         right_has_ltc = False
 
-        # If using auto mode, attempt LTC detection on both channels.
         if audio_pan == "auto":
             left_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'left', probe_duration=probe_duration)
             right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration=probe_duration)
 
+        # If one channel has LTC but the other channel is silent,
+        # assume this stream is timecode only and skip mapping it.
         if left_has_ltc and not right_has_ltc:
-            # LTC on left, use right channel audio as mono source
-            print(f"Stream {stream_index}: Left channel LTC detected. Using right channel as mono source.")
-            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+            if right_mean_volume <= silence_threshold:
+                print(f"Stream {stream_index}: Left channel LTC with silent right channel detected. Dropping stream.")
+                continue  # Skip mapping this stream
+            else:
+                print(f"Stream {stream_index}: Left channel LTC detected. Using right channel as mono source.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
         elif right_has_ltc and not left_has_ltc:
-            # LTC on right, use left channel audio as mono source
-            print(f"Stream {stream_index}: Right channel LTC detected. Using left channel as mono source.")
-            pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+            if left_mean_volume <= silence_threshold:
+                print(f"Stream {stream_index}: Right channel LTC with silent left channel detected. Dropping stream.")
+                continue  # Skip mapping this stream
+            else:
+                print(f"Stream {stream_index}: Right channel LTC detected. Using left channel as mono source.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
         else:
-            # If no LTC detected or both LTC:
+            # No (or ambiguous) LTC: apply channel-specific panning or identity for balanced audio
             if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
-                # right channel only audible
                 print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
             elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
-                # left channel only audible
                 print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
             else:
                 print(f"Stream {stream_index}: Audio is balanced or both channels have sound. No panning applied.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c1[outa{pan_filter_idx}]")
+        pan_filter_idx += 1
 
     return pan_filters
 
