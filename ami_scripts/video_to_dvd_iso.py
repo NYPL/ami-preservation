@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+
 import argparse
 import subprocess
 import json
 import os
 from fractions import Fraction
+import shutil
 
 def probe_video_format(input_file):
     """
@@ -79,14 +81,11 @@ def author_dvd_structure(mpg_file, video_format):
     Uses dvdauthor to create the DVD structure (VIDEO_TS, AUDIO_TS, etc.).
     The VIDEO_FORMAT environment variable is set based on the detected format.
     """
-    # Set the environment variable (NTSC or PAL)
     os.environ["VIDEO_FORMAT"] = video_format.upper()
-    # Chapters string (as given in your instructions)
     chapters = ("0,5:00,10:00,15:00,20:00,25:00,30:00,35:00,40:00,45:00,50:00,55:00,"
                 "1:00:00,1:05:00,1:10:00,1:15:00,1:20:00,1:25:00,1:30:00,1:35:00,"
                 "1:40:00,1:45:00,1:50:00,1:55:00,2:00:00,2:05:00,2:10:00,2:15:00,"
                 "2:20:00,2:25:00,2:30:00,2:35:00,2:40:00,2:45:00")
-    # Create the DVD structure with chapter markers
     cmd1 = ["dvdauthor", "-o", "dvd_structure", "-t", "-c", chapters, mpg_file]
     print("Running dvdauthor command (creating structure):")
     print(" ".join(cmd1))
@@ -95,7 +94,6 @@ def author_dvd_structure(mpg_file, video_format):
     except subprocess.CalledProcessError:
         print("Error: dvdauthor (creating structure) failed.")
         exit(1)
-    # Finalize the DVD structure
     cmd2 = ["dvdauthor", "-o", "dvd_structure", "-T"]
     print("Running dvdauthor command (finalizing):")
     print(" ".join(cmd2))
@@ -120,7 +118,9 @@ def create_iso(dvd_title, iso_filename):
     return iso_filename
 
 def main():
-    parser = argparse.ArgumentParser(description="Create a DVD-compliant ISO disc image from a video file.")
+    parser = argparse.ArgumentParser(
+        description="Create a DVD-compliant ISO disc image from a video file."
+    )
     parser.add_argument("-i", "--input", required=True, help="Path to the input video file")
     parser.add_argument("-t", "--title", default="MyDVDTitle", help="DVD Title for the ISO image (default: MyDVDTitle)")
     args = parser.parse_args()
@@ -132,22 +132,35 @@ def main():
         print(f"Error: Input file '{input_file}' does not exist.")
         exit(1)
 
+    # Change working directory to the directory where the input file resides.
+    work_dir = os.path.dirname(os.path.abspath(input_file))
+    os.chdir(work_dir)
+
     # Determine output ISO filename based on input file name.
     base_name = os.path.splitext(os.path.basename(input_file))[0]
     iso_filename = base_name + ".iso"
 
-    # Step 1: Determine if the video is NTSC or PAL
+    # Step 1: Determine if the video is NTSC or PAL.
     video_format = probe_video_format(input_file)
-
-    # Step 2: Transcode the source video to a DVD-compliant MPEG-2 file
+    # Step 2: Transcode the source video to a DVD-compliant MPEG-2 file.
     mpg_file = transcode_video(input_file, video_format)
-
-    # Step 3: Author the DVD structure using dvdauthor
+    # Step 3: Author the DVD structure using dvdauthor.
     author_dvd_structure(mpg_file, video_format)
-
-    # Step 4: Create the ISO image with mkisofs
+    # Step 4: Create the ISO image with mkisofs.
     create_iso(dvd_title, iso_filename)
     print(f"\nDVD ISO image created successfully: {iso_filename}")
+
+    # Clean up intermediate files.
+    try:
+        os.remove(mpg_file)
+        print(f"Removed intermediate file: {mpg_file}")
+    except Exception as e:
+        print(f"Warning: Could not remove {mpg_file}: {e}")
+    try:
+        shutil.rmtree("dvd_structure")
+        print("Removed intermediate folder: dvd_structure")
+    except Exception as e:
+        print(f"Warning: Could not remove dvd_structure folder: {e}")
 
 if __name__ == "__main__":
     main()
