@@ -10,7 +10,8 @@ import shutil
 def probe_video_format(input_file):
     """
     Uses ffprobe to inspect the input video and decide if it is NTSC or PAL.
-    It first looks at the video height and then the frame rate.
+    If the video height is a standard DVD height (480 for NTSC or 576 for PAL),
+    that is used. Otherwise (e.g., for 1080p files), it falls back to using the frame rate.
     """
     cmd = [
         "ffprobe", "-v", "error",
@@ -34,16 +35,28 @@ def probe_video_format(input_file):
     video_format = None
 
     if height is not None:
-        # If height is exactly 480 or 576, that's a clear indicator.
+        # Use standard DVD heights if available.
         if height == 480:
             video_format = "ntsc"
         elif height == 576:
             video_format = "pal"
         else:
-            # Fallback: if height is below 500 assume NTSC; else PAL.
-            video_format = "ntsc" if height < 500 else "pal"
+            # For non-standard heights (e.g., 1080), fall back to frame rate.
+            if avg_frame_rate and avg_frame_rate != "0/0":
+                try:
+                    fr = float(Fraction(avg_frame_rate))
+                    if abs(fr - 29.97) < 1:
+                        video_format = "ntsc"
+                    elif abs(fr - 25) < 1:
+                        video_format = "pal"
+                    else:
+                        video_format = "ntsc"  # default fallback
+                except Exception:
+                    video_format = "ntsc"
+            else:
+                video_format = "ntsc"
     else:
-        # If height is missing, use avg_frame_rate.
+        # If height is missing, use the frame rate.
         try:
             if avg_frame_rate and avg_frame_rate != "0/0":
                 fr = float(Fraction(avg_frame_rate))
@@ -52,11 +65,12 @@ def probe_video_format(input_file):
                 elif abs(fr - 25) < 1:
                     video_format = "pal"
                 else:
-                    video_format = "ntsc"  # default
+                    video_format = "ntsc"  # default fallback
             else:
                 video_format = "ntsc"
-        except Exception as e:
+        except Exception:
             video_format = "ntsc"
+            
     print(f"Determined video format: {video_format.upper()} (height: {height}, frame rate: {avg_frame_rate})")
     return video_format
 
