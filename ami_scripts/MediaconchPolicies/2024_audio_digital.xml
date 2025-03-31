@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<policy type="and" name="2024_audio_digital">
+  <rule name="General/FileExtension is flac" value="FileExtension" tracktype="General" occurrence="*" operator="=">flac</rule>
+  <rule name="General/Format is FLAC" value="Format" tracktype="General" occurrence="*" operator="=">FLAC</rule>
+  <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+  <rule name="Audio/BitDepth is 16" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">16</rule>
+  <rule name="Audio/SamplingRate is 48000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+</policy>
