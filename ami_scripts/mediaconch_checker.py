@@ -12,9 +12,14 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 
 # New MediaConch policies:
-AUDIO_ANALOG = 'MediaConch_NYPL-FLAC_Analog.xml' # to do (old)
-AUDIO_DIGITAL = 'MediaConch_NYPL-FLAC_Digital.xml' # to do (old)
-AUDIO_OPTICAL = 'MediaConch_NYPL-FLAC_Digital.xml' # to do (old)
+# AUDIO_ANALOG = 'MediaConch_NYPL-FLAC_Analog.xml' # to do (old)
+# AUDIO_DIGITAL = 'MediaConch_NYPL-FLAC_Digital.xml' # to do (old)
+# AUDIO_OPTICAL = 'MediaConch_NYPL-FLAC_Digital.xml' # to do (old)
+AUDIO_ANALOG_CYLINDER = '2024_audio_analog_cylinder.xml'
+AUDIO_ANALOG = '2024_audio_analog.xml'
+AUDIO_DIGITAL_DAT = '2024_audio_digital_DAT.xml'
+AUDIO_DIGITAL = '2024_audio_digital.xml'
+AUDIO_OPTICAL = '2024_audio_optical.xml'
 FILM16_PM_COMP = '2024_film16_PM_compsound.xml'
 FILM16_PM_FLEX = '2024_film16_PM.xml'
 FILM16_PM_SLNT = '2024_film16_PM_silent.xml'
@@ -124,12 +129,17 @@ def assign_audio_policy(jformat, jtype, f1):
     if re.search('optical', jtype):
         policy = AUDIO_OPTICAL
     elif re.search('digital', jtype):
-        if f1 == True and re.search('pcm|da-88', jformat):
+        if jformat in ('dat', 'adat'):
+            policy = AUDIO_DIGITAL_DAT
+        elif f1 == True and re.search('pcm|da-88', jformat):
             policy = AUDIO_ANALOG
         else:
             policy = AUDIO_DIGITAL
     else:
-        policy = AUDIO_ANALOG
+        if re.search('cylinder', jformat):
+            policy = AUDIO_ANALOG_CYLINDER
+        else:
+            policy = AUDIO_ANALOG
     return policy
 
 def assign_film_policy(jformat, jrole, flex):
