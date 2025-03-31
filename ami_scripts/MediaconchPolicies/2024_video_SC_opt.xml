@@ -20,12 +20,9 @@
 
     <policy type="and" name="NTSC specs">
 
-      <!-- <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule> -->
-      <policy type="or" name="Expected NTSC frame rate (29.970 or 59.940)" level="warn">
-        <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
-        <rule name="Video/FrameRate is 59.940" value="FrameRate" tracktype="Video" occurrence="*" operator="=">59.940</rule>
-      </policy>
-
+      <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule>
+      <rule name="Typical Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=" level="info">29.970</rule>
+      
       <policy type="or" name="NTSC frame rate">
         <policy type="and" name="Fuzzy NTSC frame rate">
           <rule name="Video/FrameRate is greater than 29" value="FrameRate" tracktype="Video" occurrence="*" operator="&gt;">29.000</rule>
@@ -73,11 +70,8 @@
 
     <policy type="and" name="PAL specs">
 
-      <!-- <rule name="Expected Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">PAL</rule> -->
-      <policy type="or" name="PAL frame rate (25.000 or 50.000)">
-        <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
-        <rule name="Video/FrameRate is 50.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">50.000</rule>
-      </policy>
+      <rule name="Expected Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">PAL</rule>
+      <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
 
       <policy type="or" name="PAL Height, Width, DAR, and PAR">
 
