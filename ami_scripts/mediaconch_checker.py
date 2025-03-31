@@ -124,7 +124,7 @@ def assign_audio_policy(jformat, jtype, f1):
     if re.search('optical', jtype):
         policy = AUDIO_OPTICAL
     elif re.search('digital', jtype):
-        if f1 == True and re.search('pcm|da-88', jformat):
+        if f1 == True and re.search('pcm', jformat):
             policy = AUDIO_ANALOG
         else:
             policy = AUDIO_DIGITAL
