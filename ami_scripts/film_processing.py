@@ -15,6 +15,10 @@ LOGGER = logging.getLogger(__name__)
 video_extensions = {'.mkv', '.mov', '.mp4', '.dv', '.iso'}
 audio_extensions = {'.wav', '.flac'}
 
+def fast_rmtree(directory):
+    LOGGER.info("Removing entire folder %s using system command", directory)
+    subprocess.run(["rm", "-rf", str(directory)], check=True)
+
 def convert_to_mp4(input_file, input_directory):
     output_file_name = f"{input_file.stem.replace('_mz', '')}_sc.mp4"
     output_file = input_directory / output_file_name
@@ -43,7 +47,7 @@ def move_and_clean(pm_folder, output_name):
     
     # Remove the entire PreservationMasters folder.
     LOGGER.info("Removing entire folder %s to expedite deletion of DPX files", pm_folder)
-    shutil.rmtree(pm_folder)
+    fast_rmtree(pm_folder)
     
     # Recreate the PreservationMasters folder and restore the preserved file.
     LOGGER.info("Recreating folder %s and restoring preserved file from %s", pm_folder, temp_dest)
