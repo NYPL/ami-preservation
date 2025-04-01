@@ -13,25 +13,20 @@
   <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
   <rule name="Video/Format is AVC" value="Format" tracktype="Video" occurrence="*" operator="=">AVC</rule>
   <rule name="Video/ScanType is Progressive" value="ScanType" tracktype="Video" occurrence="*" operator="=">Progressive</rule>
-  <rule name="Typical Video/Width is 720" value="Width" tracktype="Video" occurrence="*" operator="=" level="info">720</rule>
-  <rule name="Typical Video/FrameRate_Mode is CFR" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=" level="info">CFR</rule>
+  <!-- <rule name="Typical Video/Width is 720" value="Width" tracktype="Video" occurrence="*" operator="=" level="info">720</rule> -->
+  <!-- <rule name="Typical Video/FrameRate_Mode is CFR" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=" level="info">CFR</rule> -->
 
   <policy type="or" name="NTSC or PAL specs">
 
     <policy type="and" name="NTSC specs">
 
-      <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule>
-      <rule name="Typical Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=" level="info">29.970</rule>
+      <!-- <rule name="Expected Video/Standard is NTSC" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">NTSC</rule> -->
       
-      <policy type="or" name="NTSC frame rate">
-        <policy type="and" name="Fuzzy NTSC frame rate">
-          <rule name="Video/FrameRate is greater than 29" value="FrameRate" tracktype="Video" occurrence="*" operator="&gt;">29.000</rule>
-          <rule name="Video/FrameRate is less than 30" value="FrameRate" tracktype="Video" occurrence="*" operator="&lt;">30.000</rule>
-        </policy>
-        <policy type="and" name="Fuzzy pull down frame rate">
-          <rule name="Video/FrameRate is greater than 23" value="FrameRate" tracktype="Video" occurrence="*" operator="&gt;">23.000</rule>
-          <rule name="Video/FrameRate is less than 25" value="FrameRate" tracktype="Video" occurrence="*" operator="&lt;">25.000</rule>
-        </policy>
+      <policy type="or" name="NTSC frame rate (29.970 or 59.940)">
+        <rule name="Video/FrameRate is 29.970" value="FrameRate" tracktype="Video" occurrence="*" operator="=">29.970</rule>
+        <rule name="Video/FrameRate is 59.940" value="FrameRate" tracktype="Video" occurrence="*" operator="=">59.940</rule>
+        <rule name="Video/FrameRate is 23.976" value="FrameRate" tracktype="Video" occurrence="*" operator="=">23.976</rule>
+        <rule name="Video/FrameRate is 47.952" value="FrameRate" tracktype="Video" occurrence="*" operator="=">47.952</rule>
       </policy>
 
       <policy type="or" name="NTSC Height, Width, DAR, and PAR">
@@ -64,14 +59,25 @@
           <rule name="Video/PixelAspectRatio is 0.913" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">0.913</rule>
         </policy> 
 
+        <policy type="and" name="NTSC China Video Disc">
+          <rule name="Video/Width is 352" value="Width" tracktype="Video" occurrence="*" operator="=">352</rule>
+          <rule name="Video/Height is 480" value="Height" tracktype="Video" occurrence="*" operator="=">480</rule>
+          <rule name="Video/DisplayAspectRatio is 1.333" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.333</rule>
+          <rule name="Video/PixelAspectRatio is 1.818" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.818</rule>
+        </policy>
+
       </policy>
 
     </policy>
 
     <policy type="and" name="PAL specs">
 
-      <rule name="Expected Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">PAL</rule>
-      <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
+      <!-- <rule name="Expected Video/Standard is PAL" value="Standard" tracktype="Video" occurrence="*" operator="=" level="warn">PAL</rule> -->
+      
+      <policy type="or" name="PAL frame rate (25.000 or 50.000)">
+        <rule name="Video/FrameRate is 25.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">25.000</rule>
+        <rule name="Video/FrameRate is 50.000" value="FrameRate" tracktype="Video" occurrence="*" operator="=">50.000</rule>
+      </policy>
 
       <policy type="or" name="PAL Height, Width, DAR, and PAR">
 
