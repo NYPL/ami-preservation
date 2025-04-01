@@ -35,17 +35,22 @@ def move_and_clean(pm_folder, output_name):
     dest = pm_folder / output_name.name
     LOGGER.info("Moving file %s to %s", output_name, dest)
     shutil.move(str(output_name), str(dest))
+    
+    # Temporarily move the file to be preserved out of the folder.
+    temp_dest = pm_folder.parent / dest.name
+    LOGGER.info("Temporarily moving preserved file %s to %s", dest, temp_dest)
+    shutil.move(str(dest), str(temp_dest))
+    
+    # Remove the entire PreservationMasters folder.
+    LOGGER.info("Removing entire folder %s to expedite deletion of DPX files", pm_folder)
+    shutil.rmtree(pm_folder)
+    
+    # Recreate the PreservationMasters folder and restore the preserved file.
+    LOGGER.info("Recreating folder %s and restoring preserved file from %s", pm_folder, temp_dest)
+    pm_folder.mkdir()
+    shutil.move(str(temp_dest), str(pm_folder / dest.name))
+    LOGGER.info("Clean up process completed for %s", pm_folder)
 
-    LOGGER.info("Starting removal of all files and directories in %s except %s", pm_folder, dest)
-    for item in pm_folder.glob('*'):
-        if item != dest:
-            if item.is_file():
-                LOGGER.info("Removing file: %s", item)
-                item.unlink()
-            elif item.is_dir():
-                LOGGER.info("Removing directory: %s", item)
-                shutil.rmtree(item)
-    LOGGER.info("Removal process completed in %s", pm_folder)
 
 def copy_to_editmasters(pm_folder, flac_file):
     em_folder = pm_folder.parent / 'EditMasters'
