@@ -28,21 +28,24 @@ def convert_to_mp4(input_file, input_directory):
         "-crf", "21",
         "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file)
     ]
+    LOGGER.info("Converting %s to MP4 as %s", input_file, output_file)
     subprocess.run(command)
 
-
 def move_and_clean(pm_folder, output_name):
-    # Move the output file to the PreservationMasters folder
-    shutil.move(str(output_name), str(pm_folder / output_name.name))
+    dest = pm_folder / output_name.name
+    LOGGER.info("Moving file %s to %s", output_name, dest)
+    shutil.move(str(output_name), str(dest))
 
-    # Delete the contents of the PreservationMasters folder, except the output file
+    LOGGER.info("Starting removal of all files and directories in %s except %s", pm_folder, dest)
     for item in pm_folder.glob('*'):
-        if item != pm_folder / output_name.name:
+        if item != dest:
             if item.is_file():
+                LOGGER.info("Removing file: %s", item)
                 item.unlink()
             elif item.is_dir():
+                LOGGER.info("Removing directory: %s", item)
                 shutil.rmtree(item)
-
+    LOGGER.info("Removal process completed in %s", pm_folder)
 
 def copy_to_editmasters(pm_folder, flac_file):
     em_folder = pm_folder.parent / 'EditMasters'
@@ -50,14 +53,14 @@ def copy_to_editmasters(pm_folder, flac_file):
     
     em_file_name = flac_file.stem.replace('_pm', '_em') + '.flac'
     em_file = em_folder / em_file_name
+    LOGGER.info("Copying %s to EditMasters folder as %s", flac_file, em_file)
     shutil.copy(str(flac_file), str(em_file))
-
 
 def remove_hidden_files(directory):
     for item in directory.rglob('.*'):
         if item.is_file():
+            LOGGER.info("Removing hidden file: %s", item)
             item.unlink()
-
 
 def process_directory(root_dir):
     for folder in sorted(root_dir.glob('*')):
@@ -85,7 +88,7 @@ def process_directory(root_dir):
                         output_name = folder / f"{output_stem}.mkv"
 
                     if mz_file:
-                        print(f"Processing {folder}...")
+                        LOGGER.info("Processing folder %s...", folder)
                         rawcooked_cmd = ['rawcooked', '--no-accept-gaps', '--no-check-padding',
                                           pm_folder, '--output-name', output_name]
                         result = subprocess.run(rawcooked_cmd)
@@ -94,10 +97,10 @@ def process_directory(root_dir):
                             move_and_clean(pm_folder, output_name)
                             convert_to_mp4(mz_file, sc_folder)
                         else:
-                            print(f"Error: rawcooked command failed for {folder}")
+                            LOGGER.error("Error: rawcooked command failed for %s", folder)
 
                     else:
-                        print(f"Error: No Mezzanine file found in {mz_folder}")
+                        LOGGER.error("Error: No Mezzanine file found in %s", mz_folder)
 
                 if wav_file:  # If a WAV file is found, run the flac command (covers both cases with and without DPX files)
                     output_file = wav_file.with_suffix('.flac')
@@ -108,23 +111,23 @@ def process_directory(root_dir):
                         '--verify',
                         '-o', str(output_file)
                     ]
+                    LOGGER.info("Converting %s to FLAC as %s", wav_file, output_file)
                     return_code = subprocess.call(flac_command)
 
                     if return_code == 0:  # If the command ran successfully, delete the WAV file
+                        LOGGER.info("FLAC conversion succeeded. Deleting original WAV file: %s", wav_file)
                         wav_file.unlink()
                         copy_to_editmasters(pm_folder, output_file)
 
                 elif not dpx_files:
-                    print(f"Error: No DPX files or WAV file found in {pm_folder}")
+                    LOGGER.error("Error: No DPX files or WAV file found in %s", pm_folder)
 
             else:
-                print(f"Error: Missing required folder(s) in {folder}")
-
+                LOGGER.error("Error: Missing required folder(s) in %s", folder)
 
 def collect_media_files(directory):
     valid_extensions = video_extensions.union(audio_extensions)
     return [path for path in directory.rglob('*') if path.is_file() and path.suffix.lower() in valid_extensions]
-
 
 def has_mezzanines(file_path):
     for parent in file_path.parents:
@@ -132,7 +135,6 @@ def has_mezzanines(file_path):
         if mezzanines_dir.is_dir():
             return True
     return False
-
 
 def extract_track_info(media_info, path, project_code_pattern, valid_extensions):
     for track in media_info.tracks:
@@ -184,8 +186,9 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
 
     return None
 
-
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
     parser = argparse.ArgumentParser(description='Process media files from motion picture film digitization.')
     parser.add_argument('-d', '--directory', dest='input_dir', required=True, help='Path to the root directory containing the media files.')
     parser.add_argument('-o', '--output', dest='output_csv', required=False, help='Path to save the CSV with MediaInfo.')
@@ -206,7 +209,7 @@ if __name__ == '__main__':
                     media_info = MediaInfo.parse(str(path))
                     file_data = extract_track_info(media_info, path, project_code_pattern, video_extensions.union(audio_extensions))
                     if file_data:
-                        print(file_data)
+                        LOGGER.info("Extracted data for %s: %s", path, file_data)
                         all_file_data.append(file_data)
 
             with open(args.output_csv, 'w') as f:
@@ -231,6 +234,5 @@ if __name__ == '__main__':
                     'projectID'
                 ])
                 md_csv.writerows(all_file_data)
-
     else:
-        print(f"Error: {root_path} does not exist or is not a directory.")
+        LOGGER.error("Error: %s does not exist or is not a directory.", root_path)
