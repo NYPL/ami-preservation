@@ -15,10 +15,12 @@
   <rule name="Video/ColorSpace is YUV" value="ColorSpace" tracktype="Video" occurrence="*" operator="=">YUV</rule>
   <rule name="Video/colour_range is Limited" value="colour_range" tracktype="Video" occurrence="*" operator="=">Limited</rule> 
   <rule name="Video/Compression_Mode is Lossless" value="Compression_Mode" tracktype="Video" occurrence="*" operator="=">Lossless</rule>
-  <rule name="Video/extra[1]/ErrorDetectionType is Per slice" value="extra[1]/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule>
-  <rule name="Video/extra[1]/MaxSlicesCount is 24" value="extra[1]/MaxSlicesCount" tracktype="Video" occurrence="*" operator="=">24</rule>
+  <rule name="Video/extra/ErrorDetectionType is Per slice" value="extra/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule>
+<!--   <rule name="Video/extra[1]/ErrorDetectionType is Per slice" value="extra[1]/ErrorDetectionType" tracktype="Video" occurrence="*" operator="=">Per slice</rule> -->
+<!--   <rule name="Video/extra[1]/MaxSlicesCount is 24" value="extra[1]/MaxSlicesCount" tracktype="Video" occurrence="*" operator="=">24</rule> -->
   <rule name="Video/Format is FFV1" value="Format" tracktype="Video" occurrence="*" operator="=">FFV1</rule>
   <rule name="Video/Format_Settings_GOP is N=1" value="Format_Settings_GOP" tracktype="Video" occurrence="*" operator="=">N=1</rule>
+  <rule name="Video/Format_Settings_SliceCount is 24" value="Format_Settings_SliceCount" tracktype="Video" occurrence="*" operator="=">24</rule>
   <rule name="Video/Format_Version is 3.4 or greater" value="Format_Version" tracktype="Video" occurrence="*" operator="&gt;=">3.4</rule>
   <rule name="Video/FrameRate_Mode is CFR" value="FrameRate_Mode" tracktype="Video" occurrence="*" operator="=">CFR</rule>
   <rule name="Video/ScanType is Interlaced" value="ScanType" tracktype="Video" occurrence="*" operator="=">Interlaced</rule>
