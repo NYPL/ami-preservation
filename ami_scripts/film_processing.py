@@ -9,6 +9,8 @@ import logging
 import re
 from pathlib import Path
 from pymediainfo import MediaInfo
+import multiprocessing
+from functools import partial
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,21 +30,56 @@ def convert_to_mp4(input_file, input_directory):
         "-crf", "21",
         "-c:a", "aac", "-b:a", "320000", "-ar", "48000", str(output_file)
     ]
+    LOGGER.info("Converting %s to MP4 as %s", input_file, output_file)
     subprocess.run(command)
 
+def move_dpx_files_to_to_delete(pm_folder, film_folder):
+    """
+    Moves all DPX files from pm_folder into a TO_DELETE folder.
+    The TO_DELETE folder is placed in the parent directory of film_folder,
+    with a subdirectory named after film_folder.
+    """
+    to_delete_root = film_folder.parent / "TO_DELETE"
+    to_delete_folder = to_delete_root / film_folder.name
+    to_delete_folder.mkdir(parents=True, exist_ok=True)
+    
+    dpx_files = list(pm_folder.glob('*.dpx'))
+    if dpx_files:
+        LOGGER.info("Moving %d DPX files from %s to %s", len(dpx_files), pm_folder, to_delete_folder)
+        for file in dpx_files:
+            try:
+                shutil.move(str(file), str(to_delete_folder / file.name))
+            except Exception as e:
+                LOGGER.error("Error moving %s: %s", file, e)
+    else:
+        LOGGER.info("No DPX files found in %s to move.", pm_folder)
 
-def move_and_clean(pm_folder, output_name):
-    # Move the output file to the PreservationMasters folder
-    shutil.move(str(output_name), str(pm_folder / output_name.name))
-
-    # Delete the contents of the PreservationMasters folder, except the output file
+def move_and_clean(film_folder, pm_folder, output_name):
+    """
+    Moves the output file (rawcooked result) into pm_folder, then
+    moves all DPX files to the TO_DELETE folder and deletes any other leftover items.
+    """
+    dest = pm_folder / output_name.name
+    LOGGER.info("Moving file %s to %s", output_name, dest)
+    shutil.move(str(output_name), str(dest))
+    
+    # Instead of deleting DPX files, move them into a TO_DELETE folder.
+    move_dpx_files_to_to_delete(pm_folder, film_folder)
+    
+    # Remove any remaining files or directories in pm_folder except the preserved output.
+    LOGGER.info("Removing remaining items in %s except %s", pm_folder, dest)
     for item in pm_folder.glob('*'):
-        if item != pm_folder / output_name.name:
-            if item.is_file():
-                item.unlink()
-            elif item.is_dir():
-                shutil.rmtree(item)
-
+        if item != dest:
+            try:
+                if item.is_file():
+                    LOGGER.info("Deleting file: %s", item)
+                    item.unlink()
+                elif item.is_dir():
+                    LOGGER.info("Deleting directory: %s", item)
+                    shutil.rmtree(item)
+            except Exception as e:
+                LOGGER.error("Error deleting %s: %s", item, e)
+    LOGGER.info("Cleanup completed for %s", pm_folder)
 
 def copy_to_editmasters(pm_folder, flac_file):
     em_folder = pm_folder.parent / 'EditMasters'
@@ -50,21 +87,21 @@ def copy_to_editmasters(pm_folder, flac_file):
     
     em_file_name = flac_file.stem.replace('_pm', '_em') + '.flac'
     em_file = em_folder / em_file_name
+    LOGGER.info("Copying %s to EditMasters folder as %s", flac_file, em_file)
     shutil.copy(str(flac_file), str(em_file))
-
 
 def remove_hidden_files(directory):
     for item in directory.rglob('.*'):
         if item.is_file():
+            LOGGER.info("Removing hidden file: %s", item)
             item.unlink()
 
-
 def process_directory(root_dir):
-    for folder in sorted(root_dir.glob('*')):
-        if folder.is_dir():
-            remove_hidden_files(folder)
-            pm_folder = folder / 'PreservationMasters'
-            mz_folder = folder / 'Mezzanines'
+    for film_folder in sorted(root_dir.glob('*')):
+        if film_folder.is_dir():
+            remove_hidden_files(film_folder)
+            pm_folder = film_folder / 'PreservationMasters'
+            mz_folder = film_folder / 'Mezzanines'
 
             if pm_folder.exists():
                 # Check for WAV files in the PreservationMasters folder
@@ -73,8 +110,8 @@ def process_directory(root_dir):
                 # Check for DPX files in the PreservationMasters folder
                 dpx_files = list(pm_folder.glob('*.dpx'))
 
-                if dpx_files:  # If DPX files exist (including cases with WAV file)
-                    sc_folder = folder / 'ServiceCopies'
+                if dpx_files:  # If DPX files exist (possibly along with WAV file)
+                    sc_folder = film_folder / 'ServiceCopies'
                     sc_folder.mkdir(exist_ok=True)
 
                     mz_file = next(iter(sorted(mz_folder.glob('*.mov'))), None)
@@ -82,22 +119,24 @@ def process_directory(root_dir):
 
                     if first_dpx_file is not None:
                         output_stem = first_dpx_file.stem[:-8]
-                        output_name = folder / f"{output_stem}.mkv"
+                        output_name = film_folder / f"{output_stem}.mkv"
+                    else:
+                        LOGGER.error("No DPX file found to derive output name in %s", pm_folder)
+                        continue
 
                     if mz_file:
-                        print(f"Processing {folder}...")
+                        LOGGER.info("Processing folder %s...", film_folder)
                         rawcooked_cmd = ['rawcooked', '--no-accept-gaps', '--no-check-padding',
-                                          pm_folder, '--output-name', output_name]
+                                          str(pm_folder), '--output-name', str(output_name)]
                         result = subprocess.run(rawcooked_cmd)
 
                         if result.returncode == 0:
-                            move_and_clean(pm_folder, output_name)
+                            move_and_clean(film_folder, pm_folder, output_name)
                             convert_to_mp4(mz_file, sc_folder)
                         else:
-                            print(f"Error: rawcooked command failed for {folder}")
-
+                            LOGGER.error("Error: rawcooked command failed for %s", film_folder)
                     else:
-                        print(f"Error: No Mezzanine file found in {mz_folder}")
+                        LOGGER.error("Error: No Mezzanine file found in %s", mz_folder)
 
                 if wav_file:  # If a WAV file is found, run the flac command (covers both cases with and without DPX files)
                     output_file = wav_file.with_suffix('.flac')
@@ -108,23 +147,22 @@ def process_directory(root_dir):
                         '--verify',
                         '-o', str(output_file)
                     ]
+                    LOGGER.info("Converting %s to FLAC as %s", wav_file, output_file)
                     return_code = subprocess.call(flac_command)
 
                     if return_code == 0:  # If the command ran successfully, delete the WAV file
+                        LOGGER.info("FLAC conversion succeeded. Deleting original WAV file: %s", wav_file)
                         wav_file.unlink()
                         copy_to_editmasters(pm_folder, output_file)
 
                 elif not dpx_files:
-                    print(f"Error: No DPX files or WAV file found in {pm_folder}")
-
+                    LOGGER.error("Error: No DPX files or WAV file found in %s", pm_folder)
             else:
-                print(f"Error: Missing required folder(s) in {folder}")
-
+                LOGGER.error("Error: Missing required folder(s) in %s", film_folder)
 
 def collect_media_files(directory):
     valid_extensions = video_extensions.union(audio_extensions)
     return [path for path in directory.rglob('*') if path.is_file() and path.suffix.lower() in valid_extensions]
-
 
 def has_mezzanines(file_path):
     for parent in file_path.parents:
@@ -132,7 +170,6 @@ def has_mezzanines(file_path):
         if mezzanines_dir.is_dir():
             return True
     return False
-
 
 def extract_track_info(media_info, path, project_code_pattern, valid_extensions):
     for track in media_info.tracks:
@@ -184,8 +221,9 @@ def extract_track_info(media_info, path, project_code_pattern, valid_extensions)
 
     return None
 
-
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
     parser = argparse.ArgumentParser(description='Process media files from motion picture film digitization.')
     parser.add_argument('-d', '--directory', dest='input_dir', required=True, help='Path to the root directory containing the media files.')
     parser.add_argument('-o', '--output', dest='output_csv', required=False, help='Path to save the CSV with MediaInfo.')
@@ -206,7 +244,7 @@ if __name__ == '__main__':
                     media_info = MediaInfo.parse(str(path))
                     file_data = extract_track_info(media_info, path, project_code_pattern, video_extensions.union(audio_extensions))
                     if file_data:
-                        print(file_data)
+                        LOGGER.info("Extracted data for %s: %s", path, file_data)
                         all_file_data.append(file_data)
 
             with open(args.output_csv, 'w') as f:
@@ -231,6 +269,5 @@ if __name__ == '__main__':
                     'projectID'
                 ])
                 md_csv.writerows(all_file_data)
-
     else:
-        print(f"Error: {root_path} does not exist or is not a directory.")
+        LOGGER.error("Error: %s does not exist or is not a directory.", root_path)

@@ -221,13 +221,13 @@ def main():
             'technical.durationMilli.measure',
             'technical.durationHuman',
             'mediaType',
-            'role',
-            'divisionCode',
+            'asset.fileRole',
+            'bibliographic.vernacularDivisionCode',
             'driveID',
-            'primaryID',
-            'collectionID',  # Added from JSON
-            'objectType',    # Added from JSON
-            'objectFormat'   # Added from JSON
+            'bibliographic.primaryID',
+            'bibliographic.cmsCollectionID',  # Added from JSON
+            'source.object.type',    # Added from JSON
+            'source.object.format'   # Added from JSON
         ]
         md_csv.writerow(header)
         md_csv.writerows(all_file_data)
