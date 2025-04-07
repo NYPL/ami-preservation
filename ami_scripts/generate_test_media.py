@@ -78,24 +78,48 @@ def prepare_test_files(args):
             'channels': 2,
             'ext': '.flac'
         },
+        # 2K 10-bit with silent audio track (no WAV generated)
         {
-            'name': 'ffv1_rawcooked_2K_gbrp10le',
+            'name': 'ffv1_rawcooked_2K_gbrp10le_audio_silent',
             'video_res': '2048x1556',
             'frame_rate': '24',
             'pix_fmt': 'gbrp10le',
             'frames': 10,
-            'ext': '.dpx'
+            'ext': '.dpx',
+            'audio_source': 'silent'
         },
+        # 2K 10-bit with a stereo (sine wave) audio track
         {
-            'name': 'ffv1_rawcooked_4K_gbrp16le',
+            'name': 'ffv1_rawcooked_2K_gbrp10le_audio_sine',
+            'video_res': '2048x1556',
+            'frame_rate': '24',
+            'pix_fmt': 'gbrp10le',
+            'frames': 10,
+            'ext': '.dpx',
+            'audio_source': 'sine'
+        },
+        # 4K 16-bit with silent audio track (no WAV generated)
+        {
+            'name': 'ffv1_rawcooked_4K_gbrp16le_audio_silent',
             'video_res': '4096x3112',
             'frame_rate': '24',
             'pix_fmt': 'gbrp16le',
             'frames': 10,
-            'ext': '.dpx'
+            'ext': '.dpx',
+            'audio_source': 'silent'
+        },
+        # 4K 16-bit with a stereo (sine wave) audio track
+        {
+            'name': 'ffv1_rawcooked_4K_gbrp16le_audio_sine',
+            'video_res': '4096x3112',
+            'frame_rate': '24',
+            'pix_fmt': 'gbrp16le',
+            'frames': 10,
+            'ext': '.dpx',
+            'audio_source': 'sine'
         },
         {
-            'name': 'prores_hq__pcm_s24le_48kHz',
+            'name': 'prores_hq_pcm_s24le_48kHz',
             'video_codec': 'prores_ks',
             'video_options': '-profile:v 3 -pix_fmt yuv422p10le',  # ProRes HQ in 4:2:2
             'audio_codec': 'pcm_s24le',
@@ -194,25 +218,41 @@ def generate_test_files(destination_dir, test_files):
             # Handle DPX test file generation.
             dpx_dir = os.path.join(destination_dir, test_file['name'])
             os.makedirs(dpx_dir, exist_ok=True)
+            # Generate DPX frames.
             command = [
                 'ffmpeg',
                 '-f', 'lavfi', '-i', f"mandelbrot=size={test_file['video_res']}:rate={test_file['frame_rate']}",
                 '-vframes', str(test_file['frames']),
                 '-pix_fmt', test_file['pix_fmt'],
-                '-y', os.path.join(dpx_dir, f"{test_file['name']}_%06d{test_file['ext']}")
+                '-y', os.path.join(dpx_dir, f"{test_file['name']}_%07d{test_file['ext']}")
             ]
             subprocess.run(command, check=True)
-            # Convert DPX frames with rawcooked.
+
+            # For sine audio track on film files, generate a WAV file with duration matching the DPX frames.
+            if test_file.get('audio_source') == 'sine':
+                wav_file = os.path.join(dpx_dir, f"{test_file['name']}.wav")
+                # Calculate duration = frames / frame_rate (e.g. 10/24 ≈ 0.417 sec)
+                duration = str(float(test_file['frames']) / float(test_file['frame_rate']))
+                audio_cmd = [
+                    'ffmpeg',
+                    '-f', 'lavfi', '-i', 'sine=frequency=1000:sample_rate=48000',
+                    '-t', duration,
+                    '-c:a', 'pcm_s24le',
+                    '-y', wav_file
+                ]
+                subprocess.run(audio_cmd, check=True)
+
+            # Convert DPX frames (and WAV, if present) with rawcooked.
             command = [
                 'rawcooked',
                 '--no-check-padding',
                 dpx_dir
             ]
             subprocess.run(command)
-            # Delete DPX frames.
-            for dpx_file in os.listdir(dpx_dir):
-                if dpx_file.endswith('.dpx'):
-                    os.remove(os.path.join(dpx_dir, dpx_file))
+            # Delete DPX frames and any generated WAV file.
+            for file in os.listdir(dpx_dir):
+                if file.endswith('.dpx') or file.endswith('.wav'):
+                    os.remove(os.path.join(dpx_dir, file))
             if not os.listdir(dpx_dir):
                 os.rmdir(dpx_dir)
             continue
