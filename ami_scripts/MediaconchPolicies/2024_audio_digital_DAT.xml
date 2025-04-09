@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<policy type="and" name="2024_audio_digital_DAT">
+  <rule name="General/FileExtension is flac" value="FileExtension" tracktype="General" occurrence="*" operator="=">flac</rule>
+  <rule name="General/Format is FLAC" value="Format" tracktype="General" occurrence="*" operator="=">FLAC</rule>
+  <rule name="Audio/Format is FLAC" value="Format" tracktype="Audio" occurrence="*" operator="=">FLAC</rule>
+  <policy type="or" name="DAT sampling rate and bit depth">
+    <policy type="and" name="32kHz and 12 bit">
+      <rule name="Audio/BitDepth is 12" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">12</rule>
+      <rule name="Audio/SamplingRate is 32000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">32000</rule>
+    </policy>
+    <policy type="and" name="32/44.1/48kHz and 16 bit">
+      <rule name="Audio/BitDepth is 16" value="BitDepth" tracktype="Audio" occurrence="*" operator="=">16</rule>
+      <policy type="or" name="32/44.1/48kHz">
+        <rule name="Audio/SamplingRate is 32000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">32000</rule>
+        <rule name="Audio/SamplingRate is 44100" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">44100</rule>
+        <rule name="Audio/SamplingRate is 48000" value="SamplingRate" tracktype="Audio" occurrence="*" operator="=">48000</rule>
+      </policy>
+    </policy>
+  </policy>
+</policy>
