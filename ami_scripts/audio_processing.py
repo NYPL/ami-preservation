@@ -48,8 +48,44 @@ def verify_directory(source_directory, destination_directory):
     destination_directory.mkdir(parents=True, exist_ok=True)
 
 
+def get_mediainfo(file_path, inform):
+    result = subprocess.check_output(
+        [
+            'mediainfo',
+            '--Language=raw',
+            '--Full',
+            f"--Inform={inform}",
+            str(file_path),
+        ]
+    ).rstrip()
+    return result.decode('UTF-8')
+
+
+def is_32bit_float(file):
+    """
+    Determines if an audio file is a 32-bit float broadcast WAV.
+    It checks:
+      - Audio;%BitDepth% equals "32"
+      - And that either Audio;%Format_Profile% or Audio;%Format% contains "float".
+    Additionally, it logs the mediainfo output for diagnosis.
+    """
+    try:
+        bit_depth = get_mediainfo(file, "Audio;%BitDepth%").strip()
+        format_profile = get_mediainfo(file, "Audio;%Format_Profile%").strip().lower()
+        audio_format = get_mediainfo(file, "Audio;%Format%").strip().lower()
+        logging.info(f"For file {file.name}: BitDepth={bit_depth}, Format_Profile='{format_profile}', Format='{audio_format}'")
+
+        # Check if bit depth is 32 and either the format_profile or format indicates a float type.
+        if bit_depth == "32" and ("float" in format_profile or "float" in audio_format):
+            return True
+    except Exception as e:
+        logging.error(f"Error determining bit depth for {file}: {e}")
+    return False
+
+
 def transcode_files(source_directory, destination_directory):
     files = skip_hidden_files(list(source_directory.glob("**/*.wav")))
+    fallback_files = []
     for file in tqdm(files, desc="Transcoding files", unit="file"):
         output_file = destination_directory / f"{file.stem}.flac"
         flac_command = [
@@ -61,9 +97,36 @@ def transcode_files(source_directory, destination_directory):
         ]
         return_code = subprocess.call(flac_command)
         if return_code != 0:
-            logging.error(f"Error while transcoding {file}. Return code: {return_code}")
+            logging.error(f"Error while transcoding {file} with flac. Return code: {return_code}")
+            if is_32bit_float(file):
+                logging.info(f"Detected 32-bit float broadcast WAV for {file}. Attempting FFmpeg fallback to transcode to 24-bit FLAC.")
+                ffmpeg_command = [
+                    'ffmpeg',
+                    '-i', str(file),
+                    '-c:a', 'flac',
+                    '-compression_level', '12',
+                    # The following options attempt to force a conversion to 24-bit output.
+                    '-af', 'aformat=sample_fmts=s32',
+                    '-sample_fmt', 's32',
+                    '-bits_per_raw_sample', '24',
+                    str(output_file)
+                ]
+                ffmpeg_return_code = subprocess.call(ffmpeg_command)
+                if ffmpeg_return_code != 0:
+                    logging.error(f"FFmpeg fallback failed for {file} with return code: {ffmpeg_return_code}")
+                else:
+                    logging.info(f"Successfully transcoded {file} to {output_file} using FFmpeg fallback.")
+                    fallback_files.append(file)
+            else:
+                logging.error(f"Transcoding failed for {file} and it is not recognized as a 32-bit float broadcast WAV. Skipping fallback.")
         else:
-            logging.info(f"Successfully transcoded {file} to {output_file}")
+            logging.info(f"Successfully transcoded {file} to {output_file} using FLAC command.")
+
+    if fallback_files:
+        print("\nFFmpeg fallback occurred for the following 32-bit float broadcast WAV files:")
+        for fallback_file in fallback_files:
+            print(f"  {fallback_file}")
+        print("Please check your DAW settings to avoid generating 32-bit float broadcast WAV files.\n")
 
 
 def module_exists(module_name):
@@ -135,19 +198,6 @@ def organize_files(source_directory, destination_directory):
         edit_masters_dir = id_folder / "EditMasters"
         edit_masters_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(file, edit_masters_dir)
-
-
-def get_mediainfo(file_path, inform):
-    result = subprocess.check_output(
-        [
-            'mediainfo',
-            '--Language=raw',
-            '--Full',
-            f"--Inform={inform}",
-            str(file_path),
-        ]
-    ).rstrip()
-    return result.decode('UTF-8')
 
 
 def update_flac_info(destination_directory):
