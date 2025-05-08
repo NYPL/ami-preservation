@@ -399,6 +399,41 @@ def display_monthly_output(df, args, fiscal=False):
 
     print(f"Total duration of all digitized items (HH:MM:SS): {formatted_grand_total_duration}")
 
+    # --- compute total bytes per file role ---
+    data_by_role = (
+        df_filtered
+        .groupby('asset.fileRole')['technical.fileSize.measure']
+        .sum()
+        .reset_index()
+        .rename(columns={'technical.fileSize.measure': 'totalBytes'})
+    )
+    
+    # --- print human-readable breakdown by role ---
+    print("\nTotal Data by Role:")
+    for _, row in data_by_role.iterrows():
+        role = row['asset.fileRole']
+        size = format_file_size(row['totalBytes'])
+        print(f"  {role}: {size}")
+    
+    # compression ratio for EM → AAC
+    compression_ratio = 320_000 / 684_000
+
+    # get raw bytes for SC and EM
+    sc_bytes = data_by_role.loc[data_by_role['asset.fileRole']=='sc', 'totalBytes'].sum()
+    em_bytes = data_by_role.loc[data_by_role['asset.fileRole']=='em', 'totalBytes'].sum()
+
+    # estimate EM size after AAC compression
+    estimated_em = em_bytes * compression_ratio
+
+    # total DAMS footprint = SC + compressed EM
+    estimated_dams = sc_bytes + estimated_em
+
+    # print it out
+    print("\nEstimated DAMS Data:")
+    print(f"  sc: {format_file_size(sc_bytes)}")
+    print(f"  em (compressed): {format_file_size(estimated_em)}")
+    print(f"  TOTAL → {format_file_size(estimated_dams)}")
+    
     # 1) Check if the columns exist in df_pm
     has_equipment_cols = (
         'digitizationProcess.playbackDevice.model' in df_pm.columns and
@@ -509,7 +544,7 @@ def display_monthly_output(df, args, fiscal=False):
     plt.legend(title=legend_title)
     plt.show()
 
-    return output_line, year_label, total_items_per_month_summed, total_file_size, total_media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator
+    return output_line, year_label, total_items_per_month_summed, total_file_size, total_media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator, data_by_role
 
 def plot_object_format_counts(df, args, fiscal=False, previous_fiscal=False, top_n=10, formatted_file_size="", total_items_per_month_summed=0, media_counts=None, formatted_grand_total_duration=""):
     if 'digitizer.operator.lastName' not in df.columns:
@@ -924,7 +959,7 @@ def main():
         return
     
     df_processed = process_data(df, args, fiscal=args.fiscal)
-    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator = display_monthly_output(df_processed, args, fiscal=args.fiscal)
+    line_data, year_label, total_items_per_month_summed, total_file_size, media_counts, equipment_usage, spec_collection_usage, formatted_grand_total_duration, total_media_counts_by_division, total_counts_by_project_type, output_by_operator, data_by_role = display_monthly_output(df_processed, args, fiscal=args.fiscal)
     if line_data is None:
         print("Error: Missing data. Exiting the program.")
         return
