@@ -38,13 +38,13 @@ def main():
     prefix = args.prefix
 
     processed_dir = os.path.join(input_dir, "Processed")
-    preservation_dir = os.path.join(input_dir, "Preservation Masters")
+    preservation_dir = os.path.join(input_dir, "PreservationMasters")
     os.makedirs(processed_dir, exist_ok=True)
     os.makedirs(preservation_dir, exist_ok=True)
 
     for entry in sorted(os.listdir(input_dir)):
         entry_path = os.path.join(input_dir, entry)
-        if not os.path.isdir(entry_path) or entry in ("Processed", "Preservation Masters"):
+        if not os.path.isdir(entry_path) or entry in ("Processed", "PreservationMasters"):
             continue
         if not (entry.isdigit() and len(entry) == 6):
             print(f"Skipping {entry}: not a six-digit ID.")
