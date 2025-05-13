@@ -399,7 +399,7 @@ def convert_mov_file(input_file, input_directory, audio_pan):
         "-g", "1",
         "-slicecrc", "1",
         "-slices", "24",
-        "-c:a", "copy"    # Copy all audio bit-for-bit
+        "-c:a", "flac"    # Copy all audio bit-for-bit
     ]
 
     # Apply field_order if defined
