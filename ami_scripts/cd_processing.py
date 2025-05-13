@@ -12,136 +12,152 @@ import shutil
 import unicodedata
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Process directories of CD WAV files using cues and shntool."
+    p = argparse.ArgumentParser(
+        description="Concatenate/copy CD WAVs according to CUE track order"
     )
-    parser.add_argument(
+    p.add_argument(
         "-i", "--input", required=True,
-        help="Input directory containing subdirectories for each CD (named by six-digit ID)."
+        help="Directory with one sub‑folder per disc (named by six‑digit ID)"
     )
-    parser.add_argument(
+    p.add_argument(
         "-p", "--prefix", required=True,
-        help="Three-letter prefix for output filenames."
+        help="Three‑letter prefix for output filenames"
     )
-    return parser.parse_args()
+    return p.parse_args()
 
-def strip_accents(text):
-    """Strip accents from string using Unicode NFD normalization."""
+
+def strip_accents(text: str) -> str:
+    """Remove diacritics; return lower‑cased, accent‑free string."""
     return ''.join(
         ch for ch in unicodedata.normalize('NFD', text)
         if unicodedata.category(ch) != 'Mn'
-    )
+    ).casefold()
+
+
+def process_disc(disc_path: str, disc_id: str, prefix: str,
+                 processed_dir: str, preservation_dir: str) -> None:
+
+    cue_files = [f for f in os.listdir(disc_path) if f.lower().endswith(".cue")]
+    if not cue_files:
+        print(f"No .cue file found in {disc_id}, skipping.")
+        return
+    cue_path = os.path.join(disc_path, cue_files[0])
+
+    # --- extract TITLE lines from CUE ---------------------------------------
+    track_titles = []
+    in_track = False
+    with open(cue_path, encoding="utf‑8", errors="ignore") as fh:
+        for line in fh:
+            if re.match(r"^\s*TRACK", line):
+                in_track = True
+            if in_track:
+                m = re.match(r'^\s*TITLE\s+"(.+)"', line)
+                if m:
+                    track_titles.append(m.group(1))
+
+    all_wavs = [f for f in os.listdir(disc_path) if f.lower().endswith(".wav")]
+    if not all_wavs:
+        print(f"No WAV files found in {disc_id}, skipping.")
+        return
+
+    noext = lambda p: os.path.splitext(p)[0]
+    norm   = lambda p: strip_accents(noext(p))
+
+    exact_map = {norm(w): w for w in all_wavs}
+    used: set[str] = set()
+    wav_paths: list[str | None] = []
+
+    if track_titles:                     #  ❯❯❯  TITLE‑driven ordering
+        for title in track_titles:
+            n_title = strip_accents(title)
+
+            chosen = None
+            # 1) exact basename match (unused)
+            if n_title in exact_map and exact_map[n_title] not in used:
+                chosen = exact_map[n_title]
+            else:
+                # 2) substring match (unused)
+                cands = [w for w in all_wavs
+                         if n_title in norm(w) and w not in used]
+                if cands:
+                    # prefer the shortest candidate (avoids hcbb vs hcbbng)
+                    chosen = sorted(cands, key=len)[0]
+
+            if chosen:
+                wav_paths.append(os.path.join(disc_path, chosen))
+                used.add(chosen)
+            else:
+                wav_paths.append(None)
+                print(f"Warning: no WAV matching '{title}' in {disc_id}")
+
+        # Fill any gaps with remaining unused WAVs alphabetically
+        remaining = [w for w in sorted(all_wavs) if w not in used]
+        for idx, val in enumerate(wav_paths):
+            if val is None and remaining:
+                fill = remaining.pop(0)
+                wav_paths[idx] = os.path.join(disc_path, fill)
+                used.add(fill)
+                print(f"Filled missing track {idx+1} with '{fill}'")
+    else:                               #  ❯❯❯  Alphabetical fallback
+        print(f"No TITLE lines in {disc_id}; using alphabetical WAV order")
+        wav_paths = [os.path.join(disc_path, w) for w in sorted(all_wavs)]
+
+    # ── output names ---------------------------------------------------------
+    base = f"{prefix}_{disc_id}_v01_pm"
+    out_wav = os.path.join(preservation_dir, base + ".wav")
+    out_cue = os.path.join(preservation_dir, base + ".cue")
+
+    # ── join or copy ---------------------------------------------------------
+    if len(wav_paths) > 1:
+        try:
+            subprocess.run(
+                ["shntool", "join", "-o", "wav", "-r", "none"] + wav_paths,
+                cwd=preservation_dir,
+                check=True
+            )
+            joined = os.path.join(preservation_dir, "joined.wav")
+            if os.path.exists(joined):
+                os.rename(joined, out_wav)
+            else:
+                print(f"Expected 'joined.wav' not found for {disc_id}")
+                return
+        except subprocess.CalledProcessError as e:
+            print(f"shntool error on {disc_id}: {e}")
+            return
+    else:
+        shutil.copy2(wav_paths[0], out_wav)
+
+    # copy/rename CUE, move source dir to “Processed”
+    shutil.copy2(cue_path, out_cue)
+    shutil.move(disc_path, processed_dir)
+
+    print(f"Finished {disc_id}: {os.path.basename(out_wav)}")
+
 
 def main():
     args = parse_args()
     input_dir = os.path.abspath(args.input)
     prefix = args.prefix
 
-    processed_dir = os.path.join(input_dir, "Processed")
-    preservation_dir = os.path.join(input_dir, "PreservationMasters")
-    os.makedirs(processed_dir, exist_ok=True)
+    processed_dir     = os.path.join(input_dir, "Processed")
+    preservation_dir  = os.path.join(input_dir, "PreservationMasters")
+    os.makedirs(processed_dir,    exist_ok=True)
     os.makedirs(preservation_dir, exist_ok=True)
 
     for entry in sorted(os.listdir(input_dir)):
-        entry_path = os.path.join(input_dir, entry)
-        if not os.path.isdir(entry_path) or entry in ("Processed", "PreservationMasters"):
+        disc_path = os.path.join(input_dir, entry)
+        if (not os.path.isdir(disc_path)
+                or entry in ("Processed", "PreservationMasters")):
             continue
         if not (entry.isdigit() and len(entry) == 6):
-            print(f"Skipping {entry}: not a six-digit ID.")
+            print(f"Skipping {entry}: not a six‑digit ID.")
             continue
 
-        print(f"Processing CD {entry}...")
-        # Find the CUE file
-        cue_files = [f for f in os.listdir(entry_path) if f.lower().endswith('.cue')]
-        if not cue_files:
-            print(f"No .cue file found in {entry}, skipping.")
-            continue
-        cue_path = os.path.join(entry_path, cue_files[0])
-
-        # Read track-level titles from CUE
-        track_titles = []
-        in_track = False
-        with open(cue_path, 'r', encoding='utf-8', errors='ignore') as f:
-            for line in f:
-                if re.match(r"^\s*TRACK", line):
-                    in_track = True
-                if in_track:
-                    m = re.match(r'^\s*TITLE\s+"(.+)"', line)
-                    if m:
-                        track_titles.append(m.group(1))
-
-        # List WAV files and build normalized map
-        all_wavs = [f for f in os.listdir(entry_path) if f.lower().endswith('.wav')]
-        norm_map = {wav: strip_accents(wav).casefold() for wav in all_wavs}
-
-        # Determine WAV order
-        if track_titles:
-            # Pre-allocate slots
-            wav_paths = [None] * len(track_titles)
-            # Match titles to files
-            for idx, title in enumerate(track_titles):
-                norm_title = strip_accents(title).casefold()
-                matches = [wav for wav, norm in norm_map.items() if norm_title in norm]
-                if matches:
-                    if len(matches) > 1:
-                        print(f"Multiple matches for '{title}' in {entry}: using '{matches[0]}'")
-                    wav_paths[idx] = os.path.join(entry_path, matches[0])
-                else:
-                    print(f"Warning: no WAV matching title '{title}' in {entry}")
-            # Fill unmatched slots
-            remaining = [wav for wav in all_wavs if os.path.join(entry_path, wav) not in wav_paths]
-            for i in range(len(wav_paths)):
-                if wav_paths[i] is None and remaining:
-                    fill = remaining.pop(0)
-                    wav_paths[i] = os.path.join(entry_path, fill)
-                    print(f"Filled missing track {i+1} with '{fill}'")
-        else:
-            # No titles: alphabetical fallback
-            wav_paths = [os.path.join(entry_path, wav) for wav in sorted(all_wavs)]
-            if not wav_paths:
-                print(f"No WAV files found in {entry}, skipping.")
-                continue
-            else:
-                print(f"No track titles in {entry}: using alphabetical WAV listing")
-
-        # Remove any None entries
-        wav_paths = [p for p in wav_paths if p]
-        if not wav_paths:
-            print(f"No valid WAVs to process for {entry}, skipping.")
-            continue
-
-        # Prepare output names
-        base = f"{prefix}_{entry}_v01_pm"
-        out_wav = os.path.join(preservation_dir, base + '.wav')
-        out_cue = os.path.join(preservation_dir, base + '.cue')
-
-        # Join or copy
-        if len(wav_paths) > 1:
-            try:
-                subprocess.run(
-                    ['shntool', 'join', '-o', 'wav', '-r', 'none'] + wav_paths,
-                    cwd=preservation_dir,
-                    check=True
-                )
-                default_join = os.path.join(preservation_dir, 'joined.wav')
-                if os.path.exists(default_join):
-                    os.rename(default_join, out_wav)
-                else:
-                    print(f"Expected 'joined.wav' not found for {entry}.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error joining WAVs for {entry}: {e}")
-                continue
-        else:
-            print(f"Only one WAV in {entry}; copying to '{out_wav}'")
-            shutil.copy2(wav_paths[0], out_wav)
-
-        # Copy and rename CUE
-        shutil.copy2(cue_path, out_cue)
-        # Move processed folder
-        shutil.move(entry_path, processed_dir)
-        print(f"Finished processing {entry}: {os.path.basename(out_wav)}, {os.path.basename(out_cue)}")
+        print(f"Processing CD {entry} …")
+        process_disc(disc_path, entry, prefix, processed_dir, preservation_dir)
 
     print("All done.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
