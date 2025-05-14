@@ -1065,6 +1065,44 @@ class ami_bag(bagit.Bag):
         Check if the bag's data_dirs are fully contained in 'expected_dirs'.
         """
         return expected_dirs >= self.data_dirs
+    
+    def check_audio_optical_cue(self) -> bool:
+        """
+        If this is an audio optical disc bag, make sure every PM audio file
+        has a matching .cue in PreservationMasters, else error.
+        """
+        # Find a JSON to read the source.object.type
+        sample_json = os.path.join(self.path, self.metadata_files[0])
+        with open(sample_json, 'r', encoding='utf-8-sig') as f:
+            obj = json.load(f)
+
+        if obj.get("source", {})\
+               .get("object", {})\
+               .get("type", "") != "audio optical disc":
+            return True  # not an audio optical disc, nothing to do
+
+        # Collect PM basenames
+        pm_bases = {
+            os.path.splitext(os.path.basename(p))[0]
+            for p in self.pm_filepaths
+        }
+
+        # Find all .cue files under PreservationMasters
+        cue_files = [
+            p for p in self.all_data_files
+            if p.startswith(f"data/{PM_DIR}/") and p.lower().endswith(CUE_EXT)
+        ]
+        cue_bases = {
+            os.path.splitext(os.path.basename(p))[0]
+            for p in cue_files
+        }
+
+        missing = pm_bases - cue_bases
+        if missing:
+            raise ami_bagError(f"No .cue files matching PM audio for: {sorted(missing)}")
+
+        return True
+
 
     def check_amibag(self, fast: bool = True, metadata: bool = False) -> Tuple[bool, bool]:
         """
@@ -1109,6 +1147,11 @@ class ami_bag(bagit.Bag):
                 issue was detected.
                 - error=True if at least one critical issue was detected, 
                 blocking ingestion.
+        """
+    def check_amibag(self, fast: bool = True, metadata: bool = False) -> Tuple[bool, bool]:
+        """
+        Run a series of validations on this bag and return warning/error flags.
+        …
         """
         error = False
         warning = False
@@ -1191,11 +1234,17 @@ class ami_bag(bagit.Bag):
                     self.warning_messages.append("Mismatch of PM & SC for DVDs")
                     warning = True
                 else:
-                    # For everything else, it’s still an error
                     LOGGER.error(f"Asset balance out of spec: {e.message}")
                     self.error_messages.append("Mismatch of PM & SC")
                     error = True
 
+        # --- NEW: enforce .cue for audio optical disc bags ---
+        try:
+            self.check_audio_optical_cue()
+        except ami_bagError as e:
+            LOGGER.error(f"CUE file missing for audio optical disc: {e.message}")
+            self.error_messages.append(e.message)
+            error = True
 
         # Check bag type
         try:
@@ -1234,14 +1283,12 @@ class ami_bag(bagit.Bag):
             try:
                 self.check_metadata_json()
             except ami_bagError as e:
-                # If it’s a mismatch, treat it as an error
                 if "Duration mismatch" in e.message:
                     detailed_msg = f"JSON metadata error: {e.message}"
                     LOGGER.error(detailed_msg)
                     self.error_messages.append(detailed_msg)
                     error = True
                 else:
-                    # Keep other JSON issues as warnings
                     LOGGER.warning(f"JSON metadata out of spec: {e.message}")
                     self.warning_messages.append("JSON metadata out of spec")
                     warning = True
@@ -1254,6 +1301,7 @@ class ami_bag(bagit.Bag):
                 error = True
 
         return warning, error
+    
 
     def compare_fileset_pairs(self,
                               primary_files: Set[str],
