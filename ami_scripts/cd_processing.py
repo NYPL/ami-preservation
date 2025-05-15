@@ -179,7 +179,7 @@ def join_discs(root: Path, prefix: str, make_edit: bool) -> None:
         if not (disc_dir.name.isdigit() and len(disc_dir.name) == 6):
             print(f"Skipping {disc_dir.name}: not a six‑digit ID.")
             continue
-
+        print(f"\nNow processing 💿 {disc_dir.name}\n")
         # only real .cue files, not macOS AppleDouble sidecars:
         cue_files = [p for p in disc_dir.glob("*.cue") if not p.name.startswith("._")]
         if not cue_files:
