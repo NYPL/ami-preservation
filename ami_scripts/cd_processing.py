@@ -340,7 +340,7 @@ def join_discs(root: Path, prefix: str, make_edit: bool) -> None:
         for i, wav in enumerate(ordered):
             print(f"{i+1}: {wav.name}")
 
-        out_base = f"{prefix}_{disc_dir.name}_v01_pm"
+        out_base = f"{prefix}_{disc_dir.name}_v01f01_pm"
         out_wav = pm_dir / f"{out_base}.wav"
         out_cue = pm_dir / f"{out_base}.cue"
 
