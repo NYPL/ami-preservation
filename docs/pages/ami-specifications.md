@@ -48,7 +48,7 @@ For each original recording, the following shall be produced:
 
 **_Capture tools_**
 
-Film must be digitized and captured as DPX, then transcoded with any synchronous Broadcast Wave files to FFV1/FLAC/Matroska using RAWcooked (https://mediaarea.net/RAWcooked).
+Film must be digitized and captured either (1) as DPX, then transcoded along with synchronous Broadcast Wave files to FFV1/FLAC/Matroska using RAWcooked (https://mediaarea.net/RAWcooked), or (2) directly to FFV1/FLAC/Matroska using a Lasergraphics scanner, provided that all NYPL specifications are met.
 
 <a name="film-groups-1-and-2-motion-picture-film-silent--sound"></a>
 ### Film Groups 1 and 2: Motion picture film, silent / sound
@@ -60,19 +60,19 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | ---- | ---- | ---- | ---- |
 | Video bit depth | 16 bit | 10 bit | 10 bit |
 | Resolution | 4K optical side overscan | 2K optical side overscan | 2K optical side overscan |
-| Video codec | FFv1 version 3 from DPX | FFv1 version 3 from DPX  | FFv1 version 3 from DPX |
-| File wrapper | Matroska (.mkv) from DPX | Matroska (.mkv) from DPX | Matroska (.mkv) from DPX |
+| Video codec | FFv1 version 3 | FFv1 version 3  | FFv1 version 3 |
+| File wrapper | Matroska (.mkv) | Matroska (.mkv) | Matroska (.mkv) |
 | Frame size | 4096x3112 | 2048x1556 | 2048x1556 |
 | Frame rate | (Same as source. If not described, please determine on viewing and describe in metadata signal) | (Same as source. If not described, please determine on viewing and describe in metadata signal) | (Same as source. If not described, please determine on viewing and describe in metadata signal) |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
 | Audio bit depth* | 24 bit | 24 bit | 24 bit |
 | Audio sampling rate* | 96,000 Hz | 96,000 Hz | 96,000 Hz |
-| Audio codec/data encoding* | FLAC from PCM/WAV | FLAC from PCM/WAV | FLAC from PCM/WAV |
+| Audio codec/data encoding* | FLAC | FLAC | FLAC |
 | Audio channels* | Same as source object | Same as source object | Same as source object |
 | Color space | Linear RGB | Linear RGB | Linear RGB |
 | Color primaries | BT.709 | BT.709 | BT.709 |
 | Transfer characteristics | Printing Density | Printing Density | Printing Density |
-| Notes | Transcoded to FFV1/MKV from DPX using RAWCooked | Transcoded to FFV1/MKV from DPX using RAWCooked | Transcoded to FFV1/MKV from DPX using RAWCooked |
+| Notes | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. |
 
 <a name="mezz-fg1-2"></a>
 #### **_Mezzanine file specifications: Film group 1 & 2 (Motion picture film, silent / sound)_**
@@ -114,7 +114,7 @@ Film must be digitized and captured as DPX, then transcoded with any synchronous
 | Frame rate | (Same as preservation master) | (Same as preservation master)  | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
-| Video bit rate | 8 Mbps | 8 Mbps | 8 Mbps |
+| Video bit rate | Target quality setting CRF 21 (in-house); equivalent constant bitrate settings acceptable for vendor workflows | Target quality setting CRF 21 (in-house); equivalent constant bitrate settings acceptable for vendor workflows | Target quality setting CRF 21 (in-house); equivalent constant bitrate settings acceptable for vendor workflows |
 | Audio codec* | AAC | AAC | AAC |
 | Audio bit rate* | 320 kbs | 320 kbs | 320 kbs |
 | Audio sampling rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
