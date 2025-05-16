@@ -181,19 +181,30 @@ def join_discs(root: Path, prefix: str, make_edit: bool) -> None:
             continue
         print(f"\nNow processing 💿 {disc_dir.name}\n")
         # only real .cue files, not macOS AppleDouble sidecars:
-        cue_files = [p for p in disc_dir.glob("*.cue") if not p.name.startswith("._")]
+        # ── find the directory that actually holds the .cue + .wav files ──
+        work_dir = disc_dir
+        cue_files = [p for p in work_dir.glob("*.cue") if not p.name.startswith("._")]
+
+        # if there was no .cue at this level, look one level down
+        if not cue_files:
+            subdirs = [d for d in disc_dir.iterdir() if d.is_dir()]
+            if len(subdirs) == 1:
+                work_dir = subdirs[0]
+                cue_files = [p for p in work_dir.glob("*.cue") if not p.name.startswith("._")]
+                print(f"Using subdirectory `{work_dir.name}` for assets")
+        
         if not cue_files:
             print(f"No .cue file in {disc_dir.name}, skipping.")
             continue
-        cue_path = cue_files[0]
-        print(f"Using CUE file: {cue_path.name}")
 
-        # ----- Parse the CUE file to get track info in the right order -----
+        cue_path = cue_files[0]
+
         track_info = parse_cue_file(cue_path)
-        
-        all_wavs = [p for p in disc_dir.glob("*.wav")]
+
+        # now gather your WAVs from the same work_dir
+        all_wavs = [p for p in work_dir.glob("*.wav")]
         if not all_wavs:
-            print(f"No WAVs in {disc_dir.name}, skipping.")
+            print(f"No WAVs in {disc_dir.name} (or its only subdir), skipping.")
             continue
 
         def norm(p: Path | str) -> str:
