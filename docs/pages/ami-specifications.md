@@ -18,7 +18,7 @@ This document outlines the technical specifications and requirements for digitiz
   - [Video media](#video-media)
     - [Video Group 1: analog and digital cassettes, analog open reel](#video-group-1)
     - [Video Group 2: DV](#video-group-2-dv)
-    - [Video Group 2: DV](#video-group-2-hdv)
+    - [Video Group 2: HDV](#video-group-2-hdv)
     - [Video Group 3: optical video](#video-group-2)
   - [Audio media](#audio-media)
     - [Audio Group 1: analog magnetic](#audio-group-1)
@@ -301,7 +301,7 @@ When native capture is not possible due to object condition or playback issues, 
 <a name="additional-video-specifications"></a>
 ### Additional video specifications
 #### _Anamorphic video_
-  * For service copies created from Anamorphic preservation masters, treat source as D1/DV NTSC or PAL Widescreen to produce a 16 x 9 service copy without padding. Pixel aspect ratio should be 1.21 (NTSC) / 1.46 (PAL).
+  *  Service copies created from anamorphic preservation masters must be reformatted to true 16:9 (widescreen). Do not letterbox or pillarbox.
 
 #### _Complex audio configurations_
   * 4 audio channels on source:
