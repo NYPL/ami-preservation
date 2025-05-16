@@ -18,117 +18,76 @@ This page outlines our current procedures and standards for the incubation (baki
 
 ---
 
-### Equipment
+### Equipment and Temperature Settings
 
-We use two scientific ovens for tape baking:
+We use two scientific ovens dedicated to tape baking:
 
 - **Thermo Scientific Thelco 70M (Model 6550)**  
 - **Thermo Scientific Heratherm OMS180**
 
-Both ovens are dedicated to media preservation and allow for precise temperature control during extended baking periods.
+Both ovens allow for precise temperature control during extended baking periods. Our current standard temperature is **135°F / 57°C**. This is an increase from our previous standard of **125°F / 52°C**, which proved insufficient for many tape stocks. Based on testing, 135°F has been effective across most audio and video formats, including Ampex, Scotch, and Agfa brands.
 
 ---
 
-### Baking Temperatures
+### General Bake Times by Format
 
-Our standard baking temperature has increased over time:
+Bake times vary depending on the format, tape stock, and quantity of media in the oven. Below are typical durations:
 
-- **Previous standard**: 125°F / 52°C  
-- **Current standard**: 135°F / 57°C
+#### **Audio**
 
-The 125°F setting proved insufficient for many tape stocks. After testing, we raised the temperature approximately 10°F to improve effectiveness across a wider range of materials.
+- **¼" Open Reel**: ~8 hours  
+- **1" and 2" Open Reel**: ~20 hours  
+- **Cassette (e.g., Ampex)**: Case-by-case; generally shorter durations  
+- **Early audio-on-video formats** (e.g., U-matic, 8mm, VHS, Betamax): Bake using video guidelines
 
----
-
-### Duration by Format
-
-#### **Audio Tapes**
-
-- **Previous**: 7” and 10” reels were typically baked for 30–60 minutes  
-- **Current**: Now baked for **2–3 hours**, depending on reel size and quantity
-
-#### **Video Tapes**
+#### **Video**
 
 - **VHS**: ~20 hours  
 - **U-matic**: 20–24 hours  
-- **Open reel video**: ~24 hours
+- **Open Reel Video**: ~24 hours  
 
-Bake times vary based on the format and severity of degradation.
+> Note: Multiple large reels (e.g., 10") may require extended times. We determine final bake durations through observation and testing.
 
 ---
 
-### Format Considerations
+### Format Considerations and Guidelines
 
-#### **Audio**
+#### **When to Bake**
 
-In addition to reel-to-reel tape, we now also bake:
+We routinely bake the following:
 
-- **Cassette tapes**, particularly Ampex
-- **Early audio recordings on video formats**, such as:
-  - U-matic
-  - 8mm
-  - VHS
-  - Betamax
+- **Audio**: Most open reel formats, some cassettes (especially Ampex), and early audio captured on videotape.
+- **Video**: A wide range of U-matic stocks.
 
-#### **Video**
+We **do not** bake:
 
-We now bake a broader range of U-matic stocks. Key guidelines include:
-
-- **Fuji U-matics**: Generally do **not** require baking  
-- **Sony U-matics (Red/Yellow label)**: We **do** bake  
-- **Ampex U-matics**: We **do** bake
-
-Formats we typically **do not bake**:
-
-- Metal Evaporate (ME) tapes  
-- 8mm formats  
+- Metal Evaporate (ME) video formats  
 - DV formats  
-- Digital Betacam
+- Digital Betacam  
+- Most 8mm video formats
+
+#### **Known Behaviors by Brand**
+
+- **Ampex U-matics**: Consistently benefit from baking  
+- **Sony U-matics (Red/Yellow label)**: Frequently baked; results vary  
+- **Fuji U-matics**: Typically do **not** require baking  
+- **Sony U-matics (some stocks)**: May exhibit **white particulate shedding** that does **not** respond to baking
+
+#### **Problematic Audio Brands**
+
+- **Analog**: Ampex (post-1970), Scotch (e.g., 250), Agfa (e.g., 468)  
+- **Digital**: Ampex/Quantegy, Sony, some Scotch digital formats  
+
+We refer to [Richard Hess’s website](http://richardhess.com) for brand-specific guidance and documentation on tape degradation.
 
 ---
 
-### Format-Specific "Recipes"
+### Observations and Evolving Practices
 
-#### **Audio**
-
-Bake time depends on the number and size of reels in the oven. For instance, multiple 10” reels of ¼” tape require proportionally longer durations. The relationship is not fully linear and is often determined through trial and error.
-
-Anecdotally, **Agfa tapes** may benefit from slightly lower temperatures, but we’ve found **135°F** to be broadly effective across most brands.
-
-#### **Video**
-
-No additional format-specific baking recipes beyond the general guidelines listed above.
+- **Baking durations** may need to be doubled for formats like 2" multitrack audio.
+- **Multiple bake cycles** over time may reduce the effectiveness of future baking attempts. Tapes that degrade beyond recovery often exhibit **high-frequency loss** that cannot be reversed.
+- Anecdotal evidence suggests that **Agfa audio tapes** may respond better to slightly lower temperatures, but 135°F remains our reliable standard for most cases.
 
 ---
 
-### Known Problematic Brands
-
-#### **Audio**
-
-- **Analog**:
-  - Ampex (post-1970)
-  - Certain Scotch stocks (e.g., 250)
-  - Agfa (e.g., 468)
-- **Digital**:
-  - Ampex/Quantegy
-  - Sony
-  - Some Scotch
-
-See [Richard Hess’s website](http://richardhess.com) for detailed, brand-specific information.
-
-#### **Video**
-
-- **Ampex U-matics**: Consistently require baking and respond well  
-- **Sony U-matics**: Results vary; some tapes exhibit **white particulate shedding** that does **not** respond to baking
-
----
-
-### Workflow Adjustments and Observations
-
-- **2" multitrack audio tapes** often require **double** the bake time compared to standard reels  
-- Tapes that have undergone **multiple baking cycles** may reach a point of irreversible degradation  
-  - These tapes often exhibit **high-frequency loss** that cannot be recovered through additional baking
-
----
-
-This document reflects current practices based on staff experience and ongoing observation. Procedures may continue to evolve as formats degrade and new preservation challenges emerge.
+This document reflects current practices informed by staff experience, vendor feedback, and ongoing testing. As formats continue to age, we expect to adjust and refine these guidelines in response to new preservation challenges.
