@@ -7,7 +7,7 @@ nav_order: 5
 # AMI Digital Asset Specifications
 This document outlines the technical specifications and requirements for digitization of analog media collections and digital packaging of deliverable files.
 
-Last updated: 2025-05-16. For previous versions, see changelog.md
+Last updated: 2025-05-16. For previous versions, see [changelog.md](https://github.com/NYPL/ami-preservation/commits/main/docs/pages/ami-specifications.md)
 
 ## Table Of Contents
 <!-- MarkdownTOC -->
