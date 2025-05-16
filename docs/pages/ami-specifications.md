@@ -48,7 +48,7 @@ For each original recording, the following shall be produced:
 
 **_Capture tools_**
 
-Film must be digitized and captured either (1) as DPX, then transcoded along with synchronous Broadcast Wave files to FFV1/FLAC/Matroska using RAWcooked (https://mediaarea.net/RAWcooked), or (2) directly to FFV1/FLAC/Matroska using a Lasergraphics scanner, provided that all NYPL specifications are met.
+Film must be digitized and captured either (1) as DPX, then transcoded along with synchronous Broadcast Wave files to FFV1/FLAC/Matroska using [RAWcooked](https://mediaarea.net/RAWcooked), or (2) directly to FFV1/FLAC/Matroska using a Lasergraphics scanner, provided that all NYPL specifications are met.
 
 <a name="film-groups-1-and-2-motion-picture-film-silent--sound"></a>
 ### Film Groups 1 and 2: Motion picture film, silent / sound
@@ -74,6 +74,8 @@ Film must be digitized and captured either (1) as DPX, then transcoded along wit
 | Transfer characteristics | Printing Density | Printing Density | Printing Density |
 | Notes | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. |
 
+\* Where audio is applicable.
+
 <a name="mezz-fg1-2"></a>
 #### **_Mezzanine file specifications: Film group 1 & 2 (Motion picture film, silent / sound)_**
 
@@ -91,13 +93,12 @@ Film must be digitized and captured either (1) as DPX, then transcoded along wit
 | Audio data encoding* | PCM | PCM | PCM |
 | Audio bit rate* | 2304 kbps | 2304 kbps | 2304 kbps |
 | Audio bit depth* | 24 bit | 24 bit | 24 bit |
-| Audio sampling* rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
+| Audio sampling rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
 | Audio channels* | same as Preservation Master* | same as Preservation Master* | same as Preservation Master* |
 | Color space | 4:2:2 | 4:2:2 | 4:2:2 |
 | Image corrections | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic |
 
 \* Where audio is applicable.
-** Subject to change. TBD.
 
 <a name="sc-fg1-2"></a>
 #### **_Service copy file specifications: Film group 1 & 2 (Motion picture film, silent / sound)_**
@@ -114,9 +115,9 @@ Film must be digitized and captured either (1) as DPX, then transcoded along wit
 | Frame rate | (Same as preservation master) | (Same as preservation master)  | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
-| Video bit rate | Target quality setting CRF 21 (in-house); equivalent constant bitrate settings acceptable for vendor workflows | Target quality setting CRF 21 (in-house); equivalent constant bitrate settings acceptable for vendor workflows | Target quality setting CRF 21 (in-house); equivalent constant bitrate settings acceptable for vendor workflows |
+| Video bit rate | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 8 Mbps to approximate equivalent visual quality | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 8 Mbps to approximate equivalent visual quality | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 8 Mbps to approximate equivalent visual quality |
 | Audio codec* | AAC | AAC | AAC |
-| Audio bit rate* | 320 kbs | 320 kbs | 320 kbs |
+| Audio bit rate* | 320 kbps | 320 kbps | 320 kbps |
 | Audio sampling rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
 | Audio channels* | same as Mezzanine* | same as Mezzanine* | same as Mezzanine* |
 | Image corrections| Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic |
@@ -137,24 +138,22 @@ Film must be digitized and captured either (1) as DPX, then transcoded along wit
 | Sampling rate | 96,000 Hz | 96,000 Hz | 96,000 Hz |
 | Number of audio channels | (same as source) | (same as source) | (same as source) |
 | Other characteristics | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. |
-| BEXT metadata | If possible, BEXT metadata must be embedded as per specifications for audio deliverables | If possible, BEXT metadata must be embedded as per specifications for audio deliverables | If possible, BEXT metadata must be embedded as per specifications for audio deliverables |
 
 <a name="edit-masters-fg3"></a>
 #### **_Edit master file specifications: Film group 3 (Audio film)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | --- | ---| --- | --- |
-| Audio data encoding | Flac | Flac | Flac |
-| Wrapper | Flac | Flac | Flac |
+| Audio data encoding | FLAC | FLAC | FLAC |
+| Wrapper | FLAC | FLAC | FLAC |
 | Bit depth | equal to preservation master | equal to preservation master | equal to preservation master |
 | Sampling rate | equal to preservation master | equal to preservation master | equal to preservation master |
 | Number of audio channels | equal to preservation master | equal to preservation master | equal to preservation master|
 | Other characteristics | If there are tones / sync marks present, they must be captured and described in metadata signal notes | If there are tones / sync marks present, they must be captured and described in metadata signal notes | If there are tones / sync marks present, they must be captured and described in metadata signal notes |
-| BEXT metadata | BEXT metadata must be embedded as per specifications for audio deliverables | BEXT metadata must be embedded as per specifications for audio deliverables | BEXT metadata must be embedded as per specifications for audio deliverables |
 
 <a name="film-group-4-filmstrips"></a>
 ### Film Group 4: Filmstrips
-NYPL will review recommendations for digitization of filmstrips (and accompanying audio media, where applicable) before defining a specification. Requests for recommendations regarding these objects have been included in the Business Questions section.
+NYPL will review recommendations for digitization of filmstrips (and accompanying audio media, where applicable) before defining a specification.
 
 <a name="video-media"></a>
 ## Video media
@@ -192,7 +191,7 @@ Preservation master video files must be generated by professional-grade capture 
 
 <a name="qctools-reports"></a>
 ### QCTools Reports
-  * Each video preservation master file should receive a corresponding QCTools report, which will be included in the PreservationMasters Bagged directory as a sidecar file.
+  * Each video preservation master file may receive a corresponding QCTools report, which will be included in the PreservationMasters Bagged directory as a sidecar file.
       * Format: QCTools Report (gzipped XML) (https://www.bavc.org/preserve-media/preservation-tools)
       * Naming Convention: division_PrimaryID_v01_pm.mkv.qctools.xml.gz
 
@@ -233,13 +232,18 @@ Preservation master video files must be generated by professional-grade capture 
 <a name="video-group-2"></a>
   **_Preservation master file specifications: video group 2: DV (digital video) cassettes_**
 
-  NYPL prefers native capture of DV content, with the understanding that errors and varying conditions may require alternative approaches to signal capture. Below are NYPL primary specifications, followed by specifications for cases where the native DV capture with .dv wrapper is problematic due to problems with a given object.
+NYPL prefers native capture of DV content over FireWire whenever possible. All natively captured DV files must be processed using [dvpackager](https://mipops.github.io/dvrescue/sections/packaging.html), part of the DVRescue project, and rewrapped as Matroska (.mkv).
+
+By default, dvpackager will segment files when there are changes to key signal parameters (such as aspect ratio or broadcast standard). NYPL prefers a minimal number of segments, but splitting is acceptable when necessary due to such changes. Segments are initially labeled as part1, part2, etc., but must be renamed to follow NYPL's filenaming convention using region identifiers (e.g., _v01r01, _v01r02, etc.).
+
+When native capture is not possible due to object condition or playback issues, DV or HDV tapes may be captured via SDI as V210/MOV and subsequently transcoded and rewrapped as .mkv.
 
 | Attribute | Specification | Notes |
 | ---- | ---- | ---- |
-| Video codec | (Same as source) | See note |
-| File wrapper | DV (.dv) | See note |
-| Other characteristics | (Same as source) | If it is necessary to capture DV or HDV tapes via SDI (i.e. as V210/MOV), due to problematic tapes, deliverables must be transcoded and rewrapped as “.mkv”. |
+| Video codec | DV | Native DV stream extracted from source |
+| File wrapper | Matroska (.mkv) | DV files must be processed using dvpackager and rewrapped as .mkv |
+| Other characteristics | (Same as source) | Splitting allowed when aspect ratio or broadcast standard changes mid-recording. Filenames must follow NYPL’s regional naming convention. |
+| Alternate method | FFv1 in Matroska (.mkv) | If native capture fails, SDI capture to V210/MOV may be transcoded and rewrapped. |
 
 <a name="video-group-3"></a>
 **_Preservation master file specifications: video group 3: optical discs_**
@@ -309,9 +313,9 @@ For each collection object, the following shall be produced:
 
 <a name="capture-tools"></a>
 ### _Capture tools_
-Preservation master and edit master files must be captured/encoded as Broadcast Wave Format (BWF), with embedded BEXT metadata (see “Embedded Metadata” section).
+Preservation master and edit master files must be captured/encoded as Broadcast Wave Format (BWF).
 
-Files that exceed the Broadcast Wave Format 4GB file size limitation should be captured as RF64, with the same embedded metadata values. Post-capture, all Broadcast Wave and RF64 files should be transcoded to the FLAC codec and container, with embedded metadata and original modification times retained through the use of the FLAC Utility (https://xiph.org/flac/download.html) by following the command listed on the FFmprovisr website (https://amiaopensource.github.io/ffmprovisr/#flac-tool). Original capture as Wave64 (.w64) is not acceptable.
+Files that exceed the Broadcast Wave Format 4GB file size limitation should be captured as RF64. Post-capture, all Broadcast Wave and RF64 files should be transcoded to the FLAC codec and container, with embedded metadata and original modification times retained through the use of the FLAC Utility (https://xiph.org/flac/download.html) by following the command listed on the FFmprovisr website (https://amiaopensource.github.io/ffmprovisr/#flac-tool). Original capture as Wave64 (.w64) is not acceptable.
 
 <a name="audio-pms"></a>
 #### Preservation master
@@ -350,9 +354,6 @@ Files that exceed the Broadcast Wave Format 4GB file size limitation should be c
 #### Multi-track audio Preservation Masters
 For multi-track audio masters, multiple **streams** are captured of identical length and intended to be mixed down. As mentioned below, the Edit Masters for these streams must not be trimmed or altered in any way.
 
-#### Embedded metadata
-BEXT metadata must be embedded in each audio file upon capturing to WAV. See Metadata section for details.
-
 <a name="audio-group-1"></a>
 **_Preservation master file specifications: audio group 1: analog magnetic_**
 
@@ -390,7 +391,6 @@ BEXT metadata must be embedded in each audio file upon capturing to WAV. See Met
 #### CUE sheet files
 In congress with capturing a Broadcast Wave file prior to transcoding to .flac, a CUE file must be generated. The CUE file must:
 * Follow the same naming convention as the WAV file, but instead with a ".cue" extension. Example: "myh_123456_v01f01_pm.cue"
-* Be referenced in the JSON file under the technical.cueFile field, by its complete filename
 * Be nested within the Preservation Masters directory, accompanying the Preservation Master WAV file (the Edit master must not have a .cue file):
 
   * PrimaryID
