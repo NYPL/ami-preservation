@@ -117,7 +117,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Frame rate | (Same as source. If not described, please determine on viewing and describe in metadata) | (Same as source. If not described, please determine on viewing and describe in metadata) | (Same as source. If not described, please determine on viewing and describe in metadata) |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
 | Audio bit depth* | 24 bit | 24 bit | 24 bit |
-| Audio sampling rate* | 96,000 Hz | 96,000 Hz | 96,000 Hz |
+| Audio sampling rate* | 96000 Hz | 96000 Hz | 96000 Hz |
 | Audio codec* | FLAC | FLAC | FLAC |
 | Audio channels* | Same as source  | Same as source | Same as source |
 | Color space | Linear RGB | Linear RGB | Linear RGB |
@@ -137,14 +137,14 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Display aspect ratio** | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed |
 | Video codec | ProResHQ | ProResHQ | ProResHQ |
 | File wrapper | Quicktime | Quicktime | Quicktime |
-| Frame size** | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
+| Frame size | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
 | Frame rate | (Same as preservation master) | (Same as preservation master) | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
 | Audio codec* | PCM | PCM | PCM |
 | Audio bit rate* | 2304 kbps | 2304 kbps | 2304 kbps |
 | Audio bit depth* | 24 bit | 24 bit | 24 bit |
-| Audio sampling rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
+| Audio sampling rate* | 48000 Hz | 48000 Hz | 48000 Hz |
 | Audio channels* | same as Preservation Master* | same as Preservation Master* | same as Preservation Master* |
 | Color space | 4:2:2 | 4:2:2 | 4:2:2 |
 | Image corrections | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic |
@@ -162,14 +162,14 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Video codec | H.264 | H.264 | H.264 |
 | File wrapper | MPEG-4 (.mp4) | MPEG-4 (.mp4) | MPEG-4 (.mp4) |
 | Color space | 4:2:0 | 4:2:0 | 4:2:0 |
-| Frame size** | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
+| Frame size | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
 | Frame rate | (Same as preservation master) | (Same as preservation master)  | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
 | Video bit rate | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 8 Mbps to approximate equivalent visual quality | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 8 Mbps to approximate equivalent visual quality | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 8 Mbps to approximate equivalent visual quality |
 | Audio codec* | AAC | AAC | AAC |
 | Audio bit rate* | 320 kbps (CBR) | 320 kbps (CBR) | 320 kbps (CBR) |
-| Audio sampling rate* | 48,000 Hz | 48,000 Hz | 48,000 Hz |
+| Audio sampling rate* | 48000 Hz | 48000 Hz | 48000 Hz |
 | Audio channels* | same as Mezzanine* | same as Mezzanine* | same as Mezzanine* |
 | Image corrections| Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic |
 
@@ -186,7 +186,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Audio codec | FLAC | FLAC | FLAC |
 | Wrapper | FLAC (.flac) | FLAC (.flac) | FLAC (.flac) |
 | Bit depth | 24 bit | 24 bit | 24 bit |
-| Sampling rate | 96,000 Hz | 96,000 Hz | 96,000 Hz |
+| Sampling rate | 96000 Hz | 96000 Hz | 96000 Hz |
 | Number of audio channels | (same as source) | (same as source) | (same as source) |
 | Other characteristics | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. |
 
@@ -392,7 +392,7 @@ Due to the variety of encoding structures present on source DVDs, NYPL allows a 
 | Pixel aspect ratio  | Based on source; ranges from 0.889 to 2.909 |
 | Audio codec         | AAC |
 | Audio channels      | 2 |
-| Audio sampling rate | 48,000 Hz |
+| Audio sampling rate | 48000 Hz |
 | Audio bit rate      | 320 kbps (CBR) |
 
 **Note:** While these specs permit a variety of technical values to accommodate the source material, all DVD-derived service copies must validate against the [NYPL MediaConch DVD SC policy](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts/MediaconchPolicies).
@@ -486,7 +486,7 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | Audio codec        | FLAC             |
 | File wrapper       | FLAC (.flac)     |
 | Bit depth          | 24               |
-| Sampling rate      | 96,000 Hz        |
+| Sampling rate      | 96000 Hz        |
 | Number of channels | (same as source) |
 
 <a name="audio-group-2"></a>
@@ -496,8 +496,8 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | ------------------ | ---------------- |
 | Audio codec        | FLAC             |
 | File wrapper       | FLAC (.flac)     |
-| Bit depth          | (same as source) |
-| Sampling rate      | (same as source) |
+| Bit depth          | (same as source, commonly 16) |
+| Sampling rate      | (same as source, commonly 48000, 44100, 44056, or 40056 Hz) |
 | Number of channels | (same as source) |
 
 <a name="audio-group-3"></a>
@@ -507,8 +507,8 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | --------------------- | --------------------------------------- |
 | Audio codec           | FLAC                                    |
 | File wrapper          | FLAC (.flac)                            |
-| Bit depth             | (same as source)                        |
-| Sampling rate         | (same as source)                        |
+| Bit depth             | 16                       |
+| Sampling rate         | 44100 Hz                        |
 | Number of channels    | 2 (left + right discrete)               |
 | Other characteristics | CDs should be captured as a single file |
 
@@ -538,7 +538,7 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | Audio codec        | FLAC                      |
 | File wrapper       | FLAC (.flac)              |
 | Bit depth          | 24                        |
-| Sampling rate      | 96,000 Hz                 |
+| Sampling rate      | 96000 Hz                 |
 | Number of channels | 2 (left + right discrete) |
 
 #### Reproduction Details
@@ -567,7 +567,7 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | Audio codec        | FLAC                      |
 | File wrapper       | FLAC (.flac)              |
 | Bit depth          | 24                        |
-| Sampling rate      | 96,000 Hz                 |
+| Sampling rate      | 96000 Hz                 |
 | Number of channels | 2 (left + right discrete) |
 
 #### Reproduction Details
