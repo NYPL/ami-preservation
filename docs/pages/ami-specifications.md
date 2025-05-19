@@ -5,9 +5,9 @@ nav_order: 5
 ---
 
 # AMI Digital Asset Specifications
-This document outlines the technical specifications and requirements for digitization of analog media collections and digital packaging of deliverable files.
+This document outlines the technical specifications and requirements for the preservation-focused digitization of audio and moving image collections, along with guidelines for the packaging of digital deliverable files.
 
-Last updated: 2025-05-16. For previous versions, see [changelog.md](https://github.com/NYPL/ami-preservation/commits/main/docs/pages/ami-specifications.md)
+Last updated: 2025-05-19. For previous versions, see [changelog.md](https://github.com/NYPL/ami-preservation/commits/main/docs/pages/ami-specifications.md)
 
 ## Table Of Contents
 <!-- MarkdownTOC -->
@@ -19,9 +19,9 @@ Last updated: 2025-05-16. For previous versions, see [changelog.md](https://gith
     - [Film Group 4: filmstrips](#film-group-4-filmstrips)
   - [Video media](#video-media)
     - [Video Group 1: analog and digital cassettes, analog open reel](#video-group-1)
-    - [Video Group 2: DV](#video-group-2-dv)
-    - [Video Group 2: HDV](#video-group-2-hdv)
-    - [Video Group 3: optical video](#video-group-3)
+    - [Video Group 2: DV](#video-group-2)
+    - [Video Group 3: HDV](#video-group-3)
+    - [Video Group 4: optical video](#video-group-4)
     - [Service copy specifications for video](#service-copies)
     - [Additional video specifications](#additional-video-specifications)
   - [Audio media](#audio-media)
@@ -34,6 +34,7 @@ Last updated: 2025-05-16. For previous versions, see [changelog.md](https://gith
   - [Data Media](#data-media)
     - [Data Group 1: optical disc](#data-group-1)
   - [Image Deliverables](#image-deliverables)
+  - [JSON Metadata Deliverables](#json-metadata-deliverables)
 
 
 <!-- /MarkdownTOC -->
@@ -84,7 +85,7 @@ For each original recording, the following shall be produced:
 * One preservation master file*
 * One mezzanine file*
 * One service copy file*
-* One JSON metadata file per media file
+* One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
 * Optional image files as described in [Image Deliverables](#image-deliverables)
   
 **If the object has audio content (i.e. composite sound print), audio must be synchronized and embedded in all final deliverables.**
@@ -120,7 +121,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Audio sampling rate* | 96000 Hz | 96000 Hz | 96000 Hz |
 | Audio codec* | FLAC | FLAC | FLAC |
 | Audio channels* | Same as source  | Same as source | Same as source |
-| Color space | Linear RGB | Linear RGB | Linear RGB |
+| Color space | Linear RGB (4:4:4) | Linear RGB (4:4:4) | Linear RGB (4:4:4) |
 | Color primaries | BT.709 | BT.709 | BT.709 |
 | Transfer characteristics | Printing Density | Printing Density | Printing Density |
 | Notes | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. | Files may be transcoded from DPX using RAWcooked or captured directly to FFV1/MKV via an approved scanner. |
@@ -136,8 +137,10 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Resolution** | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
 | Display aspect ratio** | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed |
 | Video codec | ProResHQ | ProResHQ | ProResHQ |
-| File wrapper | Quicktime | Quicktime | Quicktime |
+| File wrapper | QuickTime (.mov) | QuickTime (.mov) | QuickTime (.mov) |
 | Frame size | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
+| Color space | YUV | YUV | YUV |
+| Chroma subsampling | 4:2:2 | 4:2:2 | 4:2:2 |
 | Frame rate | (Same as preservation master) | (Same as preservation master) | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
@@ -146,7 +149,6 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Audio bit depth* | 24 bit | 24 bit | 24 bit |
 | Audio sampling rate* | 48000 Hz | 48000 Hz | 48000 Hz |
 | Audio channels* | same as Preservation Master* | same as Preservation Master* | same as Preservation Master* |
-| Color space | 4:2:2 | 4:2:2 | 4:2:2 |
 | Image corrections | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic |
 
 \* Where audio is applicable.
@@ -161,7 +163,8 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Display aspect ratio** | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed | 16:9 pillarboxed / letter boxed as needed |
 | Video codec | H.264 | H.264 | H.264 |
 | File wrapper | MPEG-4 (.mp4) | MPEG-4 (.mp4) | MPEG-4 (.mp4) |
-| Color space | 4:2:0 | 4:2:0 | 4:2:0 |
+| Color space | YUV | YUV | YUV |
+| Chroma subsampling | 4:2:0 | 4:2:0 | 4:2:0 |
 | Frame size | 1920 x 1080 | 1920 x 1080 | 1920 x 1080 |
 | Frame rate | (Same as preservation master) | (Same as preservation master)  | (Same as preservation master) |
 | Scan type | Progressive | Progressive | Progressive |
@@ -171,7 +174,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Audio bit rate* | 320 kbps (CBR) | 320 kbps (CBR) | 320 kbps (CBR) |
 | Audio sampling rate* | 48000 Hz | 48000 Hz | 48000 Hz |
 | Audio channels* | same as Mezzanine* | same as Mezzanine* | same as Mezzanine* |
-| Image corrections| Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, Non-anamorphic |
+| Image corrections| Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic | Color corrected for dye fading, cropped to picture - no frame-lines or sound track visible, non-anamorphic |
 
 \* Where audio is applicable.
 
@@ -215,9 +218,9 @@ NYPL will review recommendations for digitization of filmstrips (and accompanyin
 ### _Deliverables_
 For each original recording, the following shall be produced:
   * One preservation master file
-      * If captions are present in source, one closed captions sidecar file
+      * If EIA-608 (line 21) captions are present in source, one closed captions sidecar file
   * One service copy file
-  * One JSON metadata file per media file
+  * One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
   * Optional image files as described in [Image Deliverables](#image-deliverables)
 
 
@@ -226,19 +229,19 @@ Preservation master video files must be generated by professional-grade capture 
 
 <a name="guidelines-preservation-master-files-all-groups"></a>
 ### Guidelines: Preservation master files, all groups
-  * Characteristics intrinsic to the broadcast standard of the source material, including frame rate, pixel aspect ratio, interlacing, resolution, and recording standard (NTSC, PAL, SECAM, etc.) should be preserved.
+  * Characteristics intrinsic to the broadcast standard of the source material, including frame rate, pixel aspect ratio, field dominance, resolution, and recording standard (NTSC, PAL, SECAM, etc.) should be preserved.
   * Signal extraction must be optimal, and carried out using the equipment and accessories that are appropriate for the original format characteristics.
   * The most direct and clean signal path must be used at all times from source to destination. There may be no devices inserted in the signal path that are not being used. If there are multiple destination formats being used in the transfer the signal path must be routed in parallel. No daisy-chaining of devices may occur.
   * The highest quality signal format (composite, S-Video, Component, SDI, etc.) available for the source media type must be used throughout the entirety of the signal path from source through destination. Exceptions to this must be explained and requested prior to performing the transfer.
   * Luminance, black, and color levels should be adjusted to existing color bars if they are present on tape and look accurate. If color bars are not present or are clearly inaccurate, preview each tape in order to adjust levels according to the content of the tape using known references (such as blue sky, known blacks and whites, flesh tone, etc.). Luma should be adjusted to fall within broadcast range (100 IRE max) and must not exceed 110 IRE.
   * The transfer should capture all content recorded on the original object, including any bars and tone, slates, or other material coming before the start of the recorded program.
   * The recording should run until the end of the recorded content (picture and sound).  If this endpoint cannot be unambiguously determined, the recording should run until the end of the original object.
-  * If present on the source tape, closed captions must be captured.
+  * If present on the source tape, EIA-608 (line 21) closed captions must be captured.
 
 #### _Video preservation master sidecar files_
 
-**Closed Captions (.scc)**
-- If captions are present in the source object, a sidecar Scenarist Closed Caption File (.scc) must be created.
+**EIA-608 (line 21) Closed Captions (.scc)**
+- If EIA-608 (line 21) captions are present in the source object, a sidecar Scenarist Closed Caption File (.scc) must be created.
 - The file should follow the naming convention: `division_PrimaryID_v01_pm.scc`
 - Place the file alongside the video preservation master in the `PreservationMasters` directory.
 
@@ -268,17 +271,18 @@ PrimaryID
 | ---- | ------ |
 | Video codec | FFv1 version 3 |
 | Data compression | Lossless, Intra-frame (GOP-1) only |
-| Chroma subsampling | 4:2:2 YUV |
+| Color space | YUV |
+| Chroma subsampling | 4:2:2 |
 | Bit depth | 10-bit |
 | File wrapper | Matroska (.mkv) |
 | Frame rate | SD: 29.97 (NTSC) or 25 (PAL); HD: same as source |
 | Frame size | SD: 720x486 (NTSC) or 720x576 (PAL); HD: 1920x1080 |
 | Broadcast standard | (Same as original media) |
-| Pixel aspect ratio | SD: 0.909 (NTSC) or 1.091 (PAL) |
+| Pixel aspect ratio | SD: 0.909 (NTSC) or 1.091 (PAL); HD: 1.000 |
 | Slices | 24 |
 | Slicecrc | 1 |
 | Audio format | FLAC |
-| Audio bit depth | 24-bit |
+| Audio bit depth | 24 bit |
 | Audio sampling rate | 48 kHz |
 | Audio channels | (Same as original media, see guidelines for silent channels) |
 
@@ -296,7 +300,7 @@ PrimaryID
 ### Timecode
   * Two forms of legacy/source timecode should be retained: LTC Timecode, recorded on an audio channel, should be captured as an audio stream in the resulting preservation master file; VITC timecode, if present, should be captured through the use of appropriate playback devices and a carefully routed SDI signal chain.
 
-<a name="video-group-2-dv"></a>
+<a name="video-group-2"></a>
 ### Video Group 2: DV
 **_Preservation master file specifications: DV (digital video) cassettes_**
 
@@ -321,10 +325,10 @@ When native capture is not possible due to object condition or playback issues, 
 | Initial capture wrapper | QuickTime (.mov) |
 | Transcode codec | FFv1 version 3 |
 | Final wrapper | Matroska (.mkv) |
-| Audio | FLAC (24-bit, 48kHz) |
+| Audio | FLAC (24 bit, 48kHz) |
 
-<a name="video-group-2-hdv"></a>
-### Video Group 2: HDV
+<a name="video-group-3"></a>
+### Video Group 3: HDV
 **_Preservation master file specifications: HDV (high definition video) cassettes_**
 
 NYPL prefers native capture of HDV content via FireWire, preserving the original MPEG-2 transport stream. Files should be saved as `.m2t` and subsequently rewrapped as Matroska (`.mkv`) using a lossless method that retains all original stream characteristics.
@@ -342,8 +346,8 @@ When native capture is not possible due to object condition or playback issues, 
 | Alternate method     | FFV1/FLAC in Matroska (.mkv)             | If native capture fails, SDI capture to V210/MOV may be transcoded and rewrapped using the same parameters as the DV fallback method |
 
 
-<a name="video-group-3"></a>
-### Video Group 3: Optical video
+<a name="video-group-4"></a>
+### Video Group 4: Optical video
 **_Preservation master file specifications: optical video discs_**
 
 | Attribute | Specification |
@@ -355,15 +359,15 @@ When native capture is not possible due to object condition or playback issues, 
 <a name="service-copies"></a>
 ### Service copy specifications for video
 <a name="service-copies-1/2"></a>
-**_Service copy file specifications: video group 1 and 2 (DV)_**
+**_Service copy file specifications: video groups 1 and 2_**
 
 | Attribute | Specification |
 | ---- | ------ |
 | Video codec | H.264/MPEG-4 AVC |
 | Video bit rate | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 3.5 Mbps to approximate equivalent visual quality |
-| Chroma subsampling | 4:2:0 YUV |
-| Bit depth | 8-bit |
-| File wrapper | MP4 |
+| Color space | 4:2:0 YUV |
+| Bit depth | 8 bit |
+| File wrapper | MPEG-4 (.mp4) |
 | Frame rate | 59.94 (NTSC) or 50 (PAL) |
 | Frame size | 720x480 (NTSC) or 720x576 (PAL) |
 | Broadcast standard | (Same as original media) |
@@ -374,7 +378,7 @@ When native capture is not possible due to object condition or playback issues, 
 | Audio channels | 2 (see examples) |
 
 <a name="service-copies-dvd"></a>
-**_Service copy file specifications: video group 3 (optical video discs)_**
+**_Service copy file specifications: video group 4 (optical video discs)_**
 
 Due to the variety of encoding structures present on source DVDs, NYPL allows a broader range of specifications for service copies derived from DVD (video group 3). Files must comply with the following general characteristics, with resolution, frame rate, display aspect ratio, and pixel aspect ratio varying according to the source.
 
@@ -382,9 +386,10 @@ Due to the variety of encoding structures present on source DVDs, NYPL allows a 
 |---------------------|----------------|
 | Video codec         | H.264 / MPEG-4 AVC |
 | Video bit rate | CRF 21 (variable bitrate) for in-house workflows; vendors may use constant bitrate (CBR) encoding at 3.5 Mbps to approximate equivalent visual quality |
-| Chroma subsampling  | 4:2:0 YUV |
-| Bit depth     | 8-bit |
-| File wrapper        | MP4 |
+| Color space | YUV |
+| Chroma subsampling | 4:2:0 |
+| Bit depth     | 8bit |
+| File wrapper        | MPEG-4 (.mp4) |
 | Frame rate          | NTSC: 29.970 / 59.940 / 23.976 / 47.952; PAL: 25.000 / 50.000 |
 | Frame size          | Based on source DVD: 720x480, 704x480, 352x480, 352x240 (NTSC); 720x576, 352x576, 352x288 (PAL) |
 | Broadcast standard | (Same as original media) |
@@ -423,7 +428,7 @@ For each collection object, the following shall be produced:
 
 * One or more preservation master file(s)
 * One edit master file per preservation master
-* One JSON metadata file per media file
+* One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
 * For optical audio only, one CUE file per preservation master file
 * Optional image files as described in [Image Deliverables](#image-deliverables)
 
@@ -471,8 +476,31 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 
 <a name="audio-multitrack"></a>
 
-* Multi-track items must be captured as synchronized, parallel-length streams for later mixdown.
-* No trimming or alteration is allowed for Edit Masters derived from these streams.
+When dealing with multi-track recordings (e.g., 8-, 16-, 24-track open-reel tapes, multi-channel DAT or N-track digital formats), follow these guidelines:
+
+* **Parallel, synchronized streams**  
+  Each track must be recorded as its own file, with precisely the same duration and time-alignment. This preserves phase relationships for later mixdown or analysis.
+
+* **Filenaming for stream identifiers**  
+  Append a stream index identifier (`s01`, `s02`, …) between the face/region code and role suffix.  
+  - Format: `division_PrimaryID_vXXfYYsZZ_pm.flac`  
+  - `sZZ` = stream number, zero-padded to two digits.
+
+* **No trimming or processing**  
+  Preservation masters must be “flat” transfers: no edits, fades, trims, or level adjustments. All overlap and dead-air at splice points remains intact.
+
+* **Edit masters**  
+  No trimming or alteration is allowed for Edit Masters derived from these streams.
+
+**Example: 24-track, two-inch open-reel tape (Face 1, Region 1):**
+
+```
+myd_123456_v01f01s01_pm.flac
+myd_123456_v01f01s02_pm.flac
+myd_123456_v01f01s03_pm.flac
+…
+myd_123456_v01f01s24_pm.flac
+```
 
 ### *Preservation master file specifications*
 
@@ -496,8 +524,8 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | ------------------ | ---------------- |
 | Audio codec        | FLAC             |
 | File wrapper       | FLAC (.flac)     |
-| Bit depth          | (same as source, commonly 16) |
-| Sampling rate      | (same as source, commonly 48000, 44100, 44056, or 40056 Hz) |
+| Bit depth          | (same as source, commonly 16 bit) |
+| Sampling rate      | (same as source, commonly 48000 Hz, 44100 Hz, 32000 Hz (DAT), 44056 Hz (PCM-1610/30, F1) |
 | Number of channels | (same as source) |
 
 <a name="audio-group-3"></a>
@@ -507,8 +535,8 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | --------------------- | --------------------------------------- |
 | Audio codec           | FLAC                                    |
 | File wrapper          | FLAC (.flac)                            |
-| Bit depth             | 16                       |
-| Sampling rate         | 44100 Hz                        |
+| Bit depth             | 16 bit                                  |
+| Sampling rate         | 44100 Hz                                |
 | Number of channels    | 2 (left + right discrete)               |
 | Other characteristics | CDs should be captured as a single file |
 
@@ -567,8 +595,8 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 | Audio codec        | FLAC                      |
 | File wrapper       | FLAC (.flac)              |
 | Bit depth          | 24                        |
-| Sampling rate      | 96000 Hz                 |
-| Number of channels | 2 (left + right discrete) |
+| Sampling rate      | 96000 Hz                  |
+| Number of channels | Mono (1))                 |
 
 #### Reproduction Details
 
@@ -608,7 +636,7 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 For each collection object, the following shall be produced:
 
 * One or more preservation master file(s)
-* One JSON metadata file per media file
+* One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
 * Optional image files as described in [Image Deliverables](#image-deliverables)
 
 
@@ -689,3 +717,26 @@ PrimaryID
 | Resolution              | Minimum 400 true DPI, without interpolation                                                                                                                                                         |
 | Surfaces                | All enclosures: front, back, top, bottom, left side, right side                                                                                                                                     |
 | Notes                   | Images with text/content should be oriented correctly. If a surface lacks content, it may be skipped. If the media object has extensive labeling, media and enclosure may be photographed together. |
+
+<a name="json-deliverables"></a>
+
+## JSON Metadata Deliverables
+
+NYPL metadata deliverables must adhere to the customized fields and controlled vocabulary defined in NYPL’s [ami-metadata](https://github.com/NYPL/ami-metadata) JSON Schema repository.
+
+- **Per-file packaging**  
+  Each audio, video, or film media file must have exactly one JSON sidecar. Images do **not** require JSON metadata.
+
+- **Schema validation**  
+  JSON must validate against the appropriate schema. Any validation errors (including BOM/encoding issues) will prompt a full redelivery of the Bagged asset.
+
+- **Naming**  
+  Use the same filename “root” as the media file, with a `.json` extension only.  
+  - ✅ `division_PrimaryID_v01_pm.json`  
+  - ❌ `division_PrimaryID_v01_pm.mov.json`
+
+- **Encoding**  
+  JSON files must be encoded as UTF-8 **without** a Byte Order Mark (BOM). Including a BOM often breaks downstream validation; please ensure your editor or export tool does not insert one.
+
+- **Where to find samples & instructions**  
+  See the `samples/` [folder](https://github.com/NYPL/ami-metadata/tree/main/versions/2.0/sample) in the schema repo for sample JSON, plus README-based validation steps.  
