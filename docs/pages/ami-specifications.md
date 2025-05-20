@@ -21,7 +21,8 @@ Last updated: 2025-05-19. For previous versions, see [changelog.md](https://gith
     - [Video Group 1: analog and digital cassettes, analog open reel](#video-group-1)
     - [Video Group 2: DV](#video-group-2)
     - [Video Group 3: HDV](#video-group-3)
-    - [Video Group 4: optical video](#video-group-4)
+    - [Video Group 4: DVD (optical video discs)](#video-group-4)
+    - [Video Group 5: VCD (Video CDs)](#video-group-5)
     - [Service copy specifications for video](#service-copies)
     - [Additional video specifications](#additional-video-specifications)
   - [Audio media](#audio-media)
@@ -347,14 +348,28 @@ When native capture is not possible due to object condition or playback issues, 
 
 
 <a name="video-group-4"></a>
-### Video Group 4: Optical video
-**_Preservation master file specifications: optical video discs_**
+### Video Group 4: DVD (optical video discs)
+**_Preservation master file specifications: DVD (optical video discs)_**
 
 | Attribute | Specification |
 | ---- | ------ |
 | File system | Preserve as-is from source disc; may include UDF, ISO 9660, or a hybrid structure |
 | File wrapper | ISO (.iso) |
 | Other characteristics | Full disc image must retain original structure, including VIDEO_TS and AUDIO_TS directories where present |
+
+<a name="video-group-5"></a>
+### Video Group 5: Video CDs (VCD)
+
+**_Preservation master file specifications: Video CDs (VCD)_**
+
+| Attribute       | Specification                                                                                                 |
+|-----------------|---------------------------------------------------------------------------------------------------------------|
+| File wrapper    | BIN/CUE pair                                                                                                  |
+| `.bin` file     | Full raw-sector copy of the disc (2352-byte sectors, Mode 2 Form 2)                                            |
+| `.cue` file     | Track layout, indexing, mode and sector metadata for the `.bin`                                               |
+| File system     | Preserve CD-ROM XA structure, including all AUDIO/VIDEO DAT files                                             |
+| Other           | • Maintain all subchannel (Q-channel) data if possible<br>• Use the same naming convention as other PM files |
+
 
 <a name="service-copies"></a>
 ### Service copy specifications for video
@@ -401,6 +416,10 @@ Due to the variety of encoding structures present on source DVDs, NYPL allows a 
 | Audio bit rate      | 320 kbps (CBR) |
 
 **Note:** While these specs permit a variety of technical values to accommodate the source material, all DVD-derived service copies must validate against the [NYPL MediaConch DVD SC policy](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts/MediaconchPolicies).
+
+**Note for VCDs:**  
+Apply the same service-copy settings as for DVDs (see [Service copy specifications: video group 4](#service-copies-dvd)), transcoding the MPEG-1 DAT streams into H.264/MP4 per spec.
+
 
 <a name="additional-video-specifications"></a>
 ### Additional video specifications
