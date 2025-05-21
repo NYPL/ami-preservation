@@ -14,26 +14,26 @@ Last updated: 2025-05-19. For previous versions, see [changelog.md](https://gith
 
 - [Specifications for Digital Assets](#specifications-for-digital-assets)
   - [Film Media](#film-media)
-    - [Film Groups 1 and 2: motion picture film, silent / sound](#film-groups-1-and-2-motion-picture-film-silent--sound)
-    - [Film Group 3: audio film](#film-group-3-audio-film)
-    - [Film Group 4: filmstrips](#film-group-4-filmstrips)
+    - [Film Groups 1 and 2: Motion Picture Film, Silent / Sound](#film-groups-1-and-2-motion-picture-film-silent--sound)
+    - [Film Group 3: Audio Film](#film-group-3-audio-film)
+    - [Film Group 4: Filmstrips](#film-group-4-filmstrips)
   - [Video media](#video-media)
-    - [Video Group 1: analog and digital cassettes, analog open reel](#video-group-1)
+    - [Video Group 1: Analog and Digital Cassettes, Analog Open Reel](#video-group-1)
     - [Video Group 2: DV](#video-group-2)
     - [Video Group 3: HDV](#video-group-3)
-    - [Video Group 4: DVD (optical video discs)](#video-group-4)
+    - [Video Group 4: DVD-Video](#video-group-4)
     - [Video Group 5: VCD (Video CDs)](#video-group-5)
-    - [Service copy specifications for video](#service-copies)
-    - [Additional video specifications](#additional-video-specifications)
-  - [Audio media](#audio-media)
-    - [Audio Group 1: analog magnetic](#audio-group-1)
-    - [Audio Group 2: digital magnetic](#audio-group-2)
-    - [Audio Group 3: optical audio](#audio-group-3)
-    - [Audio Group 4: grooved disc](#audio-group-4)
-    - [Audio Group 5: grooved cylinder](#audio-group-5)
-    - [Edit master file specifications](#edit-masters-all)
+    - [Service Copy Specifications for Video](#service-copies)
+    - [Additional Video Specifications](#additional-video-specifications)
+  - [Audio Media](#audio-media)
+    - [Audio Group 1: Analog Magnetic](#audio-group-1)
+    - [Audio Group 2: Digital Magnetic](#audio-group-2)
+    - [Audio Group 3: CDDA](#audio-group-3)
+    - [Audio Group 4: Grooved Disc](#audio-group-4)
+    - [Audio Group 5: Grooved Cylinder](#audio-group-5)
+    - [Edit Master File Specifications](#edit-masters-all)
   - [Data Media](#data-media)
-    - [Data Group 1: optical disc](#data-group-1)
+    - [Data Group 1: Optical Disc](#data-group-1)
   - [Image Deliverables](#image-deliverables)
   - [JSON Metadata Deliverables](#json-metadata-deliverables)
 
@@ -104,10 +104,10 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 * `--info`: Full encoding details must be preserved
 
 <a name="film-groups-1-and-2-motion-picture-film-silent--sound"></a>
-### Film Groups 1 and 2: Motion picture film, silent / sound
+### Film Groups 1 and 2: Motion Picture Film, Silent / Sound
 
 <a name="pm-fg1-2"></a>
-#### **_Preservation master file specifications: Film groups 1 & 2: Motion picture film, silent / sound_**
+#### **_Preservation Master File Specifications: Film Groups 1 & 2: Motion Picture Film, Silent / Sound_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | ---- | ---- | ---- | ---- |
@@ -130,7 +130,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 \* Where audio is applicable.
 
 <a name="mezz-fg1-2"></a>
-#### **_Mezzanine file specifications: Film group 1 & 2 (Motion picture film, silent / sound)_**
+#### **_Mezzanine File Specifications: Film Group 1 & 2 (Motion Picture Film, Silent / Sound)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | --- | ---| --- | --- |
@@ -155,7 +155,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 \* Where audio is applicable.
 
 <a name="sc-fg1-2"></a>
-#### **_Service copy file specifications: Film group 1 & 2 (Motion picture film, silent / sound)_**
+#### **_Service Copy File Specifications: Film Group 1 & 2 (Motion Picture Film, Silent / Sound)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | --- | ---| --- | --- |
@@ -180,10 +180,10 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 \* Where audio is applicable.
 
 <a name="film-group-3-audio-film"></a>
-### Film Group 3: Audio film
+### Film Group 3: Audio Film
 
 <a name="pm-fg3"></a>
-#### **_Preservation master file specifications: Film group 3 (Audio film)_**
+#### **_Preservation Master File Specifications: Film Group 3 (Audio Film)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | --- | ---| --- | --- |
@@ -195,7 +195,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Other characteristics | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. |
 
 <a name="edit-masters-fg3"></a>
-#### **_Edit master file specifications: Film group 3 (Audio film)_**
+#### **_Edit Master File Specifications: Film Group 3 (Audio Film)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
 | --- | ---| --- | --- |
@@ -229,7 +229,7 @@ For each original recording, the following shall be produced:
 Preservation master video files must be generated by professional-grade capture devices and software, with either direct capture to FFV1/FLAC/MKV, or transcoding from V210/PCM/MOV. Specific FFmpeg transcoding recipes will be provided by NYPL to ensure consistency.
 
 <a name="guidelines-preservation-master-files-all-groups"></a>
-### Guidelines: Preservation master files, all groups
+### Guidelines: Preservation Master Files, All Groups
   * Characteristics intrinsic to the broadcast standard of the source material, including frame rate, pixel aspect ratio, field dominance, resolution, and recording standard (NTSC, PAL, SECAM, etc.) should be preserved.
   * Signal extraction must be optimal, and carried out using the equipment and accessories that are appropriate for the original format characteristics.
   * The most direct and clean signal path must be used at all times from source to destination. There may be no devices inserted in the signal path that are not being used. If there are multiple destination formats being used in the transfer the signal path must be routed in parallel. No daisy-chaining of devices may occur.
@@ -265,8 +265,9 @@ PrimaryID
 ```
 
 <a name="video-group-1"></a>
-### Video Group 1: Analog and digital cassettes, analog open reel
-**_Preservation master file specifications:_**
+### Video Group 1: Analog and Digital Cassettes, Analog Open Reel
+
+**_Preservation Master File Specifications:_**
 
 | Attribute | Specification |
 | ---- | ------ |
@@ -288,7 +289,7 @@ PrimaryID
 | Audio channels | (Same as original media, see guidelines for silent channels) |
 
 <a name="silent-audio-channels"></a>
-### Silent audio channels
+### Silent Audio Channels
 
 * If a channel is present but silent, it should be captured and noted in the JSON file, indicating that the tape and the channels in the preservation master file are silent. For example:
 
@@ -303,7 +304,7 @@ PrimaryID
 
 <a name="video-group-2"></a>
 ### Video Group 2: DV
-**_Preservation master file specifications: DV (digital video) cassettes_**
+**_Preservation Master File Specifications: DV (digital video) cassettes_**
 
 NYPL prefers native capture of DV content over FireWire whenever possible. All natively captured DV files must be processed using [dvpackager](https://mipops.github.io/dvrescue/sections/packaging.html), part of the DVRescue project, and rewrapped as Matroska (.mkv).
 
@@ -330,7 +331,7 @@ When native capture is not possible due to object condition or playback issues, 
 
 <a name="video-group-3"></a>
 ### Video Group 3: HDV
-**_Preservation master file specifications: HDV (high definition video) cassettes_**
+**_Preservation Master File Specifications: HDV (high definition video) cassettes_**
 
 NYPL prefers native capture of HDV content via FireWire, preserving the original MPEG-2 transport stream. Files should be saved as `.m2t` and subsequently rewrapped as Matroska (`.mkv`) using a lossless method that retains all original stream characteristics.
 
@@ -348,8 +349,8 @@ When native capture is not possible due to object condition or playback issues, 
 
 
 <a name="video-group-4"></a>
-### Video Group 4: DVD (optical video discs)
-**_Preservation master file specifications: DVD (optical video discs)_**
+### Video Group 4: DVD-Video
+**_Preservation Master File Specifications: DVD-Video_**
 
 | Attribute | Specification |
 | ---- | ------ |
@@ -360,21 +361,21 @@ When native capture is not possible due to object condition or playback issues, 
 <a name="video-group-5"></a>
 ### Video Group 5: Video CDs (VCD)
 
-**_Preservation master file specifications: Video CDs (VCD)_**
+**_Preservation Master File Specifications: Video CDs (VCD)_**
 
 | Attribute       | Specification                                                                                                 |
 |-----------------|---------------------------------------------------------------------------------------------------------------|
 | File wrapper    | BIN/CUE pair                                                                                                  |
-| `.bin` file     | Full raw-sector copy of the disc (2352-byte sectors, Mode 2 Form 2)                                            |
+| `.bin` file     | Full raw-sector copy of the disc (2352-byte sectors, [Mode 2 Form 2](https://www.isobuster.com/help/what_is_mode_2_form_2_on_cd))                                            |
 | `.cue` file     | Track layout, indexing, mode and sector metadata for the `.bin`                                               |
-| File system     | Preserve CD-ROM XA structure, including all AUDIO/VIDEO DAT files                                             |
-| Other           | • Maintain all subchannel (Q-channel) data if possible<br>• Use the same naming convention as other PM files |
+| File system     | File system: Create full raw sector image that preserves the complete disc structure, including the CD-ROM XA file system and all AUDIO/VIDEO DAT files                                             |
+| Other           | Use the same naming convention as other PM files |
 
 
 <a name="service-copies"></a>
-### Service copy specifications for video
+### Service Copy Specifications for Video
 <a name="service-copies-1/2"></a>
-**_Service copy file specifications: video groups 1 and 2_**
+**_Service Copy File Specifications: Video Groups 1 and 2_**
 
 | Attribute | Specification |
 | ---- | ------ |
@@ -386,16 +387,16 @@ When native capture is not possible due to object condition or playback issues, 
 | Frame rate | 59.94 (NTSC) or 50 (PAL) |
 | Frame size | 720x480 (NTSC) or 720x576 (PAL) |
 | Broadcast standard | (Same as original media) |
-| Pixel aspect ratio | 0.889 (NTSC 4:3) or 1.091 (PAL 4:3) |
+| Pixel aspect ratio | 0.889 (NTSC 4:3) or 1.091 (PAL 4:3); 1.212 (NTSC DV Widescreen); 1.454 (PAL DV Widescreen) |
 | Audio codec | AAC |
 | Audio bit rate | 320 kbps (CBR) |
 | Audio sampling rate | 48 kHz |
 | Audio channels | 2 (see examples) |
 
 <a name="service-copies-dvd"></a>
-**_Service copy file specifications: video group 4 (optical video discs)_**
+**_Service Copy File Specifications: Video Group 4 (DVD-Video)_**
 
-Due to the variety of encoding structures present on source DVDs, NYPL allows a broader range of specifications for service copies derived from DVD (video group 3). Files must comply with the following general characteristics, with resolution, frame rate, display aspect ratio, and pixel aspect ratio varying according to the source.
+Due to the variety of encoding structures present on source DVDs, NYPL allows a broader range of specifications for service copies derived from DVD (video group 4). Files must comply with the following general characteristics, with resolution, frame rate, display aspect ratio, and pixel aspect ratio varying according to the source.
 
 | Attribute           | Specification |
 |---------------------|----------------|
@@ -422,11 +423,11 @@ Apply the same service-copy settings as for DVDs (see [Service copy specificatio
 
 
 <a name="additional-video-specifications"></a>
-### Additional video specifications
-#### _Anamorphic video_
+### Additional Video Specifications
+#### _Anamorphic Video_
   *  Service copies created from anamorphic preservation masters must be reformatted to true 16:9 (widescreen). Do not letterbox or pillarbox.
 
-#### _Complex audio configurations_
+#### _Complex Audio Configurations_
   * In general, when multiple distinct language tracks are present as separate tracks, these should be retained in the service copy to preserve access to all content.
   * If distinct languages appear on individual channels of a single track and the result is difficult to understand (e.g., overlapping language audio), consult with NYPL. In most cases, the service copy should retain the English channel and omit the others to ensure accessibility.
   * If there is only audible content in a single channel of any number of channels in a source tape and preservation master, the channel containing audible content should be duplicated to produce a 2-channel service copy for improved user experience.
@@ -438,7 +439,7 @@ Apply the same service-copy settings as for DVDs (see [Service copy specificatio
   * Trimming must not result in an abrupt end of visible or audible content.
 
 <a name="audio-media"></a>
-## Audio media
+## Audio Media
 
 ### *Deliverables*
 
@@ -526,7 +527,7 @@ myd_123456_v01f01s24_pm.flac
 <a name="audio-pm-specs"></a>
 
 <a name="audio-group-1"></a>
-**Audio Group 1: analog magnetic**
+**Audio Group 1: Analog Magnetic**
 
 | Attribute          | Specification    |
 | ------------------ | ---------------- |
@@ -537,7 +538,7 @@ myd_123456_v01f01s24_pm.flac
 | Number of channels | (same as source) |
 
 <a name="audio-group-2"></a>
-**Audio Group 2: digital magnetic**
+**Audio Group 2: Digital Magnetic**
 
 | Attribute          | Specification    |
 | ------------------ | ---------------- |
@@ -548,7 +549,7 @@ myd_123456_v01f01s24_pm.flac
 | Number of channels | (same as source) |
 
 <a name="audio-group-3"></a>
-**Audio Group 3: optical disc**
+**Audio Group 3: CDDA**
 
 | Attribute             | Specification                           |
 | --------------------- | --------------------------------------- |
@@ -557,7 +558,7 @@ myd_123456_v01f01s24_pm.flac
 | Bit depth             | 16 bit                                  |
 | Sampling rate         | 44100 Hz                                |
 | Number of channels    | 2 (left + right discrete)               |
-| Other characteristics | CDs should be captured as a single file |
+| Other characteristics | CD tracks should be concatenated into a single file according to Cue sheet|
 
 #### CUE sheet files
 
@@ -578,7 +579,7 @@ myd_123456_v01f01s24_pm.flac
 ```
 
 <a name="audio-group-4"></a>
-**Audio Group 4: grooved disc**
+**Audio Group 4: Grooved Disc**
 
 | Attribute          | Specification             |
 | ------------------ | ------------------------- |
@@ -607,7 +608,7 @@ myd_123456_v01f01s24_pm.flac
   * Reattempt retracking if skips occur; document outcomes
 
 <a name="audio-group-5"></a>
-**Audio Group 5: grooved cylinder**
+**Audio Group 5: Grooved Cylinder**
 
 | Attribute          | Specification             |
 | ------------------ | ------------------------- |
@@ -627,7 +628,7 @@ myd_123456_v01f01s24_pm.flac
 
 <a name="edit-masters-all"></a>
 
-### *Edit master file specifications: all audio groups*
+### *Edit Master File Specifications: All Audio Groups*
 
 | Attribute          | Specification                |
 | ------------------ | ---------------------------- |
@@ -674,7 +675,7 @@ For each collection object, the following shall be produced:
 * Retain all file system structures as-is (UDF, ISO 9660, or hybrid)
 
 <a name="data-group-1"></a>
-**Preservation master file specifications: Data optical disc**
+**Preservation Master File Specifications: Data Optical Disc**
 
 | Attribute             | Specification                                    |
 | --------------------- | ------------------------------------------------ |
@@ -725,7 +726,7 @@ PrimaryID
 │       └── div_PrimaryID_v01_assetside.jpg
 ```
 
-### Image Specifications for photographs of media objects
+### Image Specifications for Photographs of Media Objects
 
 | Attribute               | Specification                                                                                                                                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
