@@ -12,36 +12,35 @@ Last updated: 2025-05-19. For previous versions, see [changelog.md](https://gith
 ## Table Of Contents
 <!-- MarkdownTOC -->
 
-- [Specifications for Digital Assets](#specifications-for-digital-assets)
-  - [Film Media](#film-media)
-    - [Film Groups 1 and 2: Motion Picture Film, Silent / Sound](#film-groups-1-and-2-motion-picture-film-silent--sound)
-    - [Film Group 3: Audio Film](#film-group-3-audio-film)
-    - [Film Group 4: Filmstrips](#film-group-4-filmstrips)
-  - [Video media](#video-media)
-    - [Video Group 1: Analog and Digital Cassettes, Analog Open Reel](#video-group-1)
-    - [Video Group 2: DV](#video-group-2)
-    - [Video Group 3: HDV](#video-group-3)
-    - [Video Group 4: DVD-Video](#video-group-4)
-    - [Video Group 5: VCD (Video CDs)](#video-group-5)
-    - [Service Copy Specifications for Video](#service-copies)
-    - [Additional Video Specifications](#additional-video-specifications)
-  - [Audio Media](#audio-media)
-    - [Audio Group 1: Analog Magnetic](#audio-group-1)
-    - [Audio Group 2: Digital Magnetic](#audio-group-2)
-    - [Audio Group 3: CDDA](#audio-group-3)
-    - [Audio Group 4: Grooved Disc](#audio-group-4)
-    - [Audio Group 5: Grooved Cylinder](#audio-group-5)
-    - [Edit Master File Specifications](#edit-masters-all)
-  - [Data Media](#data-media)
-    - [Data Group 1: Optical Disc](#data-group-1)
-  - [Image Deliverables](#image-deliverables)
-  - [JSON Metadata Deliverables](#json-metadata-deliverables)
-
+* [Specifications for Digital Assets](#specifications-for-digital-assets)
+  * [Film Media](#film-media)
+    * [Film Groups 1 and 2: Motion Picture Film, Silent / Sound](#film-groups-1-and-2-motion-picture-film-silent--sound)
+    * [Film Group 3: Audio Film](#film-group-3-audio-film)
+    * [Film Group 4: Filmstrips](#film-group-4-filmstrips)
+  * [Video media](#video-media)
+    * [Video Group 1: Analog and Digital Cassettes, Analog Open Reel](#video-group-1)
+    * [Video Group 2: DV](#video-group-2)
+    * [Video Group 3: HDV](#video-group-3)
+    * [Video Group 4: DVD-Video](#video-group-4)
+    * [Video Group 5: VCD (Video CDs)](#video-group-5)
+    * [Service Copy Specifications for Video](#service-copies)
+    * [Additional Video Specifications](#additional-video-specifications)
+  * [Audio Media](#audio-media)
+    * [Audio Group 1: Analog Magnetic](#audio-group-1)
+    * [Audio Group 2: Digital Magnetic](#audio-group-2)
+    * [Audio Group 3: CDDA](#audio-group-3)
+    * [Audio Group 4: Grooved Disc](#audio-group-4)
+    * [Audio Group 5: Grooved Cylinder](#audio-group-5)
+    * [Edit Master File Specifications](#edit-masters-all)
+  * [Data Media](#data-media)
+    * [Data Group 1: Optical Disc](#data-group-1)
+  * [Image Deliverables](#image-deliverables)
+  * [JSON Metadata Deliverables](#json-metadata-deliverables)
 
 <!-- /MarkdownTOC -->
 
-
 <a name="specifications-for-digital-assets"></a>
+
 # Specifications for Digital Assets
 
 Specifications may be modified over time to reflect changes in best practices or NYPL’s digital infrastructure, or to address previously unspecified media or conditions.
@@ -50,35 +49,35 @@ The following sections are broken into format groups to define the file delivera
 
 **Note:** While this document outlines general specifications, the most precise and up-to-date technical criteria—particularly for file-level validation—can be found in our [MediaConch policy files](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts/MediaconchPolicies).
 
-**Digital Asset Packaging:**  
+**Digital Asset Packaging:**
 All digital deliverables must be organized according to NYPL’s [digital asset packaging guidelines](https://nypl.github.io/ami-preservation/pages/preservationServices/vendorDigitization/vendor-ami-handling.html#digital-asset-packaging), which follow the [BagIt specification (v1.0)](https://tools.ietf.org/html/rfc8493). Each bag must:
 
-- Represent only one inventoried collection object;
-- Follow NYPL’s prescribed directory structure (`PreservationMasters`, `EditMasters`, `ServiceCopies`, `Images`, etc.);
-- Include metadata JSON for each media file (image files excluded);
-- Contain an `md5` manifest for all files in the `data` directory.
+* Represent only one inventoried collection object;
+* Follow NYPL’s prescribed directory structure (`PreservationMasters`, `EditMasters`, `ServiceCopies`, `Images`, etc.);
+* Include metadata JSON for each media file (image files excluded);
+* Contain an `md5` manifest for all files in the `data` directory.
 
 Bag directories must be named using the Primary ID of the collection object and must not be compressed.
 
-**Filename Conventions:**  
+**Filename Conventions:**
 File naming rules are referenced throughout this document, but a full breakdown of filename components and role suffixes can be found in the [NYPL file naming convention guide](https://nypl.github.io/ami-preservation/pages/preservationServices/vendorDigitization/vendor-ami-handling.html#file-naming-convention).
 
 Each filename is built from a standardized "root" that includes:
 
-- a three-letter division prefix,
-- the object's Primary ID,
-- one or more structural components (e.g., `v01`, `f01`, `r01`, `p01`, `t01`),
-- and a two-letter suffix denoting the file’s role (`pm`, `em`, `sc`, `mz`).
+* a three-letter division prefix,
+* the object's Primary ID,
+* one or more structural components (e.g., `v01`, `f01`, `r01`, `p01`, `t01`),
+* and a two-letter suffix denoting the file’s role (`pm`, `em`, `sc`, `mz`).
 
 **Examples:**
 
-- `myd_123456_v01_pm.mkv` → Video Preservation Master  
-- `myh_987654_v01f01r01_pm.flac` → Audio Preservation Master (Face 1, Region 1)
+* `myd_123456_v01_pm.mkv` → Video Preservation Master
+* `myh_987654_v01f01r01_pm.flac` → Audio Preservation Master (Face 1, Region 1)
 
 For details on volume, face, region, stream, and part identifiers—as well as role suffixes—refer to the [file naming convention chart](https://nypl.github.io/ami-preservation/pages/preservationServices/vendorDigitization/vendor-ami-handling.html#file-naming-convention).
 
-
 <a name="film-media"></a>
+
 ## Film Media
 
 #### _Deliverables_
@@ -88,7 +87,7 @@ For each original recording, the following shall be produced:
 * One service copy file*
 * One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
 * Optional image files as described in [Image Deliverables](#image-deliverables)
-  
+
 **If the object has audio content (i.e. composite sound print), audio must be synchronized and embedded in all final deliverables.**
 
 **_Capture tools_**
@@ -104,9 +103,11 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 * `--info`: Full encoding details must be preserved
 
 <a name="film-groups-1-and-2-motion-picture-film-silent--sound"></a>
+
 ### Film Groups 1 and 2: Motion Picture Film, Silent / Sound
 
 <a name="pm-fg1-2"></a>
+
 #### **_Preservation Master File Specifications: Film Groups 1 & 2: Motion Picture Film, Silent / Sound_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
@@ -130,6 +131,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 \* Where audio is applicable.
 
 <a name="mezz-fg1-2"></a>
+
 #### **_Mezzanine File Specifications: Film Group 1 & 2 (Motion Picture Film, Silent / Sound)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
@@ -155,6 +157,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 \* Where audio is applicable.
 
 <a name="sc-fg1-2"></a>
+
 #### **_Service Copy File Specifications: Film Group 1 & 2 (Motion Picture Film, Silent / Sound)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
@@ -180,9 +183,11 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 \* Where audio is applicable.
 
 <a name="film-group-3-audio-film"></a>
+
 ### Film Group 3: Audio Film
 
 <a name="pm-fg3"></a>
+
 #### **_Preservation Master File Specifications: Film Group 3 (Audio Film)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
@@ -195,6 +200,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Other characteristics | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. |
 
 <a name="edit-masters-fg3"></a>
+
 #### **_Edit Master File Specifications: Film Group 3 (Audio Film)_**
 
 | Source format | 35mm | 16mm | 8mm / Super 8mm / Double 8mm |
@@ -209,13 +215,16 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 **Note:** Unlike Film Groups 1 & 2, Film Group 3 (Audio film) uses Edit Masters rather than Mezzanine files. Service copies are not currently required for this group. The Edit Master serves as the primary access file.
 
 <a name="film-group-4-filmstrips"></a>
+
 ### Film Group 4: Filmstrips
 NYPL will review recommendations for digitization of filmstrips (and accompanying audio media, where applicable) before defining a specification.
 
 <a name="video-media"></a>
+
 ## Video media
 
 <a name="deliverables"></a>
+
 ### _Deliverables_
 For each original recording, the following shall be produced:
   * One preservation master file
@@ -224,11 +233,11 @@ For each original recording, the following shall be produced:
   * One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
   * Optional image files as described in [Image Deliverables](#image-deliverables)
 
-
 **_Capture tools_**
 Preservation master video files must be generated by professional-grade capture devices and software, with either direct capture to FFV1/FLAC/MKV, or transcoding from V210/PCM/MOV. Specific FFmpeg transcoding recipes will be provided by NYPL to ensure consistency.
 
 <a name="guidelines-preservation-master-files-all-groups"></a>
+
 ### Guidelines: Preservation Master Files, All Groups
   * Characteristics intrinsic to the broadcast standard of the source material, including frame rate, pixel aspect ratio, field dominance, resolution, and recording standard (NTSC, PAL, SECAM, etc.) should be preserved.
   * Signal extraction must be optimal, and carried out using the equipment and accessories that are appropriate for the original format characteristics.
@@ -242,14 +251,14 @@ Preservation master video files must be generated by professional-grade capture 
 #### _Video preservation master sidecar files_
 
 **EIA-608 (line 21) Closed Captions (.scc)**
-- If EIA-608 (line 21) captions are present in the source object, a sidecar Scenarist Closed Caption File (.scc) must be created.
-- The file should follow the naming convention: `division_PrimaryID_v01_pm.scc`
-- Place the file alongside the video preservation master in the `PreservationMasters` directory.
+* If EIA-608 (line 21) captions are present in the source object, a sidecar Scenarist Closed Caption File (.scc) must be created.
+* The file should follow the naming convention: `division_PrimaryID_v01_pm.scc`
+* Place the file alongside the video preservation master in the `PreservationMasters` directory.
 
 **QCTools Report**
-- Each video preservation master file may also receive a corresponding QCTools report as a gzipped XML file.
-- The file should follow the naming convention: `division_PrimaryID_v01_pm.mkv.qctools.xml.gz`
-- Place the file alongside the preservation master file in the `PreservationMasters` directory.
+* Each video preservation master file may also receive a corresponding QCTools report as a gzipped XML file.
+* The file should follow the naming convention: `division_PrimaryID_v01_pm.mkv.qctools.xml.gz`
+* Place the file alongside the preservation master file in the `PreservationMasters` directory.
 
 **Example directory structure:**
 
@@ -265,6 +274,7 @@ PrimaryID
 ```
 
 <a name="video-group-1"></a>
+
 ### Video Group 1: Analog and Digital Cassettes, Analog Open Reel
 
 **_Preservation Master File Specifications:_**
@@ -289,6 +299,7 @@ PrimaryID
 | Audio channels | (Same as original media, see guidelines for silent channels) |
 
 <a name="silent-audio-channels"></a>
+
 ### Silent Audio Channels
 
 * If a channel is present but silent, it should be captured and noted in the JSON file, indicating that the tape and the channels in the preservation master file are silent. For example:
@@ -297,12 +308,13 @@ PrimaryID
 
 * In cases where two silent channels are detected as actual channels (i.e., recorded with no sound rather than not recorded at all), both channels should be captured and included in the preservation master. Additionally, a signalNote should be added to indicate that the tape is silent.
 
-
 <a name="timecode"></a>
+
 ### Timecode
   * Two forms of legacy/source timecode should be retained: LTC Timecode, recorded on an audio channel, should be captured as an audio stream in the resulting preservation master file; VITC timecode, if present, should be captured through the use of appropriate playback devices and a carefully routed SDI signal chain.
 
 <a name="video-group-2"></a>
+
 ### Video Group 2: DV
 **_Preservation Master File Specifications: DV (digital video) cassettes_**
 
@@ -330,6 +342,7 @@ When native capture is not possible due to object condition or playback issues, 
 | Audio | FLAC (24 bit, 48kHz) |
 
 <a name="video-group-3"></a>
+
 ### Video Group 3: HDV
 **_Preservation Master File Specifications: HDV (high definition video) cassettes_**
 
@@ -347,8 +360,8 @@ When native capture is not possible due to object condition or playback issues, 
 | Other characteristics| (Same as source)                         | Segment splitting allowed if required by stream changes; use NYPL filenaming convention for regions |
 | Alternate method     | FFV1/FLAC in Matroska (.mkv)             | If native capture fails, SDI capture to V210/MOV may be transcoded and rewrapped using the same parameters as the DV fallback method |
 
-
 <a name="video-group-4"></a>
+
 ### Video Group 4: DVD-Video
 **_Preservation Master File Specifications: DVD-Video_**
 
@@ -359,6 +372,7 @@ When native capture is not possible due to object condition or playback issues, 
 | Other characteristics | Full disc image must retain original structure, including VIDEO_TS and AUDIO_TS directories where present |
 
 <a name="video-group-5"></a>
+
 ### Video Group 5: Video CDs (VCD)
 
 **_Preservation Master File Specifications: Video CDs (VCD)_**
@@ -371,8 +385,8 @@ When native capture is not possible due to object condition or playback issues, 
 | File system     | File system: Create full raw sector image that preserves the complete disc structure, including the CD-ROM XA file system and all AUDIO/VIDEO DAT files                                             |
 | Other           | Use the same naming convention as other PM files |
 
-
 <a name="service-copies"></a>
+
 ### Service Copy Specifications for Video
 <a name="service-copies-1/2"></a>
 **_Service Copy File Specifications: Video Groups 1 and 2_**
@@ -418,12 +432,13 @@ Due to the variety of encoding structures present on source DVDs, NYPL allows a 
 
 **Note:** While these specs permit a variety of technical values to accommodate the source material, all DVD-derived service copies must validate against the [NYPL MediaConch DVD SC policy](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts/MediaconchPolicies).
 
-**Note for VCDs:**  
+**Note for VCDs:**
 Apply the same service-copy settings as for DVDs (see [Service copy specifications: video group 4](#service-copies-dvd)), transcoding the MPEG-1 DAT streams into H.264/MP4 per spec.
 
-
 <a name="additional-video-specifications"></a>
+
 ### Additional Video Specifications
+
 #### _Anamorphic Video_
   *  Service copies created from anamorphic preservation masters must be reformatted to true 16:9 (widescreen). Do not letterbox or pillarbox.
 
@@ -439,6 +454,7 @@ Apply the same service-copy settings as for DVDs (see [Service copy specificatio
   * Trimming must not result in an abrupt end of visible or audible content.
 
 <a name="audio-media"></a>
+
 ## Audio Media
 
 ### *Deliverables*
@@ -451,7 +467,6 @@ For each collection object, the following shall be produced:
 * One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
 * For optical audio only, one CUE file per preservation master file
 * Optional image files as described in [Image Deliverables](#image-deliverables)
-
 
 ### *Capture tools*
 
@@ -498,18 +513,18 @@ Preservation master and edit master files must be captured/encoded as Broadcast 
 
 When dealing with multi-track recordings (e.g., 8-, 16-, 24-track open-reel tapes, multi-channel DAT or N-track digital formats), follow these guidelines:
 
-* **Parallel, synchronized streams**  
+* **Parallel, synchronized streams**
   Each track must be recorded as its own file, with precisely the same duration and time-alignment. This preserves phase relationships for later mixdown or analysis.
 
-* **Filenaming for stream identifiers**  
-  Append a stream index identifier (`s01`, `s02`, …) between the face/region code and role suffix.  
-  - Format: `division_PrimaryID_vXXfYYsZZ_pm.flac`  
-  - `sZZ` = stream number, zero-padded to two digits.
+* **Filenaming for stream identifiers**
+  Append a stream index identifier (`s01`, `s02`, …) between the face/region code and role suffix.
+  * Format: `division_PrimaryID_vXXfYYsZZ_pm.flac`
+  * `sZZ` = stream number, zero-padded to two digits.
 
-* **No trimming or processing**  
+* **No trimming or processing**
   Preservation masters must be “flat” transfers: no edits, fades, trims, or level adjustments. All overlap and dead-air at splice points remains intact.
 
-* **Edit masters**  
+* **Edit masters**
   No trimming or alteration is allowed for Edit Masters derived from these streams.
 
 **Example: 24-track, two-inch open-reel tape (Face 1, Region 1):**
@@ -659,7 +674,6 @@ For each collection object, the following shall be produced:
 * One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
 * Optional image files as described in [Image Deliverables](#image-deliverables)
 
-
 **Filenaming and metadata protocol for misidentified discs:**
 
 * If a disc described as Audio or Video is actually a data disc, omit any Face metadata.
@@ -744,19 +758,19 @@ PrimaryID
 
 NYPL metadata deliverables must adhere to the customized fields and controlled vocabulary defined in NYPL’s [ami-metadata](https://github.com/NYPL/ami-metadata) JSON Schema repository.
 
-- **Per-file packaging**  
+* **Per-file packaging**
   Each audio, video, or film media file must have exactly one JSON sidecar. Images do **not** require JSON metadata.
 
-- **Schema validation**  
+* **Schema validation**
   JSON must validate against the appropriate schema. Any validation errors (including BOM/encoding issues) will prompt a full redelivery of the Bagged asset.
 
-- **Naming**  
-  Use the same filename “root” as the media file, with a `.json` extension only.  
-  - ✅ `division_PrimaryID_v01_pm.json`  
-  - ❌ `division_PrimaryID_v01_pm.mov.json`
+* **Naming**
+  Use the same filename “root” as the media file, with a `.json` extension only.
+  * ✅ `division_PrimaryID_v01_pm.json`
+  * ❌ `division_PrimaryID_v01_pm.mov.json`
 
-- **Encoding**  
+* **Encoding**
   JSON files must be encoded as UTF-8 **without** a Byte Order Mark (BOM). Including a BOM often breaks downstream validation; please ensure your editor or export tool does not insert one.
 
-- **Where to find samples & instructions**  
-  See the `samples/` [folder](https://github.com/NYPL/ami-metadata/tree/main/versions/2.0/sample) in the schema repo for sample JSON, plus README-based validation steps.  
+* **Where to find samples & instructions**
+  See the `samples/` [folder](https://github.com/NYPL/ami-metadata/tree/main/versions/2.0/sample) in the schema repo for sample JSON, plus README-based validation steps.
