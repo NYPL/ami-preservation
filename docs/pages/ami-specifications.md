@@ -277,7 +277,7 @@ PrimaryID
 
 ### Video Group 1: Analog and Digital Cassettes, Analog Open Reel
 
-**Preservation Master File Specifications**
+#### **_Preservation Master File Specifications_**
 
 | Attribute | Specification |
 | ---- | ------ |
@@ -316,7 +316,8 @@ PrimaryID
 <a name="video-group-2"></a>
 
 ### Video Group 2: DV
-**_Preservation Master File Specifications: DV (digital video) cassettes_**
+
+#### **_Preservation Master File Specifications: DV (digital video) Cassettes_**
 
 NYPL prefers native capture of DV content over FireWire whenever possible. All natively captured DV files must be processed using [dvpackager](https://mipops.github.io/dvrescue/sections/packaging.html), part of the DVRescue project, and rewrapped as Matroska (.mkv).
 
@@ -344,7 +345,8 @@ When native capture is not possible due to object condition or playback issues, 
 <a name="video-group-3"></a>
 
 ### Video Group 3: HDV
-**_Preservation Master File Specifications: HDV (high definition video) cassettes_**
+
+#### **_Preservation Master File Specifications: HDV (High Definition Video) Cassettes_**
 
 NYPL prefers native capture of HDV content via FireWire, preserving the original MPEG-2 transport stream. Files should be saved as `.m2t` and subsequently rewrapped as Matroska (`.mkv`) using a lossless method that retains all original stream characteristics.
 
@@ -363,7 +365,8 @@ When native capture is not possible due to object condition or playback issues, 
 <a name="video-group-4"></a>
 
 ### Video Group 4: DVD-Video
-**_Preservation Master File Specifications: DVD-Video_**
+
+#### **_Preservation Master File Specifications: DVD-Video_**
 
 | Attribute | Specification |
 | ---- | ------ |
@@ -375,7 +378,7 @@ When native capture is not possible due to object condition or playback issues, 
 
 ### Video Group 5: Video CDs (VCD)
 
-**_Preservation Master File Specifications: Video CDs (VCD)_**
+#### **_Preservation Master File Specifications: Video CDs (VCD)_**
 
 | Attribute       | Specification                                                                                                 |
 |-----------------|---------------------------------------------------------------------------------------------------------------|
@@ -389,7 +392,8 @@ When native capture is not possible due to object condition or playback issues, 
 
 ### Service Copy Specifications for Video
 <a name="service-copies-1/2"></a>
-**_Service Copy File Specifications: Video Groups 1 and 2_**
+
+#### **_Service Copy File Specifications: Video Groups 1 and 2_**
 
 | Attribute | Specification |
 | ---- | ------ |
@@ -408,7 +412,8 @@ When native capture is not possible due to object condition or playback issues, 
 | Audio channels | 2 (see examples) |
 
 <a name="service-copies-dvd"></a>
-**_Service Copy File Specifications: Video Group 4 (DVD-Video)_**
+
+#### **_Service Copy File Specifications: Video Group 4 (DVD-Video)_**
 
 Due to the variety of encoding structures present on source DVDs, NYPL allows a broader range of specifications for service copies derived from DVD (video group 4). Files must comply with the following general characteristics, with resolution, frame rate, display aspect ratio, and pixel aspect ratio varying according to the source.
 
@@ -473,7 +478,7 @@ For each collection object, the following shall be produced:
 <a name="audio-capture-tools"></a>
 Preservation master and edit master files must be captured/encoded as Broadcast Wave Format (BWF). Files that exceed the Broadcast Wave Format 4GB file size limitation should be captured as RF64. Post-capture, all Broadcast Wave and RF64 files must be transcoded to the FLAC codec and container using the FLAC Utility, retaining embedded metadata and original modification times. Original capture as Wave64 (.w64) is not acceptable.
 
-### Guidelines: Preservation master files, audio
+### Guidelines: Preservation Master Files, Audio
 
 <a name="audio-guidelines"></a>
 
@@ -542,7 +547,8 @@ myd_123456_v01f01s24_pm.flac
 <a name="audio-pm-specs"></a>
 
 <a name="audio-group-1"></a>
-**Audio Group 1: Analog Magnetic**
+
+#### **Audio Group 1: Analog Magnetic**
 
 | Attribute          | Specification    |
 | ------------------ | ---------------- |
@@ -553,7 +559,8 @@ myd_123456_v01f01s24_pm.flac
 | Number of channels | (same as source) |
 
 <a name="audio-group-2"></a>
-**Audio Group 2: Digital Magnetic**
+
+#### **Audio Group 2: Digital Magnetic**
 
 | Attribute          | Specification    |
 | ------------------ | ---------------- |
@@ -564,7 +571,8 @@ myd_123456_v01f01s24_pm.flac
 | Number of channels | (same as source) |
 
 <a name="audio-group-3"></a>
-**Audio Group 3: CDDA**
+
+#### **Audio Group 3: CDDA**
 
 | Attribute             | Specification                           |
 | --------------------- | --------------------------------------- |
@@ -594,7 +602,8 @@ myd_123456_v01f01s24_pm.flac
 ```
 
 <a name="audio-group-4"></a>
-**Audio Group 4: Grooved Disc**
+
+#### **Audio Group 4: Grooved Disc**
 
 | Attribute          | Specification             |
 | ------------------ | ------------------------- |
@@ -623,7 +632,8 @@ myd_123456_v01f01s24_pm.flac
   * Reattempt retracking if skips occur; document outcomes
 
 <a name="audio-group-5"></a>
-**Audio Group 5: Grooved Cylinder**
+
+#### **Audio Group 5: Grooved Cylinder**
 
 | Attribute          | Specification             |
 | ------------------ | ------------------------- |
@@ -689,7 +699,8 @@ For each collection object, the following shall be produced:
 * Retain all file system structures as-is (UDF, ISO 9660, or hybrid)
 
 <a name="data-group-1"></a>
-**Preservation Master File Specifications: Data Optical Disc**
+
+#### **Preservation Master File Specifications: Data Optical Disc**
 
 | Attribute             | Specification                                    |
 | --------------------- | ------------------------------------------------ |
