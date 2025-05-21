@@ -277,7 +277,7 @@ PrimaryID
 
 ### Video Group 1: Analog and Digital Cassettes, Analog Open Reel
 
-**_Preservation Master File Specifications:_**
+**Preservation Master File Specifications**
 
 | Attribute | Specification |
 | ---- | ------ |
