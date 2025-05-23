@@ -596,13 +596,13 @@ myd_123456_v01f01s24_pm.flac
 * Place alongside the WAV in the `PreservationMasters` directory only:
 
 ```
-  * PrimaryID
-    * data
-      * PreservationMasters
-        * division_PrimaryID_v01f01.flac
-        * division_PrimaryID_v01f01.cue
-      * EditMasters
-        * division_PrimaryID_v01f01.flac
+PrimaryID
+├── data
+│ ├── PreservationMasters
+│ │ ├── division_PrimaryID_v01f01.flac
+│ │ └── division_PrimaryID_v01f01.cue
+│ └── EditMasters
+│   └── division_PrimaryID_v01f01.flac
 ```
 
 <a name="audio-group-4"></a>
