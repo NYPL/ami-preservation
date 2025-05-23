@@ -57,9 +57,9 @@ The following handbook will provide step-by-step instructions for carrying out o
     * Text editor (Atom / Notepad / Text Edit etc.) to open and inspect JSON files. 
     * VLC to open and inspect media files. 
 
-  * Content inspection can be completed either on ICC or on the drive.
-    * **On ICC**: make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags.
-    * Locate the directory that contains batch to QC in the 3_Ready_To_QC folder, if assigned by MPA.
+  * Content inspection can be completed either on ICA or on the drive.
+    * **On ICA**: make sure your machine is not going to create DS_Store files or Thumbs.db files inside bags.
+    * Locate the directory that contains batch to QC.
     * Follow the below instructions (skip “Mount Read Only” section)
     * **On Hard Drive**: Mount Drive Read Only before opening any directories, and follow the below instructions
 
@@ -108,11 +108,11 @@ The following handbook will provide step-by-step instructions for carrying out o
 
 ## Bag Validation
 
-  * Use ```validate_ami_bags.py``` in ami-tools to check Check bag Oxums, bag completeness, bag hashes, directory structure, filenames, and metadata. 
+  * Use ```validate_ami_bags.py``` in ami-scripts to check Check bag Oxums, bag completeness, bag hashes, directory structure, filenames, and metadata. 
   * Due to the time required to validate a directory of Vendor bags, its best to let validate_ami_bags.py run overnight.  
 
 ```
-python3 /path/to/ami-tools/bin/validate_ami_bags.py -d /Volumes/driveID/ --metadata --slow
+python3 /path/to/ami-preservation/ami_scripts/validate_ami_bags.py -d /Volumes/driveID/ --metadata --slow
 ```
   * Review any Bags that report as "not ready for ingest"
 
@@ -141,14 +141,6 @@ python3 /path/to/ami-preservation/ami-scripts/mediaconch_checker.py -p /path/to/
 ```
 ## Additional Checks 
   
-### BEXT Check
-  * **AUDIO ONLY**: Check a selection of FLAC for embedded metadata
-  * Copy 5 .flac files delivered to Desktop and decode these new copies back to wav.
-```
-flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
-```
-  * Check BEXT in newly decoded .wavs using BWF MetaEdit. **Discard .wavs and .flac copies after use.**
-  
 ### RAWCooked Check
   * **FILM PMs ONLY**:
   * Check a selection of PMs for RAWCooked reversability:
@@ -161,7 +153,7 @@ flac --decode --keep-foreign-metadata --preserve-modtime --verify input.flac
   * **IF APPROVED**:
     * Move the Trello Card to the proper list (passed / failed etc.)
 
-## Pull MediaInfo
+## Extract MediaInfo
   * After manual QC is complete and all assets are approved, run mediainfo_extractor.py
   ```
   python3 /path/to/ami-preservation/ami_scripts/mediainfo_extractor.py -d /Volumes/DRIVE-ID -o /path/to/destination/folder/WorkOrderID.csv
@@ -192,4 +184,4 @@ Use Terminal to generate a QC list for each drive you are QCing by following the
 
 
 ## Tools
-See our [Command Line Resources ](https://nypl.github.io/ami-preservation/pages/resources/cli-resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
+See our [Command Line Resources](https://nypl.github.io/ami-preservation/pages/resources/cli-resources.html)for descriptions, usage, and installation instructions of various tools we use in this workflow.
