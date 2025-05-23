@@ -52,7 +52,7 @@ Repairing invalid oxum requires use of scripts within the [NYPL/ami-tools](https
 
 ###  Invalid JSON (Metadata Issues)
 
-![Invalid JSON](/ami-preservation/docs/assets/images/invalid_json.png)
+![Invalid JSON](https://nypl.github.io/ami-preservation/docs/assets/images/invalid_json.png)
 
 A JSON file may be invalid when the contents or structure do not adhere to NYPL’s [ami-metadata schema]([https://nypl.github.io/ami-preservation/pages/ami-specifications.html](https://github.com/NYPL/ami-metadata) or other [metadata requirements outlined in NYPL's specifications](https://nypl.github.io/ami-preservation/pages/ami-handling.html#metadata). Some of the most common causes for invalid JSON include: empty required fields, use of terms not included in controlled vocabularies, inclusion of unrecognized characters, unnecessary blank spaces, and invalid JSON file structure. Repairing invalid JSON files requires using a combination of manual inspection and ```ajv validate```, ```fix_baginfo.py```, and ```validate_ami_bags.py``` to validate the file against a schema, fix the bag that contains the file, and confirm validation of the repaired bag.
 
