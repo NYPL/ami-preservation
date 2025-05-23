@@ -14,65 +14,66 @@ This document outlines vendor requirements for administration, shipping and medi
 
 <!-- MarkdownTOC -->
 
-- [Introduction](#introduction)
-- [Documentation](#documentation)
-  - [Statement of Work \(SOW\)](#statement-of-work-sow)
-  - [Metadata inventory](#metadata-inventory)
-  - [Vendor quote](#vendor-quote)
-- [Original Media Shipping Document](#original-media-shipping-document)
-  - [Discrepancy report](#discrepancy-report)
-  - [Hard Drive Manifest](#hard-drive-manifest)
-  - [Capture Issues](#capture-issues-report)
-- [Media Formats](#media-formats)
-- [Digital Asset Deliverables](#digital-asset-deliverables)
-- [Metadata](#metadata)
-  - [NYPL Metadata inventory](#nypl-metadata-inventory)
-  - [NYPL JSON schema](#nypl-json-schema)
-  - [Metadata content](#metadata-content)
-  - [Metadata notes fields](#metadata-notes-fields)
-  - [Metadata errors](#metadata-errors)
-  - [BEXT Metadata](#bext-metadata)
-- [Images](#images)
-  - [Image file naming convention](#image-file-naming-convention)
-- [Digital Asset and Hard Drive Structure](#digital-asset-and-hard-drive-structure)
-  - [Hard drive structure](#hard-drive-structure)
-  - [Digital asset packaging](#digital-asset-packaging)
-  - [File naming convention](#file-naming-convention)
-  - [Filename components](#filename-components)
-  - [File role](#file-role)
-- [Digital Asset Delivery](#digital-asset-delivery)
-  - [Delivery method](#delivery-method)
-  - [Delivery schedule](#delivery-schedule)
-  - [Pilot delivery](#pilot-delivery)
-- [Quality Assurance and Quality Control](#quality-assurance-and-quality-control)
-  - [Capture Issues](#capture-issues)
-  - [Vendor Quality Assurance and Control](#vendor-quality-assurance-and-control)
-  - [NYPL Quality Control](#nypl-quality-control)
-- [Environment and security](#environment-and-security)
-  - [Physical environment](#physical-environment)
-  - [Physical security](#physical-security)
-  - [Digital security](#digital-security)
-- [Shipment of Physical Media](#shipment-of-physical-media)
-  - [General logistics](#general-logistics)
-  - [Project assets](#project-assets)
-- [Treatment, Handling, and Rehousing of Physical Media](#treatment-handling-and-rehousing-of-physical-media)
-  - [General guidelines](#general-guidelines)
-  - [Treatment and rehousing: Film media](#treatment-and-rehousing-film-media)
-    - [Film handling](#film-handling)
-  - [Film cleaning](#film-cleaning)
-    - [Film repair](#film-repair)
-    - [Film rehousing](#film-rehousing)
-  - [Treatment and rehousing: Video media](#treatment-and-rehousing-video-media)
-    - [Video handling](#video-handling)
-    - [Video cleaning & baking](#video-cleaning--baking)
-    - [Video repair and rehousing](#video-repair-and-rehousing)
-  - [Treatment and rehousing: Audio media](#treatment-and-rehousing-audio-media)
-    - [Audio reel and cassette rehousing:Reels and Cassettes](#audio-reel-and-cassette-rehousingreels-and-cassettes)
-  - [Treatment and rehousing: Grooved Disc](#treatment-and-rehousing-grooved-disc)
-    - [Grooved Disc identification and rehousing](#grooved-disc-identification-and-rehousing)
-  - [Grooved Disc cleaning](#grooved-disc-cleaning)
-    - [Cylinder cleaning](#cylinder-cleaning)
-    - [Cylinder rehousing](#cylinder-rehousing)
+- [Vendor AMI Handling](#vendor-ami-handling)
+  - [Table Of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Documentation](#documentation)
+    - [Statement of Work (SOW)](#statement-of-work-sow)
+    - [Metadata inventory](#metadata-inventory)
+    - [Vendor quote](#vendor-quote)
+  - [Original Media Shipping Document](#original-media-shipping-document)
+    - [Hard Drive Manifest](#hard-drive-manifest)
+    - [Discrepancy report](#discrepancy-report)
+    - [Capture Issues Report](#capture-issues-report)
+  - [Media Formats](#media-formats)
+  - [Digital Asset Deliverables](#digital-asset-deliverables)
+  - [Metadata](#metadata)
+    - [NYPL Metadata inventory](#nypl-metadata-inventory)
+    - [NYPL JSON schema](#nypl-json-schema)
+    - [Metadata content](#metadata-content)
+    - [Metadata notes fields](#metadata-notes-fields)
+    - [Metadata errors](#metadata-errors)
+  - [Images](#images)
+    - [Image file naming convention and controlled vocabulary](#image-file-naming-convention-and-controlled-vocabulary)
+  - [Digital Asset and Hard Drive Structure](#digital-asset-and-hard-drive-structure)
+    - [Hard drive structure](#hard-drive-structure)
+    - [Digital asset packaging](#digital-asset-packaging)
+    - [File naming convention](#file-naming-convention)
+    - [Filename components](#filename-components)
+    - [File role](#file-role)
+  - [Digital Asset Delivery](#digital-asset-delivery)
+    - [Delivery method](#delivery-method)
+    - [Delivery schedule](#delivery-schedule)
+    - [Pilot delivery](#pilot-delivery)
+  - [Quality Assurance and Quality Control](#quality-assurance-and-quality-control)
+    - [Capture Issues](#capture-issues)
+    - [Vendor Quality Assurance and Control](#vendor-quality-assurance-and-control)
+    - [NYPL Quality Control](#nypl-quality-control)
+  - [Environment and Security](#environment-and-security)
+    - [Physical environment](#physical-environment)
+    - [Physical security](#physical-security)
+    - [Digital security](#digital-security)
+  - [Shipment of Physical Media](#shipment-of-physical-media)
+    - [General logistics](#general-logistics)
+    - [Project assets](#project-assets)
+  - [Treatment, Handling, and Rehousing of Physical Media](#treatment-handling-and-rehousing-of-physical-media)
+    - [General guidelines](#general-guidelines)
+    - [Treatment and rehousing: Film media](#treatment-and-rehousing-film-media)
+      - [Film handling](#film-handling)
+    - [Film cleaning](#film-cleaning)
+      - [Film repair](#film-repair)
+      - [Film rehousing](#film-rehousing)
+    - [Treatment and rehousing: Video media](#treatment-and-rehousing-video-media)
+      - [Video handling](#video-handling)
+      - [Video cleaning \& baking](#video-cleaning--baking)
+      - [Video repair and rehousing](#video-repair-and-rehousing)
+    - [Treatment and rehousing: Audio media](#treatment-and-rehousing-audio-media)
+      - [Audio reel and cassette rehousing:Reels and Cassettes](#audio-reel-and-cassette-rehousingreels-and-cassettes)
+    - [Treatment and rehousing: Grooved Disc](#treatment-and-rehousing-grooved-disc)
+      - [Grooved Disc identification and rehousing](#grooved-disc-identification-and-rehousing)
+    - [Grooved Disc cleaning](#grooved-disc-cleaning)
+      - [Cylinder cleaning](#cylinder-cleaning)
+      - [Cylinder rehousing](#cylinder-rehousing)
 
 <!-- /MarkdownTOC -->
 
@@ -81,10 +82,10 @@ This document outlines vendor requirements for administration, shipping and medi
 
 All tasks must comply with NYPL specifications, which are maintained in publically available GitHub pages. Actions to resolve unforeseen issues must be approved in writing by NYPL. The winning vendor(s) is expected to subscribe and refer to (“watch”) updates to the following GitHub repositories or pages:
 
-  * [ami-handling:] (https://github.com/NYPL/ami-handling)
-  * [ami-specifications:] (https://github.com/NYPL/ami-specifications)
-  * [ami-metadata:] (https://github.com/NYPL/ami-metadata)
-  * [external-storage:] (https://github.com/NYPL/digpres-policies/blob/master/external_storage.md)
+  * [ami-handling](https://github.com/NYPL/ami-handling)
+  * [ami-specifications](https://nypl.github.io/ami-preservation/pages/ami-specifications.html)
+  * [ami-metadata](https://github.com/NYPL/ami-metadata)
+  * [external-storage](https://github.com/NYPL/digpres-policies/blob/master/external_storage.md)
 
 <a name="documentation"></a>
 ## Documentation
@@ -151,16 +152,22 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   |Group| Type | Formats |
   | --- | --- | ---- |
   | Film Group 1 | Motion Picture Film, silent | 8mm, Super 8mm, Double 8mm, 16mm, 35mm
-  | Film Group 2 | Motion Picture Film, sound | 8 mm, Super 8mm, 16m, 35mm
+  | Film Group 2 | Motion Picture Film, sound | 8mm, Super 8mm, 16m, 35mm
   | Film Group 3 | Audio Film | 16mm full-coat magnetic audio, 16mm optical track, 35mm full-coat magnetic audio, 35mm optical track
   | Film Group 4 | Filmstrip | 16mm filmstrip, 35mm filmstrip
 
 
-  |Group| Type | Formats |
-  | --- | --- | ---- |
-  | Video Group 1 | Video Cassette Analog | Betacam Oxide, Betacam SP, Betamax, Hi8, MII, S-VHS, S-VHS-C, U-matic, U-matic SP, VHS, VHS-C, Video8 | Video Cassette Digital | D-1, D-2, D-3, D-5, D-9, Digital Betacam, HDCAM, HDCAM SR, HDCAM SX, MPEG IMX | Video Reel Analog | Two-inch quad open-reel (LoBand, HiBand and SuperHiBand), One-inch open-reel, Type A, One-inch open-reel, Type C, One-inch open-reel, EV, One-inch open reel video, IVC, One-inch open-reel, other/non-standard, Half-inch open-reel, Sony CV, Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2), Half-inch open-reel, other/non-standard
-  | Video Group 2 | Video Cassette DV | Digital8, DVCam, MiniDV, HDV, DVCPRO, DVCPRO 50, DVCPRO HD
-  | Video Group 3 | Video Optical Disc | DVD, pressed, DVD±R, DVD±RW, Blu-Ray, Laser Disc, VCD
+| Group         | Type                            | Formats |
+|---------------|----------------------------------|---------|
+| Video Group 1 | Video Cassette Analog            | Betacam Oxide, Betacam SP, Betamax, Hi8, MII, S-VHS, S-VHS-C, U-matic, U-matic SP, VHS, VHS-C, Video8, Laser Disc* |
+|               | Video Cassette Digital           | D-1, D-2, D-3, D-5, D-9, Digital Betacam, HDCAM, HDCAM SR, HDCAM SX, MPEG IMX |
+|               | Video Reel Analog                | Two-inch quad open-reel (LoBand, HiBand and SuperHiBand), One-inch open-reel, Type A, One-inch open-reel, Type C, One-inch open-reel, EV, One-inch open reel video, IVC, One-inch open-reel, other/non-standard, Half-inch open-reel, Sony CV, Half-inch open-reel, EIAJ/AV Standard (Types 1 & 2), Half-inch open-reel, other/non-standard |
+| Video Group 2 | Video Cassette DV                | Digital8, DVCam, MiniDV, DVCPRO, DVCPRO 50, DVCPRO HD |
+| Video Group 3 | Video Cassette HDV               | HDV |
+| Video Group 4 | Video Optical Disc (DVD-Video)   | DVD, pressed, DVD±R, DVD±RW, Blu-Ray |
+| Video Group 5 | Video Optical Disc (VCD)         | VCD (Video CD) |
+
+\* While a Domesday Project approach would be ideal for Laser Discs, analog video capture is acceptable.
 
 
   |Group | Type | Formats |
@@ -191,7 +198,7 @@ All tasks must comply with NYPL specifications, which are maintained in publical
 
 |Files| Film | Video | Audio | Data |
 | ------ | --- | --- | --- | --- |
-| Preservation master file (pm) | x | x | x | x |
+| Preservation Master file (pm) | x | x | x | x |
 | Edit (em) or mezzanine (mz) master file | x |  | x |  |
 | Service file (sc) | x | x |  |  |
 | Metadata file (for each media files) | x | x | x |  |
@@ -209,16 +216,16 @@ NYPL will provide the vendor with a Microsoft Excel spreadsheet containing ident
 
 <a name="nypl-json-schema"></a>
 ### NYPL JSON schema
-NYPL metadata deliverables must adhere to customized fields and controlled vocabulary defined within NYPL’s JSON Schema. The schema, sample files, and validation instructions are hosted on GitHub: (https://github.com/NYPL/ami-metadata)
+NYPL metadata deliverables must adhere to customized fields and controlled vocabulary defined within the NYPL JSON Schema. The schema, sample files, and validation instructions are hosted on [ami-metadata](https://github.com/NYPL/ami-metadata)
   * Metadata must be packaged as a single JSON file for each audio, video, or film media file (Images do not require JSON metadata).
-  * Metadata must validate against JSON schema. Any invalid files or errors will be corrected by the vendor and require redelivery of an entire Bagged digital asset.
+  * Metadata must validate against the NYPL JSON schema. Any invalid files or errors will be corrected by the vendor and require redelivery of an entire Bagged digital asset.
   * Metadata files must be named with the same root as the media file to which they pertain, but must not include the original extension of the media file. Example:
     * Correct: [filename].json
-    * Incorrect: [filename].mov.json
+    * Incorrect: [filename].mov.json — includes the media extension .mov, which is not permitted in metadata filenames
 
 The vendor will be responsible for the following:
   * maintaining a system that is able to easily sync with and incorporate updates from NYPL’s live GitHub repository, ami-metadata, and
-* generating metadata about the source object, preservation master and derivative files, treatment and digitization processes, and the transfer operator.
+* generating metadata about the source object, Preservation Master and derivative files, treatment and digitization processes, and the transfer operator.
 
 <a name="metadata-content"></a>
 ### Metadata content
@@ -247,23 +254,8 @@ The metadata schema includes a number of ‘notes’ fields which must be used a
 <a name="metadata-errors"></a>
 ### Metadata errors
 
-  * If the technical characteristics or format of an object have provided by NYPL are incorrect (i.e. metadata inventory describes the format as “video cassette analog” and it is actually “audio cassette digital” with a format of “Umatic/PCM”), please
-  * provide corrected metadata. Make any changes to source object metadata elements that would be appropriate, and note the correction in the "digitization.notes.processNotes". Example text:
+  * If the technical characteristics or format of an object have provided by NYPL are incorrect (i.e. metadata inventory describes the format as “video cassette analog” and it is actually “audio cassette digital” with a format of “Umatic/PCM”), please provide corrected metadata. Make any changes to source object metadata elements that would be appropriate, and note the correction in the "digitization.notes.processNotes". Example text:
     * "NYPL-provided metadata incorrectly listed [insert field name here] as [insert wrong content here]; JSON reflects correct [field name]"
-
-<a name="bext-metadata"></a>
-### BEXT Metadata
-The following BEXT metadata must be captured in the original Broadcast Wave files to ensure retention in the final FLAC deliverable.
-
-| BEXT field | Explanation | Sample data |
-| ---- | ----- | ---- |
-| Description | Description of who created the file | File generated by Vendor Services, US |
-| Originator | Country code, Institution | US, The New York Public Library |
-| OriginatorReference | technicalFileName | myt_123456_v01f01_pm |
-| OriginationDate | Date file created in YYYY-MM-DD format | 2017-06-23 |
-| OriginationTime | Time file created in hh:mm:ss format | 11:20:47 |
-| BextVersion | | 1 |
-| CodingHistory | Signal chain from which the digital file was created, starting with the analog or digital source. There are six elements that can be included in the coding history: 1. A = coding algorithm (analog, PCM, etc.) 2. F = sampling frequency in Hz 3. B = bit rate (for MPEG only) 4. W = word length or bit depth 5. M = mode or sound field (mono, stereo) 6. T = free text to describe playback and capture equipment | A=PCM,F=44100,W=16,M=stereo,T=TSSTcorp DVDRW SH-216BB; Compact DiscA=PCM,F=44100,W=16,M=stereo,T=dBpoweramp 14.3; Import CDDA as WAV |
 
 <a name="images"></a>
 ## Images
@@ -344,7 +336,7 @@ Package digital assets using the BagIt specification (V0.97) (https://tools.ietf
       * Images
 
       * Files
-      * For each preservation master file in the PreservationMasters directory, corresponding derivative file/s must exist.
+      * For each Preservation Master file in the PreservationMasters directory, corresponding derivative file/s must exist.
       * Each audio, film, video media, or data file in the Bag must have a corresponding JSON metadata file (image files do not require metadata).
     * Example structure:
         * NYPL000001
@@ -392,7 +384,7 @@ NYPL will provide the vendor with a filename “root” for each collection obje
 | Volume: v## | A Volume is one video or audio object in a set of objects, when that set has been assigned a single primary identifier (i.e. NYPL Primary ID) | Audio and video |
 | Face: f## | A Face is a stream or track, or a group of streams or tracks which play synchronously, within an audio object. Every audio object has at least one Face. Some optical video formats are double-sided (rare) | Audio and video |
 | Region: r## | A Region is a subdivision of a Face. Regions are most often defined by a required change in playback characteristics of an object's Face (speed, EQ, track configuration, color encoding system etc.). | Audio and video |
-| Stream: s## | The Stream element is used to describe multi-track and multi-channel audio objects only.Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object. | Audio only |
+| Stream: s## | The Stream element is used to describe multi-track and multi-channel audio objects only. Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object. | Audio only |
 | Part: p## | The part element is used when digitization of a single face of an audio or video object requires interruption because the size of the resulting file would exceed technical limits if captured all at once. The part element may also be used when a single tape contains sections of content that are each given different unique identifiers (rare; each section would be a distinct Part). | Audio and video |
 
 <a name="file-role"></a>
@@ -409,7 +401,7 @@ A media file name must record its intended role using one of the following suffi
 
 <a name="delivery-method"></a>
 ### Delivery method
-  * New hard drive(s)  must adhere to the following specifications outlined by NYPL digital preservation requirements: (https://github.com/NYPL/digpres-policies) mustbe used.
+  * New hard drive(s)  must adhere to the following specifications outlined by [NYPL digital preservation requirements](https://github.com/NYPL/digpres-policies) must be used.
   * In addition to the naming requirements listed on the linked hard drive specifications, the hard drive ID and volume name must be exactly 10-characters in length (i.e. NYPL000001 or NYPL_12345).
   * Alternate delivery methods may be explored during term of the agreement.
 
@@ -444,7 +436,7 @@ If any physical problems are detected, either during inspection or playback, con
 NYPL recognizes that some media may pose challenges to capture or may not be able to be captured due to extremely poor condition or other circumstances.
   * If media exhibit audiovisual artifacts inherent to their source formats or conditions that impact the quality of transfer, but do not prevent a full capture, such artifacts must be described in the metadata signal notes.
   * If an object is not captured, the object must be listed in the required capture issues report, described in the documentation section of this RFP:
-  * Capture issues reports must adhere to the [provided template: ](https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
+  * Capture issues reports must adhere to the [provided template](https://docs.google.com/spreadsheets/d/1ay84VeqSbn37bn73NQSWwkTUFZ2dR9Cof6kTAnyRgHI/edit#gid=668946701)
   * **Capture Issue Category**: Issues that result in an an object not being captured must be described in the report using the following categories, with additional notes provided as needed. **If additional categories are required, NYPL must approve before they are used**:
     * playback issue
     * condition issue
@@ -457,12 +449,12 @@ NYPL recognizes that some media may pose challenges to capture or may not be abl
 
 <a name="vendor-quality-assurance-and-control"></a>
 ### Vendor Quality Assurance and Control
-Quality control must be performed for all digital assets, prior to delivery, including preservation masters, derivatives, and metadata. The quality control must include, at minimum:
+Quality control must be performed for all digital assets, prior to delivery, including Preservation Masters, derivatives, and metadata. The quality control must include, at minimum:
   1. a confirmation that all required files are present and are named correctly;
   2. confirmation of conformance to media file technical specifications;
   3. confirmation of BagIt specification conformance;
   4. a comparison of each file’s technical metadata to its actual technical specifications;
-  5. validation of JSON metadata against NYPL’s JSON schema;
+  5. validation of JSON metadata against the NYPL JSON schema;
   6. a playback inspection of each file covering the beginning, middle, and end of the file; and
   7. confirmation that the delivery hard drive and subdirectories are formatted and structured according to NYPL specifications.
 
@@ -480,7 +472,7 @@ Rework following QC failures
   * **Extensive rework or redelivery of large volumes of Bags, that exceeds the 30 day QC timeframe will be subject to a new 30-day cycle upon receipt by NYPL.**
 
 <a name="environment-and-security"></a>
-## Environment and security
+## Environment and Security
 
 <a name="physical-environment"></a>
 ### Physical environment

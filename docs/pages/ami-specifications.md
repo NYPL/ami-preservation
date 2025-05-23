@@ -28,7 +28,7 @@ Last updated: 2025-05-19. For previous versions, see [changelog.md](https://gith
   * [Audio Media](#audio-media)
     * [Audio Group 1: Analog Magnetic](#audio-group-1)
     * [Audio Group 2: Digital Magnetic](#audio-group-2)
-    * [Audio Group 3: CDDA](#audio-group-3)
+    * [Audio Group 3: CD-DA (Compact Disc Digital Audio)](#audio-group-3)
     * [Audio Group 4: Grooved Disc](#audio-group-4)
     * [Audio Group 5: Grooved Cylinder](#audio-group-5)
     * [Edit Master File Specifications](#edit-masters-all)
@@ -66,7 +66,7 @@ Each filename is built from a standardized "root" that includes:
 
 * a three-letter division prefix,
 * the object's Primary ID,
-* one or more structural components (e.g., `v01`, `f01`, `r01`, `p01`, `t01`),
+* one or more structural components (e.g., `v01`, `f01`, `r01`, `s01`, `p01`, `t01`),
 * and a two-letter suffix denoting the file’s role (`pm`, `em`, `sc`, `mz`).
 
 **Examples:**
@@ -81,7 +81,7 @@ For details on volume, face, region, stream, and part identifiers—as well as r
 ## Film Media
 
 ### _Deliverables_
-For each original recording, the following shall be produced:
+For each original recording, the following should be produced:
 * One preservation master file*
 * One mezzanine file*
 * One service copy file*
@@ -226,7 +226,7 @@ NYPL will review recommendations for digitization of filmstrips (and accompanyin
 <a name="deliverables"></a>
 
 ### _Deliverables_
-For each original recording, the following shall be produced:
+For each original recording, the following should be produced:
   * One preservation master file
       * If EIA-608 (line 21) captions are present in source, one closed captions sidecar file
   * One service copy file
@@ -465,7 +465,7 @@ Apply the same service-copy settings as for DVDs (see [Service copy specificatio
 ### *Deliverables*
 
 <a name="audio-deliverables"></a>
-For each collection object, the following shall be produced:
+For each collection object, the following should be produced:
 
 * One or more preservation master file(s)
 * One edit master file per preservation master
@@ -562,6 +562,8 @@ myd_123456_v01f01s24_pm.flac
 
 ### **Audio Group 2: Digital Magnetic**
 
+Whenever possible, digital magnetic audio formats should be transferred using original playback equipment that supports native digital extraction. This approach—similar to our preferred method for DV video—ensures bit-perfect preservation of the original digital signal. If native digital migration is not possible due to equipment availability or format degradation, analog playback and re-digitization may be used as a fallback, pending approval from NYPL. Vendors must confirm and document the transfer method used for each asset.
+
 #### *Preservation Master File Specifications*
 
 | Attribute          | Specification    |
@@ -574,7 +576,9 @@ myd_123456_v01f01s24_pm.flac
 
 <a name="audio-group-3"></a>
 
-### **Audio Group 3: CDDA**
+### **Audio Group 3: CD-DA**
+
+NYPL’s preference is for all audio content present on the disc—including multiple sessions, if applicable—to be extracted and preserved. Tracks should be concatenated into a single WAV file according to the original track order defined in the CUE sheet. This ensures accurate representation of the disc’s structure and content while simplifying preservation workflows.
 
 #### *Preservation Master File Specifications*
 
@@ -686,7 +690,7 @@ PrimaryID
 ### *Deliverables*
 
 <a name="data-deliverables"></a>
-For each collection object, the following shall be produced:
+For each collection object, the following should be produced:
 
 * One or more preservation master file(s)
 * One JSON metadata file per media file (see [JSON Metadata Deliverables](#json-deliverables))
