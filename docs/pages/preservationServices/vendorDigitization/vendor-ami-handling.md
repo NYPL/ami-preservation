@@ -181,9 +181,10 @@ All tasks must comply with NYPL specifications, which are maintained in publical
   | --- | --- | --- |
   | Audio Group 2 (Digital Magnetic) | Audio Cassettes Digital | ADAT, DAT, DA-88, Digital Compact Cassette, U-matic/PCM, Betamax/PCM, VHS/PCM, Hi8/PCM
   | Audio Group 2 (Digital Magnetic) | Audio Reels Digital | ProDigi, DASH, NAGRA-D
-  | Audio Group 3 | Audio Optical Disc | Audio CD-DA, Audio CD±R, Audio CD±RW, Audio CD, pressed, DVD-Audio, Minidisc
-  | Audio Group 4 | Audio Grooved Disc | Aluminum-based lacquer coated discs, Glass-based lacquer coated discs, Paper-based lacquer coated discs, Microgroove discs (LP, Vinyl), Replicated coarse groove disc (Shellac), Gray Audograph discs, Edison Diamond Disc, Edison Voicewriter/Flexible disc, Gelatin disc, Metal disc, Metal master disc
-  | Audio Group 5 | Audio Grooved Cylinder | Brown wax, Molded and Black Amberol, Blue Amberol / US Everlasting Indestructible, Dictabelt
+  | Audio Group 3 | Audio Optical Disc | Audio CD-DA, Audio CD±R, Audio CD±RW, Audio CD, pressed, DVD-Audio
+  | Audio Group 4 | Audio Optical Disc | Minidisc
+  | Audio Group 5 | Audio Grooved Disc | Aluminum-based lacquer coated discs, Glass-based lacquer coated discs, Paper-based lacquer coated discs, Microgroove discs (LP, Vinyl), Replicated coarse groove disc (Shellac), Gray Audograph discs, Edison Diamond Disc, Edison Voicewriter/Flexible disc, Gelatin disc, Metal disc, Metal master disc
+  | Audio Group 6 | Audio Grooved Cylinder | Brown wax, Molded and Black Amberol, Blue Amberol / US Everlasting Indestructible, Dictabelt
 
 
   |Group | Type | Formats |
