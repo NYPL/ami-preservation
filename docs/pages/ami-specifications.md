@@ -29,8 +29,9 @@ Last updated: 2025-05-19. For previous versions, see [changelog.md](https://gith
     * [Audio Group 1: Analog Magnetic](#audio-group-1)
     * [Audio Group 2: Digital Magnetic](#audio-group-2)
     * [Audio Group 3: CD-DA (Compact Disc Digital Audio)](#audio-group-3)
-    * [Audio Group 4: Grooved Disc](#audio-group-4)
-    * [Audio Group 5: Grooved Cylinder](#audio-group-5)
+    * [Audio Group 4: MiniDisc](#audio-group-4)
+    * [Audio Group 5: Grooved Disc](#audio-group-5)
+    * [Audio Group 6: Grooved Cylinder](#audio-group-6)
     * [Edit Master File Specifications](#edit-masters-all)
   * [Data Media](#data-media)
     * [Data Group 1: Optical Disc](#data-group-1)
@@ -571,7 +572,7 @@ Whenever possible, digital magnetic audio formats should be transferred using or
 | Audio codec        | FLAC             |
 | File wrapper       | FLAC (.flac)     |
 | Bit depth          | (same as source, commonly 16 bit) |
-| Sampling rate      | (same as source, commonly 48000 Hz, 44100 Hz, 32000 Hz (DAT), 44056 Hz (PCM-1610/30, F1) |
+| Sampling rate      | (same as source, commonly 48000 Hz, 44100 Hz, 32000 Hz (DAT), 44056 Hz (PCM-1610/30, F1)) |
 | Number of channels | (same as source) |
 
 <a name="audio-group-3"></a>
@@ -603,15 +604,58 @@ NYPL’s preference is for all audio content present on the disc—including mul
 PrimaryID
 ├── data
 │ ├── PreservationMasters
-│ │ ├── division_PrimaryID_v01f01.flac
-│ │ └── division_PrimaryID_v01f01.cue
+│ │ ├── division_PrimaryID_v01f01_pm.flac
+│ │ └── division_PrimaryID_v01f01_pm.cue
 │ └── EditMasters
-│   └── division_PrimaryID_v01f01.flac
+│   └── division_PrimaryID_v01f01_em.flac
 ```
 
 <a name="audio-group-4"></a>
 
-### **Audio Group 4: Grooved Disc**
+### **Audio Group 4: MiniDisc**
+
+For MiniDiscs, NYPL's preference is to capture each track as a discrete file, preserving the structure and segmentation of the original disc. This approach accommodates the non-contiguous nature of audio data on MD and reflects the limitations and capabilities of current extraction tools.
+
+Preservation masters are captured in ATRAC format (ATRAC1, ATRAC3, ATRAC3plus, or PCM for Hi-MD) and stored with the `.aea` file extension. Alongside each set of preservation masters, a CSV file is included that documents the track layout and metadata as exported by the transfer software.
+
+#### *Preservation Master File Specifications*
+
+| Attribute             | Specification                                                      |
+| ---------------------|--------------------------------------------------------------------|
+| Audio codec           | ATRAC1 / ATRAC3 / ATRAC3plus / PCM (as present on source)         |
+| File wrapper          | AEA (.aea)                                                         |
+| Bit depth             | As present on source (typically 16-bit for PCM)                    |
+| Sampling rate         | As present on source (commonly 44100 Hz)                           |
+| Number of channels    | 2 (left + right discrete)                                          |
+| Other characteristics | One `.aea` file per track; no concatenation.                      |
+| Additional file       | One CSV track metadata file (UTF-8, comma-separated)               |
+| Placement             | CSV must be placed alongside `.aea` files in the `PreservationMasters` directory |
+
+#### CSV Track Metadata File
+
+The accompanying CSV must retain its original structure, as exported by the MiniDisc extraction software (e.g.,[Web MiniDisc Pro](https://web.minidisc.wiki/). It includes fields such as:
+
+```
+INDEX,GROUP RANGE,GROUP NAME,NAME,FULL WIDTH NAME,ALBUM,ARTIST,DURATION,ENCODING,BITRATE
+```
+
+The CSV filename should match the root of the preservation master files and be placed in the `PreservationMasters` directory alongside the `.aea` files—for example:
+
+```
+PrimaryID
+├── data
+│ ├── PreservationMasters
+│ │ ├── division_PrimaryID_v01f01r01_pm.aea
+│ │ ├── division_PrimaryID_v01f01r02_pm.aea
+│ │ └── division_PrimaryID_v01f01_pm.csv
+│ └── EditMasters
+│   ├── division_PrimaryID_v01f01r01_em.flac
+│   └── division_PrimaryID_v01f01r02_em.flac
+```
+
+<a name="audio-group-5"></a>
+
+### **Audio Group 5: Grooved Disc**
 
 #### *Preservation Master File Specifications*
 
@@ -641,9 +685,9 @@ PrimaryID
 
   * Reattempt retracking if skips occur; document outcomes
 
-<a name="audio-group-5"></a>
+<a name="audio-group-6"></a>
 
-### **Audio Group 5: Grooved Cylinder**
+### **Audio Group 6: Grooved Cylinder**
 
 #### *Preservation Master File Specifications*
 
@@ -653,7 +697,7 @@ PrimaryID
 | File wrapper       | FLAC (.flac)              |
 | Bit depth          | 24                        |
 | Sampling rate      | 96000 Hz                  |
-| Number of channels | Mono (1))                 |
+| Number of channels | Mono (1)                 |
 
 #### Reproduction Details
 
