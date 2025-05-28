@@ -1,12 +1,12 @@
 ---
-title: WAV Creation
+title: CD-DA Migration
 layout: default
 nav_order: 1
 parent: CD Processing
 grand_parent: Optical Media
 ---
 
-# WAV Creation
+# CD-DA Migration
 {: .no_toc }
 
 This page provides a detailed guide for extracting audio from Audio CDs using ISOBuster and the Nimbie disc robot. The process ensures preservation-quality WAV creation, aligned with our AMI digitization workflows.
@@ -19,7 +19,7 @@ This page provides a detailed guide for extracting audio from Audio CDs using IS
 
 ---
 
-### 1. WAV Extraction from Audio CDs
+### 1. WAV Extraction from CD-DA
 
 Our Audio CD migration process is based on a Windows PC equipped with the Acronova Nimbie disc robot and ISOBuster version 4.9. This combination is effective for high-volume extraction and reliable with challenging discs.
 
@@ -126,7 +126,7 @@ Each subdirectory should be named using the corresponding six-digit SPEC AMI ID.
 
 ---
 
-### Summary of Audio CD Extraction Process
+### Summary of CD-DA Extraction Process
 
 | Step                   | Tool/Action                  | Notes                                                                 |
 |------------------------|------------------------------|-----------------------------------------------------------------------|

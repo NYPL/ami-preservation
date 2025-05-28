@@ -1,12 +1,12 @@
 ---
-title: cd_processing.py Overview
+title: CD-DA Processing
 layout: default
-nav_order: 3
+nav_order: 2
 parent: CD Processing
 grand_parent: Optical Media
 ---
 
-# `cd_processing.py` Overview
+# CD-DA Processing
 {: .no_toc }
 
 This page provides a conceptual overview of the `cd_processing.py` script, which is designed to process directories created via ISOBuster extraction of Audio CDs. The script prepares these directories for ingest into our preservation workflows by creating structured Preservation and Edit Masters.
