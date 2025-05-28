@@ -406,7 +406,7 @@ When native capture is not possible due to object condition or playback issues, 
 | Frame rate | 59.94 (NTSC) or 50 (PAL) |
 | Frame size | 720x480 (NTSC) or 720x576 (PAL) |
 | Broadcast standard | (Same as original media) |
-| Pixel aspect ratio | 0.889 (NTSC 4:3) or 1.091 (PAL 4:3); 1.212 (NTSC DV Widescreen); 1.454 (PAL DV Widescreen) |
+| Pixel aspect ratio | 0.889 (NTSC 4:3) or 1.091 (PAL 4:3); 1.185 (NTSC DV Widescreen); 1.422 (PAL DV Widescreen) |
 | Audio codec | AAC |
 | Audio bit rate | 320 kbps (CBR) |
 | Audio sampling rate | 48 kHz |
