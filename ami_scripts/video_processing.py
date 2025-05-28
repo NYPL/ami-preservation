@@ -69,6 +69,33 @@ def process_dv_files(input_directory):
     return dv_files  # Return the list of .dv files
 
 
+def process_hdv_files(input_directory):
+    """
+    Remux HDV .m2t files to MKV (preserving all streams/codecs),
+    then move originals into a ProcessedHDV folder.
+    """
+    hdv_files = list(input_directory.glob("*.m2t"))
+    if not hdv_files:
+        return []
+
+    processed_directory = input_directory / "ProcessedHDV"
+    processed_directory.mkdir(exist_ok=True)
+
+    for hdv in hdv_files:
+        mkv_out = input_directory / f"{hdv.stem}.mkv"
+        cmd = [
+            "ffmpeg",
+            "-i", str(hdv),
+            "-c", "copy",
+            str(mkv_out)
+        ]
+        print(f"Rewrapping HDV: {hdv.name} → {mkv_out.name}")
+        subprocess.run(cmd, check=True)
+        shutil.move(str(hdv), processed_directory / hdv.name)
+
+    return hdv_files
+
+
 def generate_framemd5_files(input_directory):
     # Sort the files so they are processed in alphabetical order
     mkv_files = sorted(input_directory.glob("*.mkv"))
@@ -252,83 +279,95 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
             "ffprobe", "-v", "error", "-select_streams", "v:0",
             "-show_entries", "stream=width,height", "-of", "csv=p=0"
         ]
-        result = subprocess.run(ffprobe_command + [str(input_file)], capture_output=True, text=True)
-        if result.returncode == 0:
-            width, height = map(int, result.stdout.strip().split(","))
-            return width, height
-        else:
-            raise ValueError(f"Could not determine video resolution: {result.stderr}")
+        result = subprocess.run(
+            ffprobe_command + [str(input_file)],
+            capture_output=True, text=True
+        )
+
+        stdout = result.stdout.strip()
+        if result.returncode != 0 or not stdout:
+            raise ValueError(
+                f"Could not determine resolution for {input_file!r}: "
+                f"{result.stderr.strip() or 'no output'}"
+            )
+
+        # Remove any trailing commas and split
+        clean = stdout.rstrip(",")
+        parts = clean.split(",")
+        if len(parts) < 2 or not parts[0].isdigit() or not parts[1].isdigit():
+            raise ValueError(
+                f"Unexpected resolution format for {input_file!r}: '{stdout}'"
+            )
+
+        return int(parts[0]), int(parts[1])
 
     output_file_name = f"{input_file.stem.replace('_pm', '')}_sc.mp4"
     output_file = input_directory / output_file_name
 
-    # Detect all audio streams in the input file
-    ffprobe_command = [
+    # Detect all audio streams
+    ffprobe_audio = [
         "ffprobe", "-i", str(input_file),
         "-show_entries", "stream=index:stream=codec_type",
         "-select_streams", "a", "-of", "compact=p=0:nk=1", "-v", "0"
     ]
-    ffprobe_result = subprocess.run(ffprobe_command, capture_output=True, text=True)
+    audio_result = subprocess.run(ffprobe_audio, capture_output=True, text=True)
     audio_streams = [
         int(line.split('|')[0])
-        for line in ffprobe_result.stdout.splitlines() if "audio" in line
+        for line in audio_result.stdout.splitlines() if "audio" in line
     ]
 
-    # Generate pan filters based on user selection
+    # Build pan filters
     pan_filters = []
     if audio_pan in {"left", "right", "center"}:
-        for i, stream_index in enumerate(audio_streams):
+        for i, idx in enumerate(audio_streams):
             if audio_pan == "left":
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{i}]")
+                pan_filters.append(f"[0:{idx}]pan=stereo|c0=c0|c1=c0[outa{i}]")
             elif audio_pan == "right":
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{i}]")
-            elif audio_pan == "center":
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0+c1|c1=c0+c1[outa{i}]")
+                pan_filters.append(f"[0:{idx}]pan=stereo|c0=c1|c1=c1[outa{i}]")
+            else:  # center
+                pan_filters.append(f"[0:{idx}]pan=stereo|c0=c0+c1|c1=c0+c1[outa{i}]")
     elif audio_pan == "auto":
         pan_filters = detect_audio_pan(input_file, audio_pan)
 
-    # Detect resolution and decide cropping
+    # Get resolution and choose video filter
     try:
         width, height = get_video_resolution(input_file)
     except ValueError as e:
-        print(e)
+        print(f"Skipping {input_file.name}: {e}")
         return None
 
-    if width == 720 and height == 486:  # NTSC
+    if (width, height) == (720, 486):         # NTSC
         video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=4/3"
-    elif width == 720 and height == 576:  # PAL
+    elif (width, height) == (720, 576):       # PAL
         video_filter = "idet,bwdif=1"
+    elif (width, height) == (1440, 1080):     # HDV 1080-line
+        video_filter = "idet,bwdif=1"  # no crop, just deinterlace
     else:
-        print(f"Unknown resolution {width}x{height}. Skipping cropping.")
+        print(f"Unknown resolution {width}×{height}, using default filter.")
         video_filter = "idet,bwdif=1"
 
-    # FFmpeg command setup
+    # Assemble ffmpeg command
     command = [
-        "ffmpeg",
-        "-i", str(input_file),
-        "-map", "0:v", "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p",
-        "-crf", "21", "-vf", video_filter,
+        "ffmpeg", "-i", str(input_file),
+        "-map", "0:v", "-c:v", "libx264", "-movflags", "faststart",
+        "-pix_fmt", "yuv420p", "-crf", "21", "-vf", video_filter,
     ]
 
-    # Add audio filters if specified
     if pan_filters:
         filter_complex = ";".join(pan_filters)
-        command.extend([
-            "-filter_complex", filter_complex,
-        ])
+        command += ["-filter_complex", filter_complex]
         for i in range(len(pan_filters)):
-            command.extend(["-map", f"[outa{i}]"])
+            command += ["-map", f"[outa{i}]"]
     else:
-        # Default mapping for all audio streams without modification
-        for stream_index in audio_streams:
-            command.extend(["-map", f"0:{stream_index}", "-c:a", "aac", "-b:a", "320000", "-ar", "48000"])
+        for idx in audio_streams:
+            command += ["-map", f"0:{idx}", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
 
-    # Add output file
     command.append(str(output_file))
 
-    print(f"FFmpeg command: {' '.join(command)}")  # Debugging output
+    print(f"FFmpeg command: {' '.join(command)}")
     subprocess.check_call(command)
     print(f"MP4 created: {output_file}")
+
     return output_file
 
 
@@ -570,6 +609,9 @@ def main():
 
     print("Processing DV files...")
     process_dv_files(input_dir)
+
+    print("Processing HDV (.m2t) files...")
+    process_hdv_files(input_dir)
 
     print("Creating directories...")
     create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
