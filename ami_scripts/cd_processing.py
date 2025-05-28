@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import unicodedata
 from pathlib import Path
+import json
 
 
 def strip_accents(txt: str) -> str:
@@ -24,9 +25,11 @@ def strip_accents(txt: str) -> str:
 def run(cmd: list[str]) -> None:
     subprocess.run(cmd, check=True)
 
-# ── EDIT‑MASTER LOGIC ──────────────────────────────────────────────────────
-TARGET_LUFS = -23.0          # EBU R128 target
-TOLERANCE   = 1.0            # ±1 LU
+# ── EDIT-MASTER LOGIC ──────────────────────────────────────────────────────
+TARGET_I   = -23.0          # EBU R128 target integrated loudness
+TARGET_LRA = 7.0            # target loudness range
+TARGET_TP  = -2.0           # target true-peak
+TOLERANCE  = 1.0            # ±1 LU
 
 def _probe_audio(wav: Path) -> tuple[int, int]:
     """
@@ -64,35 +67,76 @@ def create_edit_master(pm_wav: Path, em_dir: Path) -> None:
     base = pm_wav.stem.replace("_pm", "_em") if "_pm" in pm_wav.stem else pm_wav.stem + "_em"
     em_wav = em_dir / f"{base}{pm_wav.suffix.lower()}"
 
-    # Keep original tech specs
+    # Preserve original sample rate & bit depth
     sample_rate, bit_depth = _probe_audio(pm_wav)
     codec = "pcm_s16le" if bit_depth <= 16 else "pcm_s24le"
 
-    # measure
-    integ = measure_loudness(pm_wav)
-    if integ is None:
-        print(f"   ⚠  {pm_wav.name}: could not measure loudness; copying as-is.")
+    # ── FIRST PASS: MEASURE ────────────────────────────────────────────────
+    print(f"   ↳ {pm_wav.name}: running first-pass loudnorm analysis…")
+    analysis_filter = (
+        f"loudnorm=dual_mono=true:"
+        f"I={TARGET_I}:LRA={TARGET_LRA}:TP={TARGET_TP}:print_format=json"
+    )
+    proc = subprocess.run(
+        ["ffmpeg", "-y", "-nostats", "-i", str(pm_wav),
+         "-af", analysis_filter,
+         "-f", "null", "-"],
+        stderr=subprocess.PIPE, text=True
+    )
+    stderr = proc.stderr
+
+    # If no JSON found, dump last lines and copy unchanged
+    if "{" not in stderr:
+        print(f"     ⚠  could not find JSON in ffmpeg output; copying as-is.")
+        print("     └─ stderr preview:")
+        print("\n".join(stderr.splitlines()[-10:]))
         shutil.copy2(pm_wav, em_wav)
         return
 
-    print(f"   ↳ {pm_wav.name}: integrated loudness = {integ:.1f} LUFS")
-    if abs(integ - TARGET_LUFS) <= TOLERANCE:
+    # Extract JSON blob between first '{' and last '}'
+    start = stderr.find("{")
+    end   = stderr.rfind("}") + 1
+    try:
+        stats = json.loads(stderr[start:end])
+    except Exception as e:
+        print(f"     ⚠  JSON parse error ({e}); copying as-is.")
+        print(stderr[start:end])
+        shutil.copy2(pm_wav, em_wav)
+        return
+
+    # Cast all values to float for formatting & calculation
+    input_i      = float(stats["input_i"])
+    input_lra    = float(stats["input_lra"])
+    input_tp     = float(stats["input_tp"])
+    input_thresh = float(stats["input_thresh"])
+    offset       = float(stats["target_offset"])
+
+    print(f"     measured: I={input_i:.1f}, "
+          f"LRA={input_lra:.1f}, TP={input_tp:.1f}, "
+          f"offset={offset:.2f}")
+
+    # If already within tolerance, just copy
+    if abs(input_i - TARGET_I) <= TOLERANCE:
         print(f"     within ±{TOLERANCE} LU → copying without change.")
         shutil.copy2(pm_wav, em_wav)
         return
 
-    print(f"     normalising {integ:.1f} → {TARGET_LUFS} LUFS")
-    # preserve sample rate + bit depth
-    sample_rate, bit_depth = _probe_audio(pm_wav)
-    codec = "pcm_s16le" if bit_depth <= 16 else "pcm_s24le"
-    cmd = [
+    # ── SECOND PASS: NORMALIZE ─────────────────────────────────────────────
+    print(f"     normalizing {input_i:.1f} → {TARGET_I} LUFS")
+    normalize_filter = (
+        f"loudnorm=I={TARGET_I}:LRA={TARGET_LRA}:TP={TARGET_TP}:"
+        f"measured_I={input_i}:measured_LRA={input_lra}:"
+        f"measured_TP={input_tp}:measured_thresh={input_thresh}:offset={offset}"
+    )
+    subprocess.run([
         "ffmpeg", "-y", "-i", str(pm_wav),
-        "-af", f"loudnorm=I={TARGET_LUFS}:TP=-2:LRA=7",
+        "-af", normalize_filter,
         "-ar", str(sample_rate),
         "-c:a", codec,
         str(em_wav),
-    ]
-    run(cmd)
+    ], check=True)
+
+    print(f"     → wrote {em_wav.name}")
 
 def safe_copy(src: Path, dst: Path, label: str = "file") -> None:
     """Copy src → dst but warn instead of crashing if something goes wrong."""
