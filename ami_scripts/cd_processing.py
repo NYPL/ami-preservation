@@ -65,7 +65,10 @@ def measure_loudness(wav: Path) -> float | None:
 def create_edit_master(pm_wav: Path, em_dir: Path) -> None:
     em_dir.mkdir(exist_ok=True)
     base = pm_wav.stem.replace("_pm", "_em") if "_pm" in pm_wav.stem else pm_wav.stem + "_em"
-    em_wav = em_dir / f"{base}{pm_wav.suffix.lower()}"
+    # Determine correct extension: .wav or .flac for loudnorm output
+    orig_ext = pm_wav.suffix.lower()
+    out_ext = orig_ext if orig_ext in ('.wav', '.flac') else '.wav'
+    em_wav = em_dir / f"{base}{out_ext}"
 
     # Preserve original sample rate & bit depth
     sample_rate, bit_depth = _probe_audio(pm_wav)
@@ -486,6 +489,59 @@ def split_masters(pm_dir: Path) -> None:
 
     print("All done (split mode).")
 
+# ── MINI DISC LOGIC ─────────────────────────────────────────────────────────
+
+def process_minidiscs(root: Path, prefix: str, make_edit: bool) -> list[Path]:
+    pm_dir = root / "PreservationMasters"
+    em_dir = root / "EditMasters"
+    processed_dir = root / "Processed"
+    for d in (pm_dir, processed_dir):
+        d.mkdir(exist_ok=True)
+    if make_edit:
+        em_dir.mkdir(exist_ok=True)
+
+    pm_files: list[Path] = []
+
+    for disc_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+        if not (disc_dir.name.isdigit() and len(disc_dir.name) == 6):
+            continue
+
+        # gather AEA and CSV
+        aea_files = [p for p in disc_dir.glob("*.aea") if not p.name.startswith("._")]
+        csv_files = [p for p in disc_dir.glob("*.csv") if not p.name.startswith("._")]
+        if not aea_files:
+            continue
+
+        print(f"\nDetected MiniDisc package in {disc_dir.name}")
+
+        # rename CSV like we do for CUE
+        if csv_files:
+            csv_src = csv_files[0]
+            out_csv = pm_dir / f"{prefix}_{disc_dir.name}_v01f01.csv"
+            safe_copy(csv_src, out_csv, "CSV")
+            print(f"   ↳ Renamed CSV: {out_csv.name}")
+
+        # copy & rename AEA files to PM
+        for idx, aea in enumerate(sorted(aea_files), start=1):
+            base = f"{prefix}_{disc_dir.name}_v01f{idx:02d}_pm"
+            pm_file = pm_dir / f"{base}.aea"
+            shutil.copy2(aea, pm_file)
+            print(f"   ↳ Created PM: {pm_file.name}")
+            pm_files.append(pm_file)
+
+        # move processed input dir
+        shutil.move(str(disc_dir), processed_dir)
+        print(f"   → Moved {disc_dir.name} to Processed/")
+
+    # if requested, run two-pass loudnorm Edit Masters using existing create_edit_master
+    if make_edit and pm_files:
+        print("\nNow creating MiniDisc Edit Masters with loudnorm…")
+        for pm in pm_files:
+            create_edit_master(pm, em_dir)
+        print("MiniDisc Edit Master generation complete.")
+
+    return pm_files
+
 # ── CLI / main ─────────────────────────────────────────────────────────────
 def cli() -> None:
     ap = argparse.ArgumentParser()
@@ -500,6 +556,9 @@ def cli() -> None:
     args = ap.parse_args()
 
     path = Path(args.input).expanduser().resolve()
+    # Process MiniDiscs first (will skip if none)
+    process_minidiscs(path, args.prefix, args.editmasters)
+
     if args.split:
         split_masters(path)
     else:
