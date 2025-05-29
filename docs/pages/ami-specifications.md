@@ -16,7 +16,6 @@ Last updated: 2025-05-19. For previous versions, see [changelog.md](https://gith
   * [Film Media](#film-media)
     * [Film Groups 1 and 2: Motion Picture Film, Silent / Sound](#film-groups-1-and-2-motion-picture-film-silent--sound)
     * [Film Group 3: Audio Film](#film-group-3-audio-film)
-    * [Film Group 4: Filmstrips](#film-group-4-filmstrips)
   * [Video Media](#video-media)
     * [Video Group 1: Analog and Digital Cassettes, Analog Open Reel](#video-group-1)
     * [Video Group 2: DV](#video-group-2)
@@ -214,11 +213,6 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Other characteristics | If there are tones / sync marks present, they must be captured and described in metadata signal notes | If there are tones / sync marks present, they must be captured and described in metadata signal notes | If there are tones / sync marks present, they must be captured and described in metadata signal notes |
 
 **Note:** Unlike Film Groups 1 & 2, Film Group 3 (Audio film) uses Edit Masters rather than Mezzanine files. Service copies are not currently required for this group. The Edit Master serves as the primary access file.
-
-<a name="film-group-4-filmstrips"></a>
-
-### Film Group 4: Filmstrips
-NYPL will review recommendations for digitization of filmstrips (and accompanying audio media, where applicable) before defining a specification.
 
 <a name="video-media"></a>
 
