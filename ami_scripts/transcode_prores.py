@@ -15,7 +15,7 @@ def convert_to_prores(input_path, output_path):
     cmd = [
         "ffmpeg",
         "-i", str(input_path),
-        "-map", "0",
+        "-map", "0:v",
         "-map", "0:a?",
         "-c:v", "prores_ks",
         "-profile:v", "3",  # ProRes HQ
