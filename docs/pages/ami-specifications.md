@@ -218,7 +218,14 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 <a name="film-group-4-filmstrips"></a>
 
 ### Film Group 4: Filmstrips
-NYPL will review recommendations for digitization of filmstrips (and accompanying audio media, where applicable) before defining a specification.
+
+Filmstrips do not require a unique digital asset specification. Rather than being digitized as discrete items, individual filmstrips will be physically combined during inspection into a single reel, based on shared characteristics such as film format (e.g., 16mm, 35mm) and element type (e.g., print, original reversal, duplicate). Leader will be spliced between individual filmstrips to mark boundaries.
+
+The resulting combined reel will then be digitized according to the appropriate specification for its format and content type, following the guidelines outlined in [Film Groups 1–3](#film-media).
+
+For details on the physical preparation process, see the [Film Workflow](https://nypl.github.io/ami-preservation/pages/preservationServices/filmAssessment/film-workflow.html). For reference information on film element types and formats, see the [Film Reference Guide](https://nypl.github.io/ami-preservation/pages/preservationServices/filmAssessment/film-reference.html).
+
+NYPL will continue to review and refine digitization recommendations for filmstrips, especially when accompanied by audio media.
 
 <a name="video-media"></a>
 
@@ -407,10 +414,10 @@ When native capture is not possible due to object condition or playback issues, 
 | Color space | 4:2:0 YUV |
 | Bit depth | 8 bit |
 | File wrapper | MPEG-4 (.mp4) |
-| Frame rate | 59.94 (NTSC) or 50 (PAL) |
-| Frame size | 720x480 (NTSC) or 720x576 (PAL) |
+| Frame rate | SD: 59.94 (NTSC) or 50 (PAL); HD: same as original media |
+| Frame size | SD: 720x480 (NTSC) or 720x576 (PAL); HD: 1920x1080 |
 | Broadcast standard | (Same as original media) |
-| Pixel aspect ratio | 0.889 (NTSC 4:3) or 1.091 (PAL 4:3); 1.185 (NTSC DV Widescreen); 1.422 (PAL DV Widescreen) |
+| Pixel aspect ratio | SD: 0.889 (NTSC) or 1.091 (PAL); DV Widescreen: 1.185 (NTSC) or 1.422 (PAL); HD: 1.000 |
 | Audio codec | AAC |
 | Audio bit rate | 320 kbps (CBR) |
 | Audio sampling rate | 48000 Hz |
