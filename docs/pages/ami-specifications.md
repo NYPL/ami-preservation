@@ -118,12 +118,12 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Video codec | FFv1 version 3 | FFv1 version 3  | FFv1 version 3 |
 | File wrapper | Matroska (.mkv) | Matroska (.mkv) | Matroska (.mkv) |
 | Frame size | 4096x3112 | 2048x1556 | 2048x1556 |
-| Frame rate | (Same as source. If not described, please determine on viewing and describe in metadata) | (Same as source. If not described, please determine on viewing and describe in metadata) | (Same as source. If not described, please determine on viewing and describe in metadata) |
+| Frame rate | (Same as original media. If not described, please determine on viewing and describe in metadata) | (Same as original media. If not described, please determine on viewing and describe in metadata) | (Same as original media. If not described, please determine on viewing and describe in metadata) |
 | Pixel aspect ratio | 1.000 | 1.000 | 1.000 |
 | Audio bit depth* | 24 bit | 24 bit | 24 bit |
 | Audio sampling rate* | 96000 Hz | 96000 Hz | 96000 Hz |
 | Audio codec* | FLAC | FLAC | FLAC |
-| Audio channels* | Same as source  | Same as source | Same as source |
+| Audio channels* | Same as original media  | Same as original media | Same as original media |
 | Color space | Linear RGB (4:4:4) | Linear RGB (4:4:4) | Linear RGB (4:4:4) |
 | Color primaries | BT.709 | BT.709 | BT.709 |
 | Transfer characteristics | Printing Density | Printing Density | Printing Density |
@@ -197,7 +197,7 @@ When using RAWcooked to transcode from DPX to FFV1/Matroska, the following param
 | Wrapper | FLAC (.flac) | FLAC (.flac) | FLAC (.flac) |
 | Bit depth | 24 bit | 24 bit | 24 bit |
 | Sampling rate | 96000 Hz | 96000 Hz | 96000 Hz |
-| Number of audio channels | (same as source) | (same as source) | (same as source) |
+| Number of audio channels | (same as original media) | (same as original media) | (same as original media) |
 | Other characteristics | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. | If there are tones / sync marks present, they must be captured or resolved and described in metadata signal notes. |
 
 <a name="edit-masters-fg3"></a>
@@ -307,7 +307,7 @@ PrimaryID
 | Chroma subsampling | 4:2:2 |
 | Bit depth | 10-bit |
 | File wrapper | Matroska (.mkv) |
-| Frame rate | SD: 29.97 (NTSC) or 25 (PAL); HD: same as source |
+| Frame rate | SD: 29.97 (NTSC) or 25 (PAL); HD: same as original media |
 | Frame size | SD: 720x486 (NTSC) or 720x576 (PAL); HD: 1920x1080 |
 | Broadcast standard | (Same as original media) |
 | Pixel aspect ratio | SD: 0.909 (NTSC) or 1.091 (PAL); HD: 1.000 |
@@ -315,7 +315,7 @@ PrimaryID
 | Slicecrc | 1 |
 | Audio format | FLAC |
 | Audio bit depth | 24 bit |
-| Audio sampling rate | 48 kHz |
+| Audio sampling rate | 48000 Hz  |
 | Audio channels | (Same as original media, see guidelines for silent channels) |
 
 <a name="video-group-2"></a>
@@ -334,7 +334,7 @@ When native capture is not possible due to object condition or playback issues, 
 | ---- | ---- | ---- |
 | Video codec | DV | Native DV stream extracted from source |
 | File wrapper | Matroska (.mkv) | DV files must be processed using dvpackager and rewrapped as .mkv |
-| Other characteristics | (Same as source) | Splitting allowed when aspect ratio or broadcast standard changes mid-recording. Filenames must follow NYPL's regional naming convention. |
+| Other characteristics | (Same as original media) | Splitting allowed when aspect ratio or broadcast standard changes mid-recording. Filenames must follow NYPL's regional naming convention. |
 | Alternate method | FFv1 in Matroska (.mkv) | If native capture fails, SDI capture to V210/MOV may be transcoded and rewrapped. |
 
 #### SDI Capture Fallback Specifications (when native DV capture is not possible)
@@ -364,7 +364,7 @@ When native capture is not possible due to object condition or playback issues, 
 | Video codec          | MPEG-2                                   | Native HDV stream extracted from source                               |
 | File wrapper         | Matroska (.mkv)                          | Original `.m2t` must be rewrapped as `.mkv`, preserving stream characteristics |
 | Audio codec          | MPEG-1 Layer II or AC-3 (as in source)   | Retain original audio streams; do not convert                         |
-| Other characteristics| (Same as source)                         | Segment splitting allowed if required by stream changes; use NYPL filenaming convention for regions |
+| Other characteristics| (Same as original media)                         | Segment splitting allowed if required by stream changes; use NYPL filenaming convention for regions |
 | Alternate method     | FFV1/FLAC in Matroska (.mkv)             | If native capture fails, SDI capture to V210/MOV may be transcoded and rewrapped using the same parameters as the DV fallback method |
 
 <a name="video-group-4"></a>
@@ -413,7 +413,7 @@ When native capture is not possible due to object condition or playback issues, 
 | Pixel aspect ratio | 0.889 (NTSC 4:3) or 1.091 (PAL 4:3); 1.185 (NTSC DV Widescreen); 1.422 (PAL DV Widescreen) |
 | Audio codec | AAC |
 | Audio bit rate | 320 kbps (CBR) |
-| Audio sampling rate | 48 kHz |
+| Audio sampling rate | 48000 Hz |
 | Audio channels | Same as Preservation Master (see examples) |
 
 <a name="service-copies-dvd"></a>
@@ -436,7 +436,7 @@ Due to the variety of encoding structures present on source DVDs, NYPL allows a 
 | Display aspect ratio| 4:3 or 16:9 (1.333, 1.777, 1.778) |
 | Pixel aspect ratio  | Based on source; ranges from 0.889 to 2.909 |
 | Audio codec         | AAC |
-| Audio channels      | 2 |
+| Audio channels      | Same as original media |
 | Audio sampling rate | 48000 Hz |
 | Audio bit rate      | 320 kbps (CBR) |
 
@@ -561,7 +561,7 @@ myd_123456_v01f01s24_pm.flac
 | File wrapper       | FLAC (.flac)     |
 | Bit depth          | 24               |
 | Sampling rate      | 96000 Hz        |
-| Number of channels | (same as source) |
+| Number of channels | (same as original media) |
 
 <a name="audio-group-2"></a>
 
@@ -575,9 +575,9 @@ Whenever possible, digital magnetic audio formats should be transferred using or
 | ------------------ | ---------------- |
 | Audio codec        | FLAC             |
 | File wrapper       | FLAC (.flac)     |
-| Bit depth          | (same as source, commonly 16 bit) |
-| Sampling rate      | (same as source, commonly 48000 Hz, 44100 Hz, 32000 Hz (DAT), 44056 Hz (PCM-1610/30, F1)) |
-| Number of channels | (same as source) |
+| Bit depth          | (same as original media, commonly 16 bit) |
+| Sampling rate      | (same as original media, commonly 48000 Hz, 44100 Hz, 32000 Hz (DAT), 44056 Hz (PCM-1610/30, F1)) |
+| Number of channels | (same as original media) |
 
 <a name="audio-group-3"></a>
 
@@ -766,7 +766,7 @@ For each collection object, the following should be produced:
 | --------------------- | ------------------------------------------------ |
 | File system           | Preserve as-is; UDF, ISO 9660, or hybrid allowed |
 | File wrapper          | ISO (.iso)                                       |
-| Other characteristics | Same as source                                   |
+| Other characteristics | Same as original media                                   |
 
 <a name="image-deliverables"></a>
 
