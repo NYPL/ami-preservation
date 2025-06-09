@@ -2,7 +2,10 @@
 <policy type="and" name="2024_film35_PM_compsound">
 
   <!-- rules for all motion picture film (silent or composite sound)-->
-  <rule name="General/extra[1]/Attachments is RAWcooked reversibility data" value="extra[1]/Attachments" tracktype="General" occurrence="*" operator="=">RAWcooked reversibility data</rule>
+  <policy type="or" name="Reversible to DPX or scanned to FFV1">
+    <rule name="General/extra[1]/Attachments is RAWcooked reversibility data" value="extra[1]/Attachments" tracktype="General" occurrence="*" operator="=">RAWcooked reversibility data</rule>
+    <rule name="General/extra[1]/COMMENT_COMMENT is Created by Lasergraphics Scanner" value="extra[1]/COMMENT_COMMENT" tracktype="General" occurrence="*" operator="=">Created by Lasergraphics Scanner</rule>
+  </policy>
   <rule name="General/extra[1]/ErrorDetectionType is Per level 1" value="extra[1]/ErrorDetectionType" tracktype="General" occurrence="*" operator="=">Per level 1</rule>
   <rule name="General/FileExtension is mkv" value="FileExtension" tracktype="General" occurrence="*" operator="=">mkv</rule>
   <rule name="General/Format is Matroska" value="Format" tracktype="General" occurrence="*" operator="=">Matroska</rule>
