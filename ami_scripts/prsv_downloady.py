@@ -27,7 +27,7 @@ def create_token() -> str:
     payload = f"username={user}&password={pw}&tenant={tenant}"
     response = requests.post(TOKEN_BASE_URL, headers=headers, data=payload)
     data = response.json()
-    print(data)
+    
     if not data["success"]:
         print(f"Invalid credentials. Please check your credentials.")
 
@@ -145,7 +145,7 @@ def download_bitstream(co_uuid):
         if co_call.status_code == 401:
             raise Exception("Authentication failed after token refresh.")
 
-    filesize = co_call.headers.get('Content-Length', None)
+    filesize = int(co_call.headers.get('Content-Length', None))
     if not filesize:
         filerange = co_call.headers.get('content-range', None)
         if not filerange:
