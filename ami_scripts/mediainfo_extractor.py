@@ -15,7 +15,7 @@ from pymediainfo import MediaInfo
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 video_extensions = {'.mkv', '.mov', '.mp4', '.dv', '.iso'}
-audio_extensions = {'.wav', '.flac'}
+audio_extensions = {'.wav', '.flac', '.aea'}
 
 def make_parser():
     parser = argparse.ArgumentParser(description="Pull MediaInfo from a bunch of video or audio files")
