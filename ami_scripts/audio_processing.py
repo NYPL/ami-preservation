@@ -315,15 +315,61 @@ def main():
     # Create a new directory inside the destination_directory
     new_destination_directory = destination_directory / source_directory.name
     verify_directory(source_directory, new_destination_directory)
-    
+
+    # ── Special Minidisc workflow ────────────────────────────────────────
+    aea_list = list(source_directory.rglob("*.aea"))
+    if aea_list:
+        logging.info("Minidisc package detected: routing PM & EM files differently")
+
+        # 1. Move Preservation Masters (AEA, JSON, CSV) untouched
+        for pm in skip_hidden_files(source_directory.glob("*_pm.*")):
+            id_code = pm.stem.split("_")[1]
+            pm_dir = new_destination_directory / id_code / "PreservationMasters"
+            pm_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pm, pm_dir)
+
+        # 2. Transcode only the Edit-Master WAVs to FLAC
+        em_wavs = [p for p in source_directory.rglob("*_em.wav") if not p.name.startswith("._")]
+        for wav in tqdm(em_wavs, desc="Transcoding EM WAV → FLAC", unit="file"):
+            id_code = wav.stem.split("_")[1]
+            em_dir = new_destination_directory / id_code / "EditMasters"
+            em_dir.mkdir(parents=True, exist_ok=True)
+            output_flac = em_dir / f"{wav.stem}.flac"
+
+            rc = subprocess.call([
+                'flac', str(wav),
+                '--best', '--preserve-modtime', '--verify',
+                '-o', str(output_flac)
+            ])
+            if rc != 0:
+                logging.error(f"FLAC transcoding failed on {wav}")
+            else:
+                logging.info(f"→ {output_flac.name}")
+
+        # 3. Copy Edit-Master JSON sidecars
+        for j in skip_hidden_files(source_directory.glob("*_em.json")):
+            id_code = j.stem.split("_")[1]
+            em_dir = new_destination_directory / id_code / "EditMasters"
+            em_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(j, em_dir)
+
+        # 4. Update technical metadata in the new FLAC JSONs
+        update_flac_info(new_destination_directory)
+
+        # 5. Bag and run post-checks
+        create_bag(new_destination_directory)
+        check_json_exists(new_destination_directory)
+        check_pm_em_pairs(new_destination_directory)
+        return
+
+    # ── Fallback CD-style workflow ───────────────────────────────────────
     transcode_files(source_directory, new_destination_directory)
     organize_files(source_directory, new_destination_directory)
     if transcribe:
         transcribe_directory(new_destination_directory, model, output_format)
     update_flac_info(new_destination_directory)
-    
-    create_bag(new_destination_directory)
 
+    create_bag(new_destination_directory)
     check_json_exists(new_destination_directory)
     check_pm_em_pairs(new_destination_directory)
 
