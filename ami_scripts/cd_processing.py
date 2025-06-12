@@ -521,9 +521,10 @@ def process_minidiscs(root: Path, prefix: str, make_edit: bool) -> list[Path]:
             safe_copy(csv_src, out_csv, "CSV")
             print(f"   ↳ Renamed CSV: {out_csv.name}")
 
-        # copy & rename AEA files to PM
+        # copy & rename AEA files to PM with rNN suffix
         for idx, aea in enumerate(sorted(aea_files), start=1):
-            base = f"{prefix}_{disc_dir.name}_v01f{idx:02d}_pm"
+            # always f01 then rNN
+            base = f"{prefix}_{disc_dir.name}_v01f01r{idx:02d}_pm"
             pm_file = pm_dir / f"{base}.aea"
             shutil.copy2(aea, pm_file)
             print(f"   ↳ Created PM: {pm_file.name}")
