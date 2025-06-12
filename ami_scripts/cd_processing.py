@@ -118,10 +118,19 @@ def create_edit_master(pm_wav: Path, em_dir: Path) -> None:
           f"LRA={input_lra:.1f}, TP={input_tp:.1f}, "
           f"offset={offset:.2f}")
 
-    # If already within tolerance, just copy
+    # If already within tolerance: copy WAV/FLAC, but re-encode AEA (or other) via FFmpeg
     if abs(input_i - TARGET_I) <= TOLERANCE:
-        print(f"     within ±{TOLERANCE} LU → copying without change.")
-        shutil.copy2(pm_wav, em_wav)
+        if orig_ext in ('.wav', '.flac'):
+            print(f"     within ±{TOLERANCE} LU → copying without change.")
+            shutil.copy2(pm_wav, em_wav)
+        else:
+            print(f"     within ±{TOLERANCE} LU → re-encoding {orig_ext[1:]} → PCM WAV for playback.")
+            subprocess.run([
+                "ffmpeg", "-y", "-i", str(pm_wav),
+                "-ar", str(sample_rate),
+                "-c:a", codec,
+                str(em_wav),
+            ], check=True)
         return
 
     # ── SECOND PASS: NORMALIZE ─────────────────────────────────────────────
