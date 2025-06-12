@@ -9,6 +9,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from pprint import pprint
+from datetime import datetime, timedelta
 from pymediainfo import MediaInfo
 
 # Configure logging
@@ -105,8 +106,92 @@ def extract_iso_file_format(file_path):
         logging.debug(f"Isolyzer output: {xml_output}")
         return None
 
+def extract_with_ffprobe(path: Path):
+    """Use ffprobe to pull basic info and format duration as HH:MM:SS.mmm."""
+    cmd = [
+        'ffprobe', '-v', 'error',
+        '-print_format', 'json',
+        '-show_format',
+        '-show_streams',
+        str(path)
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    info = json.loads(proc.stdout).get('format', {})
+    streams = json.loads(proc.stdout).get('streams', [])
+
+    # Raw values
+    size       = int(info.get('size',    0))
+    duration_s = float(info.get('duration', 0.0))
+    fmt_name   = info.get('format_name')
+    audio_codec = next((s['codec_name'] for s in streams if s.get('codec_type')=='audio'), None)
+    video_codec = next((s['codec_name'] for s in streams if s.get('codec_type')=='video'), None)
+
+    # Build HH:MM:SS.mmm
+    hrs    = int(duration_s // 3600)
+    rem    = duration_s - hrs * 3600
+    mins   = int(rem // 60)
+    rem2   = rem - mins * 60
+    secs   = int(rem2)
+    ms     = int(round((rem2 - secs) * 1000))
+    # handle rounding overflow
+    if ms == 1000:
+        secs += 1
+        ms = 0
+        if secs == 60:
+            mins += 1
+            secs = 0
+            if mins == 60:
+                hrs += 1
+                mins = 0
+    human_dur = f"{hrs:02d}:{mins:02d}:{secs:02d}.{ms:03d}"
+
+    # file’s mtime as YYYY-MM-DD
+    date_str = datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d')
+
+    return {
+        'file_size': size,
+        'duration_s': duration_s,
+        'human_duration': human_dur,
+        'file_format': fmt_name,
+        'audio_codec': audio_codec,
+        'video_codec': video_codec,
+        'date_created': date_str,
+    }
 
 def extract_track_info(media_info, path, valid_extensions):
+
+    suffix = path.suffix.lower()
+
+    # --- Special case for .aea (MiniDisc) files ---
+    if suffix == '.aea':
+        ff = extract_with_ffprobe(path)
+
+        file_no_ext = path.stem
+        role     = file_no_ext.split('_')[-1]
+        division = file_no_ext.split('_')[0]
+        driveID  = path.parts[2] if len(path.parts) > 2 else None
+        primaryID = file_no_ext.split('_')[1] if len(file_no_ext.split('_')) > 1 else None
+
+        return [
+            path,                                        # filePath
+            f"{path.stem}{suffix}",                      # asset.referenceFilename
+            path.stem,                                   # technical.filename
+            suffix[1:],                                  # technical.extension
+            ff['file_size'],                             # technical.fileSize.measure
+            ff['date_created'],                          # technical.dateCreated
+            ff['file_format'],                           # technical.fileFormat
+            ff['audio_codec'],                           # technical.audioCodec
+            ff['video_codec'],                           # technical.videoCodec
+            int(ff['duration_s'] * 1000),                # technical.durationMilli.measure
+            ff['human_duration'],                        # technical.durationHuman
+            'audio',                                     # mediaType
+            role,                                        # asset.fileRole
+            division,                                    # bibliographic.vernacularDivisionCode
+            driveID,                                     # driveID
+            primaryID                                   # bibliographic.primaryID
+        ]
+    
+    # --- Fallback for everything else (Video & WAV/FLAC) ---
     # the pattern to match YYYY-MM-DD
     pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
     for track in media_info.tracks:
@@ -205,6 +290,8 @@ def main():
                     file_data.extend([json_data['collectionID'], json_data['objectType'], json_data['objectFormat']])
             all_file_data.append(file_data)
             logging.info(f"Processed file data for: {path}")
+    
+    all_file_data.sort(key=lambda row: str(row[0]))
 
     with open(args.output, 'w', newline='') as f:
         md_csv = csv.writer(f)
