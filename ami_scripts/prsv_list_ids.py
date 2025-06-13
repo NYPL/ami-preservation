@@ -5,6 +5,9 @@ prsv_list_ids.py
 Generate a CSV of every six-digit AMI ID stored in Preservica.
 Re-uses PreservicaClient, load_credentials, and PreservicaError
 from prsv_download.py.
+
+Outputs to:
+  <output_dir>/prsv_all_ami_ids_YYYY-MM-DD.csv
 """
 
 import os
@@ -13,6 +16,7 @@ import argparse
 import logging
 import csv
 import json
+from datetime import date
 from typing import List
 
 # import your client & loader from the download script
@@ -76,9 +80,9 @@ def parse_args():
         default=None
     )
     p.add_argument(
-        "-o", "--output-csv",
-        default="ami_ids.csv",
-        help="Where to write the resulting CSV"
+        "-o", "--output",
+        default=".",
+        help="Directory in which to write the CSV"
     )
     p.add_argument(
         "-v", "--verbose",
@@ -109,14 +113,22 @@ def main():
     ami_ids.sort()
     logging.info("Total AMI IDs found: %d (writing in sorted order)", len(ami_ids))
 
+    # ensure output directory exists
+    os.makedirs(args.output, exist_ok=True)
+
+    # auto-generate filename
+    today_str = date.today().isoformat()  # YYYY-MM-DD
+    filename = f"prsv_all_ami_ids_{today_str}.csv"
+    output_path = os.path.join(args.output, filename)
+
     # write out CSV
-    with open(args.output_csv, "w", newline="") as out:
+    with open(output_path, "w", newline="") as out:
         writer = csv.writer(out)
         writer.writerow(["amiId"])
         for ami in ami_ids:
             writer.writerow([ami])
 
-    logging.info("Wrote all AMI IDs to %s", args.output_csv)
+    logging.info("Wrote all AMI IDs to %s", output_path)
 
 
 if __name__ == "__main__":
