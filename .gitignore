@@ -1,2 +1,6 @@
 docs/_site/
 .DS_Store
+
+# Python byte-compiled cache
+__pycache__/
+*.py[cod]
