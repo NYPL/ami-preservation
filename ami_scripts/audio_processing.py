@@ -321,12 +321,22 @@ def main():
     if aea_list:
         logging.info("Minidisc package detected: routing PM & EM files differently")
 
-        # 1. Move Preservation Masters (AEA, JSON, CSV) untouched
-        for pm in skip_hidden_files(source_directory.glob("*_pm.*")):
-            id_code = pm.stem.split("_")[1]
+        # 1. Move Preservation Masters (AEA, PM JSON, CSV) untouched
+        for pm_a in skip_hidden_files(source_directory.rglob("*_pm.aea")):
+            id_code = pm_a.stem.split("_")[1]
             pm_dir = new_destination_directory / id_code / "PreservationMasters"
             pm_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(pm, pm_dir)
+            shutil.copy2(pm_a, pm_dir)
+        for pm_j in skip_hidden_files(source_directory.rglob("*_pm.json")):
+            id_code = pm_j.stem.split("_")[1]
+            pm_dir = new_destination_directory / id_code / "PreservationMasters"
+            pm_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pm_j, pm_dir)
+        for csv_f in skip_hidden_files(source_directory.rglob("*.csv")):
+            id_code = csv_f.stem.split("_")[1]
+            pm_dir = new_destination_directory / id_code / "PreservationMasters"
+            pm_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(csv_f, pm_dir)
 
         # 2. Transcode only the Edit-Master WAVs to FLAC
         em_wavs = [p for p in source_directory.rglob("*_em.wav") if not p.name.startswith("._")]
@@ -341,25 +351,38 @@ def main():
                 '--best', '--preserve-modtime', '--verify',
                 '-o', str(output_flac)
             ])
-            if rc != 0:
+            if rc:
                 logging.error(f"FLAC transcoding failed on {wav}")
             else:
                 logging.info(f"→ {output_flac.name}")
 
         # 3. Copy Edit-Master JSON sidecars
-        for j in skip_hidden_files(source_directory.glob("*_em.json")):
-            id_code = j.stem.split("_")[1]
+        for em_j in skip_hidden_files(source_directory.rglob("*_em.json")):
+            id_code = em_j.stem.split("_")[1]
             em_dir = new_destination_directory / id_code / "EditMasters"
             em_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(j, em_dir)
+            shutil.copy2(em_j, em_dir)
 
         # 4. Update technical metadata in the new FLAC JSONs
         update_flac_info(new_destination_directory)
 
-        # 5. Bag and run post-checks
+        # 5. Bag & run post-checks
         create_bag(new_destination_directory)
         check_json_exists(new_destination_directory)
-        check_pm_em_pairs(new_destination_directory)
+
+        # 6. Verify that each bag contains PM .aea in data/PreservationMasters
+        missing_pm_aea = []
+        for id_folder in new_destination_directory.iterdir():
+            pm_dir = id_folder / "data" / "PreservationMasters"
+            pm_files = list(pm_dir.glob("*_pm.aea")) if pm_dir.exists() else []
+            if not pm_files:
+                missing_pm_aea.append(id_folder.name)
+
+        if missing_pm_aea:
+            print("Warning: No PM .aea found in data/PreservationMasters for IDs:", missing_pm_aea)
+        else:
+            print("✅ All PreservationMasters contain PM .aea files.")
+
         return
 
     # ── Fallback CD-style workflow ───────────────────────────────────────
