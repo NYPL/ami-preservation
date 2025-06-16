@@ -29,6 +29,8 @@ from tqdm import tqdm
 import bagit
 from pymediainfo import MediaInfo
 from dateutil import parser
+from pathlib import Path
+import subprocess
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,11 +47,13 @@ ISO_EXT = "iso"
 TAR_EXT = "tar"
 WAV_EXT = "wav"
 FLAC_EXT = "flac"
+AEA_EXT = "aea"
 
-MEDIA_EXTS = [MOV_EXT, DV_EXT, MKV_EXT, MKA_EXT, MP4_EXT, ISO_EXT, TAR_EXT, WAV_EXT, FLAC_EXT]
+
+MEDIA_EXTS = [MOV_EXT, DV_EXT, MKV_EXT, MKA_EXT, MP4_EXT, ISO_EXT, TAR_EXT, WAV_EXT, FLAC_EXT, AEA_EXT]
 
 VIDEO_EXTS = [MOV_EXT, DV_EXT, MKV_EXT, MP4_EXT, ISO_EXT, TAR_EXT]
-AUDIO_EXTS = [MKA_EXT, WAV_EXT, FLAC_EXT]
+AUDIO_EXTS = [MKA_EXT, WAV_EXT, FLAC_EXT, AEA_EXT]
 
 AO_ENDING = "ao"
 PM_ENDING = "pm"
@@ -167,17 +171,19 @@ ISO_EXT_FULL = ".iso"
 TAR_EXT_FULL = ".tar"
 WAV_EXT_FULL = ".wav"
 FLAC_EXT_FULL = ".flac"
+AEA_EXT_FULL  = ".aea"
 JSON_EXT = ".json"
 JPEG_EXT = ".jpeg"
 JPG_EXT = ".jpg"
 GZ_EXT = ".gz"
 SRT_EXT = ".srt"
 CUE_EXT = ".cue"
+CSV_EXT = ".csv"
 SCC_EXT = ".scc"
 
 MEDIA_EXTS_FULL = [
     MOV_EXT_FULL, DV_EXT_FULL, MKV_EXT_FULL, MKA_EXT_FULL, MP4_EXT_FULL,
-    ISO_EXT_FULL, TAR_EXT_FULL, WAV_EXT_FULL, FLAC_EXT_FULL
+    ISO_EXT_FULL, TAR_EXT_FULL, WAV_EXT_FULL, FLAC_EXT_FULL, AEA_EXT_FULL
 ]
 
 COMPRESSED_EXTS = [MKV_EXT_FULL, MKA_EXT_FULL, FLAC_EXT_FULL]
@@ -193,7 +199,7 @@ JSON_SUBTYPES = {
               set([JSON_EXT, MOV_EXT_FULL, MKV_EXT_FULL, DV_EXT_FULL, MP4_EXT_FULL,
                    JPEG_EXT, JPG_EXT, GZ_EXT, SRT_EXT, SCC_EXT, ISO_EXT_FULL])),
     "audio": (set([PM_DIR, EM_DIR, IM_DIR]),
-              set([JSON_EXT, WAV_EXT_FULL, FLAC_EXT_FULL, JPEG_EXT, JPG_EXT, CUE_EXT])),
+              set([JSON_EXT, WAV_EXT_FULL, FLAC_EXT_FULL, AEA_EXT_FULL, JPEG_EXT, JPG_EXT, CUE_EXT, CSV_EXT])),
     "data":  (set([PM_DIR, IM_DIR]),
               set([JSON_EXT, ISO_EXT_FULL, JPEG_EXT, JPG_EXT]))
 }
@@ -321,30 +327,49 @@ class ami_file:
 
     def set_techmd_values(self) -> None:
         """
-        Parse technical metadata via pymediainfo. Sets attributes such as
-        base_filename, extension, format, size, date_filesys_created, date_created,
-        duration_milli/human, audio_codec, video_codec.
-        :raises AMIFileError: If pymediainfo fails or no General track is found.
+        Parse technical metadata.
+        For .aea files, fall back to ffprobe; otherwise use pymediainfo.
+        Sets attributes: base_filename, extension, format, size,
+        date_filesys_created, date_created, duration_milli/human,
+        audio_codec, video_codec.
+        :raises AMIFileError: If parsing fails.
         """
+        # get on-disk extension (no reliance on self.extension yet)
+        ext = Path(self.filepath).suffix.lstrip('.').lower()
+
+        # ── ATRAC (.aea) fallback via ffprobe ──────────────────────────────────
+        if ext == "aea":
+            info = self._extract_with_ffprobe(Path(self.filepath))
+            p = Path(self.filepath)
+            self.base_filename        = p.stem
+            self.extension            = ext                          # now set it
+            self.format               = info["file_format"]
+            self.size                 = info["file_size"]
+            # preserve filesystem creation date too
+            self.date_filesys_created = datetime.datetime.fromtimestamp(
+                p.stat().st_ctime
+            ).strftime('%Y-%m-%d')
+            self.date_created         = info["date_created"]
+            self.duration_milli       = int(round(info["duration_s"] * 1000))
+            self.duration_human       = info["human_duration"]
+            self.audio_codec          = info["audio_codec"]
+            self.video_codec          = info["video_codec"]
+            return
+
+        # ── Standard pymediainfo path ──────────────────────────────────────────
         try:
             techmd = MediaInfo.parse(self.filepath)
         except Exception:
             self.raise_AMIFileError("pymediainfo failed to run, so techmd has not been parsed")
 
-        md_track = None
-        for track in techmd.tracks:
-            if track.track_type == "General":
-                md_track = track
-                break
-
+        md_track = next((t for t in techmd.tracks if t.track_type == "General"), None)
         if not md_track:
             self.raise_AMIFileError("Could not find General track from MediaInfo")
 
         self.base_filename = md_track.file_name.rsplit('.', 1)[0] if md_track.file_name else None
-        self.extension = md_track.file_extension if md_track.file_extension else ""
-        self.format = md_track.format
-        self.size = md_track.file_size
-
+        self.extension     = (md_track.file_extension or "").lower()
+        self.format        = md_track.format
+        self.size          = md_track.file_size
         self.date_filesys_created = datetime.datetime.fromtimestamp(
             os.path.getctime(self.filepath)
         ).strftime('%Y-%m-%d')
@@ -372,10 +397,57 @@ class ami_file:
             self.audio_codec = md_track.audio_codecs
 
         # Video codec
-        if md_track.codecs_video:
-            self.video_codec = md_track.codecs_video
-        else:
-            self.video_codec = None
+        self.video_codec = md_track.codecs_video or None
+
+
+
+    def _extract_with_ffprobe(self, path: Path) -> Dict[str, Any]:
+        """
+        Use ffprobe to pull basic info and format duration as HH:MM:SS.mmm.
+        """
+        cmd = [
+            'ffprobe', '-v', 'error',
+            '-print_format', 'json',
+            '-show_format', '-show_streams',
+            str(path)
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data    = json.loads(proc.stdout)
+        fmt     = data.get('format', {})
+        streams = data.get('streams', [])
+
+        size        = int(fmt.get('size', 0))
+        duration_s  = float(fmt.get('duration', 0.0))
+        fmt_name    = fmt.get('format_name')
+        audio_codec = next((s['codec_name'] for s in streams if s.get('codec_type')=='audio'), None)
+        video_codec = next((s['codec_name'] for s in streams if s.get('codec_type')=='video'), None)
+
+        # build HH:MM:SS.mmm
+        hrs  = int(duration_s // 3600)
+        rem  = duration_s - hrs * 3600
+        mins = int(rem // 60)
+        rem2 = rem - mins * 60
+        secs = int(rem2)
+        ms   = int(round((rem2 - secs) * 1000))
+        if ms == 1000:
+            secs += 1; ms = 0
+            if secs == 60:
+                mins += 1; secs = 0
+                if mins == 60:
+                    hrs += 1; mins = 0
+        human_dur = f"{hrs:02d}:{mins:02d}:{secs:02d}.{ms:03d}"
+
+        date_str = datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d')
+
+        return {
+            'file_size':      size,
+            'duration_s':     duration_s,
+            'human_duration': human_dur,
+            'file_format':    fmt_name,
+            'audio_codec':    audio_codec,
+            'video_codec':    video_codec,
+            'date_created':   date_str,
+        }
 
     def raise_AMIFileError(self, msg: str) -> None:
         """
@@ -1068,26 +1140,40 @@ class ami_bag(bagit.Bag):
     
     def check_audio_optical_cue(self) -> bool:
         """
-        If this is an audio optical disc bag, make sure every PM audio file
-        has a matching .cue in PreservationMasters, else error.
+        For audio optical disc bags:
+         - If format is "Minidisc", ensure there is at least one CSV sidecar
+           in data/PreservationMasters.
+         - Otherwise, ensure every PM audio file has a matching .cue.
         """
-        # Find a JSON to read the source.object.type
+        # load the first JSON to inspect source.object.format and type
         sample_json = os.path.join(self.path, self.metadata_files[0])
         with open(sample_json, 'r', encoding='utf-8-sig') as f:
-            obj = json.load(f)
+            obj = json.load(f).get("source", {}).get("object", {})
 
-        if obj.get("source", {})\
-               .get("object", {})\
-               .get("type", "") != "audio optical disc":
-            return True  # not an audio optical disc, nothing to do
+        fmt  = obj.get("format", "").lower()
+        obj_type = obj.get("type", "").lower()
 
-        # Collect PM basenames
+        # ── MiniDisc case: require CSV in PreservationMasters
+        if fmt == "minidisc":
+            csv_files = [
+                p for p in self.all_data_files
+                if p.startswith(f"data/{PM_DIR}/") and p.lower().endswith(".csv")
+            ]
+            if not csv_files:
+                raise ami_bagError("No CSV sidecar found in PreservationMasters for MiniDisc PMs")
+            return True
+
+        # ── Other audio optical discs: enforce .cue matching
+        if obj_type != "audio optical disc":
+            return True  # not an audio‐optical bag, nothing to do
+
+        # collect PM basenames
         pm_bases = {
             os.path.splitext(os.path.basename(p))[0]
             for p in self.pm_filepaths
         }
 
-        # Find all .cue files under PreservationMasters
+        # find all .cue under PreservationMasters
         cue_files = [
             p for p in self.all_data_files
             if p.startswith(f"data/{PM_DIR}/") and p.lower().endswith(CUE_EXT)
