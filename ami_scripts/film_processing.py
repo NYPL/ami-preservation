@@ -97,68 +97,84 @@ def remove_hidden_files(directory):
             item.unlink()
 
 def process_directory(root_dir):
-    for film_folder in sorted(root_dir.glob('*')):
-        if film_folder.is_dir():
-            remove_hidden_files(film_folder)
-            pm_folder = film_folder / 'PreservationMasters'
-            mz_folder = film_folder / 'Mezzanines'
+    for film_folder in sorted(Path(root_dir).glob('*')):
+        if not film_folder.is_dir():
+            continue
 
-            if pm_folder.exists():
-                # Check for WAV files in the PreservationMasters folder
-                wav_file = next(iter(pm_folder.glob('*.wav')), None)
+        # Remove hidden files
+        remove_hidden_files(film_folder)
+        pm_folder = film_folder / 'PreservationMasters'
+        mz_folder = film_folder / 'Mezzanines'
 
-                # Check for DPX files in the PreservationMasters folder
-                dpx_files = list(pm_folder.glob('*.dpx'))
+        if not pm_folder.exists():
+            LOGGER.error("Error: Missing required folder(s) in %s", film_folder)
+            continue
 
-                if dpx_files:  # If DPX files exist (possibly along with WAV file)
-                    sc_folder = film_folder / 'ServiceCopies'
-                    sc_folder.mkdir(exist_ok=True)
+        # Detect files in PreservationMasters
+        wav_file = next(pm_folder.glob('*.wav'), None)
+        dpx_files = list(pm_folder.glob('*.dpx'))
+        mkv_file = next(pm_folder.glob('*.mkv'), None)
 
-                    mz_file = next(iter(sorted(mz_folder.glob('*.mov'))), None)
-                    first_dpx_file = next(iter(sorted(dpx_files)), None)
+        # 1) DPX sequence processing (unchanged)
+        if dpx_files:
+            sc_folder = film_folder / 'ServiceCopies'
+            sc_folder.mkdir(exist_ok=True)
 
-                    if first_dpx_file is not None:
-                        output_stem = first_dpx_file.stem[:-8]
-                        output_name = film_folder / f"{output_stem}.mkv"
-                    else:
-                        LOGGER.error("No DPX file found to derive output name in %s", pm_folder)
-                        continue
+            mz_file = next(iter(sorted(mz_folder.glob('*.mov'))), None)
+            first_dpx = sorted(dpx_files)[0]
+            # derive stem by stripping the trailing frame index (_0000000)
+            output_stem = first_dpx.stem[:-8]
+            output_mkv = film_folder / f"{output_stem}.mkv"
 
-                    if mz_file:
-                        LOGGER.info("Processing folder %s...", film_folder)
-                        rawcooked_cmd = ['rawcooked', '--no-accept-gaps', '--no-check-padding',
-                                          str(pm_folder), '--output-name', str(output_name)]
-                        result = subprocess.run(rawcooked_cmd)
+            LOGGER.info("Processing DPX folder %s...", film_folder)
+            rawcooked_cmd = [
+                'rawcooked', '--no-accept-gaps', '--no-check-padding',
+                str(pm_folder), '--output-name', str(output_mkv)
+            ]
+            result = subprocess.run(rawcooked_cmd)
 
-                        if result.returncode == 0:
-                            move_and_clean(film_folder, pm_folder, output_name)
-                            convert_to_mp4(mz_file, sc_folder)
-                        else:
-                            LOGGER.error("Error: rawcooked command failed for %s", film_folder)
-                    else:
-                        LOGGER.error("Error: No Mezzanine file found in %s", mz_folder)
-
-                if wav_file:  # If a WAV file is found, run the flac command (covers both cases with and without DPX files)
-                    output_file = wav_file.with_suffix('.flac')
-                    flac_command = [
-                        'flac', str(wav_file),
-                        '--best',
-                        '--preserve-modtime',
-                        '--verify',
-                        '-o', str(output_file)
-                    ]
-                    LOGGER.info("Converting %s to FLAC as %s", wav_file, output_file)
-                    return_code = subprocess.call(flac_command)
-
-                    if return_code == 0:  # If the command ran successfully, delete the WAV file
-                        LOGGER.info("FLAC conversion succeeded. Deleting original WAV file: %s", wav_file)
-                        wav_file.unlink()
-                        copy_to_editmasters(pm_folder, output_file)
-
-                elif not dpx_files:
-                    LOGGER.error("Error: No DPX files or WAV file found in %s", pm_folder)
+            if result.returncode == 0:
+                move_and_clean(film_folder, pm_folder, output_mkv)
+                if mz_file:
+                    convert_to_mp4(mz_file, sc_folder)
+                else:
+                    LOGGER.error("No Mezzanine file found in %s", mz_folder)
             else:
-                LOGGER.error("Error: Missing required folder(s) in %s", film_folder)
+                LOGGER.error("rawcooked failed for %s", film_folder)
+
+        # 2) Audio WAV processing (unchanged)
+        elif wav_file:
+            output_flac = wav_file.with_suffix('.flac')
+            flac_cmd = [
+                'flac', str(wav_file), '--best', '--preserve-modtime', '--verify', '-o', str(output_flac)
+            ]
+            LOGGER.info("Converting WAV %s to FLAC %s", wav_file, output_flac)
+            if subprocess.call(flac_cmd) == 0:
+                wav_file.unlink()
+                copy_to_editmasters(pm_folder, output_flac)
+            else:
+                LOGGER.error("FLAC conversion failed for %s", wav_file)
+
+        # 3) Direct-scanned MKV processing (new scenario)
+        elif mkv_file:
+            # Rename to strip trailing frame-index
+            base = mkv_file.stem.rsplit('_', 1)[0]
+            new_mkv = pm_folder / f"{base}.mkv"
+            LOGGER.info("Renaming %s to %s", mkv_file, new_mkv)
+            mkv_file.rename(new_mkv)
+
+            # Transcode the mezzanine MOV to MP4
+            sc_folder = film_folder / 'ServiceCopies'
+            sc_folder.mkdir(exist_ok=True)
+            mz_file = next(iter(sorted(mz_folder.glob('*.mov'))), None)
+            if mz_file:
+                convert_to_mp4(mz_file, sc_folder)
+            else:
+                LOGGER.error("No Mezzanine file found in %s", mz_folder)
+
+        # 4) Nothing to do
+        else:
+            LOGGER.error("No DPX, WAV, or MKV files found in %s", pm_folder)
 
 def collect_media_files(directory):
     valid_extensions = video_extensions.union(audio_extensions)
