@@ -9,7 +9,15 @@ from collections import defaultdict
 import re
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
+
+# Summary counters
+summary = {
+    'inserted': 0,
+    'skipped': 0,
+    'errors': 0,
+}
 
 # Define media format extensions
 VIDEO_EXTENSIONS = {'.mkv', '.mov', '.mp4', '.dv', '.iso'}
@@ -220,6 +228,7 @@ def check_record_exists(conn, filename):
         curs.close()
 
 def insert_new_record(conn, original_record, target_file_info, face_number=None, region_number=None):
+    global summary
     curs = conn.cursor()
     try:
         # Set default values if face_number or region_number are None
@@ -292,6 +301,7 @@ def insert_new_record(conn, original_record, target_file_info, face_number=None,
         values = list(insert_values.values())
 
         logging.info(f"Inserting new record for file: {target_file_info['parsed']['filename']}")
+        summary['inserted'] += 1
         logging.debug(f"SQL Statement: {sql}")
         logging.debug(f"Values: {values}")
 
@@ -301,6 +311,7 @@ def insert_new_record(conn, original_record, target_file_info, face_number=None,
         logging.info("New record inserted successfully.")
     except Exception as e:
         logging.error(f"Failed to insert new record: {e}")
+        summary['errors'] += 1
         conn.rollback()
     finally:
         curs.close()
@@ -344,9 +355,10 @@ def find_primary_pm_file(pm_files):
     return pm_files[0]
 
 def process_file_group(conn, base_id, file_group):
+    global summary
     """Process a group of files with the same base identifier."""
-    pm_files = file_group['pm_files']
-    derivative_files = file_group['derivative_files']
+    pm_files = sorted(file_group['pm_files'], key=lambda x: x['parsed']['filename'])
+    derivative_files = sorted(file_group['derivative_files'], key=lambda x: x['parsed']['filename'])
     
     if not pm_files:
         logging.warning(f"No PM files found for {base_id}. Skipping.")
@@ -369,61 +381,64 @@ def process_file_group(conn, base_id, file_group):
         logging.error(f"Original record not found for {reference_filename}. Skipping.")
         return
     
-    # Create a dictionary mapping face numbers to PM files for easier lookup
-    pm_by_face = {}
+    # Build lookup tables for PM files:
+    # 1) Exact (face, region) -> pm_file
+    # 2) Face-only -> first pm_file seen for that face
+    pm_by_face_region = {}
+    pm_by_face        = {}
     for pm_file in pm_files:
-        face = pm_file['parsed']['face'] or 'f01'  # Default to f01 if no face specified
-        pm_by_face[face] = pm_file
+        f = pm_file['parsed']['face']    # may be None
+        r = pm_file['parsed']['region']  # may be None
+        pm_by_face_region[(f, r)] = pm_file
+        if f not in pm_by_face:
+            pm_by_face[f] = pm_file
     
-    # Create records for all non-primary PM files (only if they don't already exist)
+    # Create records for all non-primary PM files
     for pm_file in pm_files:
-        if pm_file != primary_pm:  # Skip the primary PM file
-            target_filename = pm_file['parsed']['filename']
-            if check_record_exists(conn, target_filename):
-                logging.info(f"Record already exists for {target_filename}. Skipping creation.")
-            else:
-                face_number = extract_face_number(pm_file['parsed'])
-                region_number = extract_region_number(pm_file['parsed'])
-                insert_new_record(conn, original_record, pm_file, face_number, region_number)
-    
-    # Process derivative files with face-specific logic
-    for derivative_file in derivative_files:
-        target_filename = derivative_file['parsed']['filename']
+        if pm_file is primary_pm:
+            continue
+        target_filename = pm_file['parsed']['filename']
         if check_record_exists(conn, target_filename):
             logging.info(f"Record already exists for {target_filename}. Skipping creation.")
-        else:
-            derivative_face = derivative_file['parsed']['face'] or 'f01'  # Default to f01 if no face specified
-            
-            # Find the corresponding PM file for this face
-            if derivative_face in pm_by_face:
-                # Use the PM file with the same face as the source record
-                source_pm = pm_by_face[derivative_face]
-                source_filename = source_pm['parsed']['filename']
-                
-                # Check if we need to fetch a different source record
-                if source_pm != primary_pm:
-                    # Check if the source PM record exists in the database
-                    if check_record_exists(conn, source_filename):
-                        source_record = fetch_original_record(conn, source_filename)
-                        if source_record:
-                            logging.info(f"Using {source_filename} as source for {target_filename}")
-                        else:
-                            logging.warning(f"Could not fetch record for {source_filename}, using primary PM record")
-                            source_record = original_record
-                    else:
-                        logging.warning(f"Source PM record {source_filename} not found in database, using primary PM record")
-                        source_record = original_record
-                else:
-                    source_record = original_record
-                    logging.info(f"Using primary PM {reference_filename} as source for {target_filename}")
-            else:
-                # No matching PM face found, use primary PM
-                source_record = original_record
-                logging.info(f"No matching PM face found for {derivative_face}, using primary PM as source for {target_filename}")
-            
-            face_number = extract_face_number(derivative_file['parsed'])
-            region_number = extract_region_number(derivative_file['parsed'])
-            insert_new_record(conn, source_record, derivative_file, face_number, region_number)
+            summary['skipped'] += 1
+            continue
+        face_number = extract_face_number(pm_file['parsed'])
+        region_number = extract_region_number(pm_file['parsed'])
+        insert_new_record(conn, original_record, pm_file, face_number, region_number)
+    
+    # Process derivative files with exact face+region logic
+    for derivative_file in derivative_files:
+        parsed   = derivative_file['parsed']
+        target_filename = parsed['filename']
+        if check_record_exists(conn, target_filename):
+            logging.info(f"Record already exists for {target_filename}. Skipping creation.")
+            summary['skipped'] += 1
+            continue
+        
+        face   = parsed['face']    # e.g. 'f01' or None
+        region = parsed['region']  # e.g. 'r02' or None
+        
+        # 1) Try exact face+region match
+        source_pm = pm_by_face_region.get((face, region))
+        # 2) Fallback to face-only
+        if source_pm is None and face in pm_by_face:
+            source_pm = pm_by_face[face]
+        # 3) Ultimate fallback to primary PM
+        if source_pm is None:
+            source_pm = primary_pm
+        
+        logging.info(f"Using {source_pm['parsed']['filename']} as source for {target_filename}")
+        
+        # Fetch the corresponding source record
+        source_record = fetch_original_record(conn, source_pm['parsed']['filename'])
+        if not source_record:
+            logging.warning(f"Could not fetch record for {source_pm['parsed']['filename']}, falling back to primary")
+            source_record = original_record
+        
+        face_number   = extract_face_number(parsed)
+        region_number = extract_region_number(parsed)
+        insert_new_record(conn, source_record, derivative_file, face_number, region_number)
+
 
 def duplicate_records(conn, file_groups):
     """Process all file groups and duplicate records as needed."""
@@ -444,6 +459,14 @@ def main():
         duplicate_records(conn, file_groups)
     finally:
         conn.close()
+
+    # --- Summary report ---
+    logger.info("")  # blank line
+    logger.info("✅ ===== Summary =====")
+    logger.info(f"✅ Records inserted: {summary['inserted']}")
+    logger.info(f"✅ Records skipped : {summary['skipped']}")
+    logger.info(f"❌ Errors          : {summary['errors']}")
+    logger.info("✅ ===================")
 
 if __name__ == '__main__':
     main()
