@@ -61,29 +61,44 @@ def connect_to_database():
 
 # Parse filename components
 def parse_filename(filename):
-    """Parse filename to extract base identifier, version, face, region, role, and extension."""
+    """Parse filename to extract base identifier, version, face, region/stream, role, and extension."""
     stem = Path(filename).stem
     ext = Path(filename).suffix.lower()
     
-    # Pattern to match: identifier_version[face][region]_role
-    # Examples: myd_123456_v01_pm, myd_123456_v01f01_pm, myd_123456_v01f01r02_sc
-    pattern = r'^(.+_v\d+)(f\d+)?(r\d+)?_([a-z]+)$'
+    # Pattern to match: identifier_version[face][region/stream]_role
+    # Examples: 
+    # - myd_123456_v01_pm, myd_123456_v01f01_pm, myd_123456_v01f01r02_sc
+    # - scb_999999_v01f01s01_pm (multitrack audio with stream)
+    
+    # Updated pattern to handle both regions (r##) and streams (s##)
+    pattern = r'^(.+_v\d+)(f\d+)?([rs]\d+)?_([a-z]+)$'
     match = re.match(pattern, stem)
     
     if match:
-        base_id = match.group(1)  # e.g., "myd_123456_v01"
-        face = match.group(2)     # e.g., "f01" or None
-        region = match.group(3)   # e.g., "r02" or None
-        role = match.group(4)     # e.g., "pm", "sc", "em", "mz"
+        base_id = match.group(1)     # e.g., "scb_999999_v01"
+        face = match.group(2)        # e.g., "f01" or None
+        region_or_stream = match.group(3)  # e.g., "r02", "s01" or None
+        role = match.group(4)        # e.g., "pm", "sc", "em", "mz"
+        
+        # Determine if this is a region or stream
+        region = None
+        stream = None
+        if region_or_stream:
+            if region_or_stream.startswith('r'):
+                region = region_or_stream
+            elif region_or_stream.startswith('s'):
+                stream = region_or_stream
         
         return {
             'base_id': base_id,
             'face': face,
             'region': region,
+            'stream': stream,
             'role': role,
             'extension': ext,
             'full_stem': stem,
-            'filename': filename
+            'filename': filename,
+            'is_multitrack': stream is not None
         }
     
     # Fallback for DVD-style filenames (backwards compatibility)
@@ -93,10 +108,12 @@ def parse_filename(filename):
             'base_id': base_id,
             'face': None,
             'region': None,
+            'stream': None,
             'role': 'pm',
             'extension': ext,
             'full_stem': stem,
-            'filename': filename
+            'filename': filename,
+            'is_multitrack': False
         }
     elif ext == '.mp4' and ('f' in stem and 'r' in stem):
         # DVD MP4 with face/region
@@ -105,10 +122,12 @@ def parse_filename(filename):
             'base_id': mp4_key,
             'face': 'f' + stem.split('f')[1].split('r')[0] if 'f' in stem else None,
             'region': 'r' + stem.split('r')[1].split('_')[0] if 'r' in stem else None,
+            'stream': None,
             'role': 'sc',
             'extension': ext,
             'full_stem': stem,
-            'filename': filename
+            'filename': filename,
+            'is_multitrack': False
         }
     elif ext == '.mp4' and stem.endswith('_sc'):
         # DVD MP4 service copy
@@ -117,10 +136,12 @@ def parse_filename(filename):
             'base_id': base_id,
             'face': None,
             'region': None,
+            'stream': None,
             'role': 'sc',
             'extension': ext,
             'full_stem': stem,
-            'filename': filename
+            'filename': filename,
+            'is_multitrack': False
         }
     
     return None
@@ -227,15 +248,17 @@ def check_record_exists(conn, filename):
     finally:
         curs.close()
 
-def insert_new_record(conn, original_record, target_file_info, face_number=None, region_number=None):
+def insert_new_record(conn, original_record, target_file_info, face_number=None, region_number=None, stream_number=None):
     global summary
     curs = conn.cursor()
     try:
-        # Set default values if face_number or region_number are None
+        # Set default values if parameters are None
         if face_number is None:
             face_number = ''
         if region_number is None:
             region_number = ''
+        if stream_number is None:
+            stream_number = ''
 
         # Define allowed prefixes
         allowed_prefixes = ("bibliographic.", "digitizationProcess.", "digitizer.", "source.")
@@ -267,6 +290,10 @@ def insert_new_record(conn, original_record, target_file_info, face_number=None,
             'source.subObject.faceNumber': face_number,
             'source.subObject.regionNumber': region_number,
         })
+        
+        # Add stream number for multitrack audio
+        if stream_number:
+            filtered_record['source.subObject.streamNumber'] = stream_number
 
         # Get table column information to identify numeric fields
         curs.execute("SELECT * FROM tbl_metadata WHERE 1=0")  # Empty result set just to get column info
@@ -336,10 +363,35 @@ def extract_region_number(parsed_data):
             return None
     return None
 
+# Extract stream number from parsed filename data
+def extract_stream_number(parsed_data):
+    """Extract stream number for multitrack audio files."""
+    if parsed_data['stream']:
+        try:
+            return int(parsed_data['stream'][1:])  # Remove 's' prefix
+        except ValueError:
+            logging.warning(f"Could not extract stream number from: {parsed_data['stream']}")
+            return None
+    return None
+
 def find_primary_pm_file(pm_files):
     """Find the primary PM file to use as the database reference."""
     if not pm_files:
         return None
+    
+    # Check if this is a multitrack scenario
+    has_multitrack = any(f['parsed']['is_multitrack'] for f in pm_files)
+    
+    if has_multitrack:
+        # For multitrack, prioritize f01s01 if it exists
+        for pm_file in pm_files:
+            parsed = pm_file['parsed']
+            if parsed['face'] == 'f01' and parsed['stream'] == 's01':
+                return pm_file
+        # Fallback to first multitrack file
+        multitrack_files = [f for f in pm_files if f['parsed']['is_multitrack']]
+        if multitrack_files:
+            return multitrack_files[0]
     
     # For audio files, prioritize f01 if it exists, otherwise take the first one
     audio_files = [f for f in pm_files if f['media_type'] == 'audio']
@@ -364,6 +416,16 @@ def process_file_group(conn, base_id, file_group):
         logging.warning(f"No PM files found for {base_id}. Skipping.")
         return
     
+    # Check if this is a multitrack scenario
+    has_multitrack = any(f['parsed']['is_multitrack'] for f in pm_files + derivative_files)
+    
+    if has_multitrack:
+        process_multitrack_file_group(conn, base_id, pm_files, derivative_files)
+    else:
+        process_standard_file_group(conn, base_id, pm_files, derivative_files)
+
+def process_standard_file_group(conn, base_id, pm_files, derivative_files):
+    """Process standard (non-multitrack) file groups - existing logic."""
     # Find the primary PM file to use as database reference
     primary_pm = find_primary_pm_file(pm_files)
     if not primary_pm:
@@ -372,7 +434,7 @@ def process_file_group(conn, base_id, file_group):
     
     # Construct the reference filename for database lookup
     reference_filename = primary_pm['parsed']['filename']
-    logging.info(f"Processing file group: {base_id}")
+    logging.info(f"Processing standard file group: {base_id}")
     logging.info(f"Primary PM file: {reference_filename}")
     
     # Fetch the original record
@@ -408,7 +470,7 @@ def process_file_group(conn, base_id, file_group):
     
     # Process derivative files with exact face+region logic
     for derivative_file in derivative_files:
-        parsed   = derivative_file['parsed']
+        parsed = derivative_file['parsed']
         target_filename = parsed['filename']
         if check_record_exists(conn, target_filename):
             logging.info(f"Record already exists for {target_filename}. Skipping creation.")
@@ -439,6 +501,92 @@ def process_file_group(conn, base_id, file_group):
         region_number = extract_region_number(parsed)
         insert_new_record(conn, source_record, derivative_file, face_number, region_number)
 
+def process_multitrack_file_group(conn, base_id, pm_files, derivative_files):
+    """Process multitrack audio file groups with stream-based logic."""
+    logging.info(f"Processing multitrack file group: {base_id}")
+    
+    # Build lookup tables for PM files by (face, stream)
+    pm_by_face_stream = {}
+    pm_by_face = {}
+    
+    for pm_file in pm_files:
+        f = pm_file['parsed']['face']
+        s = pm_file['parsed']['stream']
+        pm_by_face_stream[(f, s)] = pm_file
+        if f not in pm_by_face:
+            pm_by_face[f] = pm_file
+    
+    # Find the primary PM file (usually f01s01_pm)
+    primary_pm = None
+    for pm_file in pm_files:
+        parsed = pm_file['parsed']
+        if parsed['face'] == 'f01' and parsed['stream'] == 's01':
+            primary_pm = pm_file
+            break
+    
+    if not primary_pm:
+        primary_pm = pm_files[0]  # Fallback to first PM file
+    
+    reference_filename = primary_pm['parsed']['filename']
+    logging.info(f"Primary PM file: {reference_filename}")
+    
+    # Fetch the original record
+    original_record = fetch_original_record(conn, reference_filename)
+    if not original_record:
+        logging.error(f"Original record not found for {reference_filename}. Skipping.")
+        return
+    
+    # Check which PM records already exist
+    missing_pm_streams = []
+    for pm_file in pm_files:
+        if pm_file is primary_pm:
+            continue
+        target_filename = pm_file['parsed']['filename']
+        if not check_record_exists(conn, target_filename):
+            missing_pm_streams.append(pm_file)
+        else:
+            logging.info(f"PM record already exists for {target_filename}")
+            summary['skipped'] += 1
+    
+    # Create missing PM records
+    for pm_file in missing_pm_streams:
+        face_number = extract_face_number(pm_file['parsed'])
+        stream_number = extract_stream_number(pm_file['parsed'])
+        insert_new_record(conn, original_record, pm_file, face_number, None, stream_number)
+    
+    # Process derivative files (EM files in multitrack scenario)
+    for derivative_file in derivative_files:
+        parsed = derivative_file['parsed']
+        target_filename = parsed['filename']
+        
+        if check_record_exists(conn, target_filename):
+            logging.info(f"Record already exists for {target_filename}. Skipping creation.")
+            summary['skipped'] += 1
+            continue
+        
+        face = parsed['face']
+        stream = parsed['stream']
+        
+        # Find matching PM file for this face+stream combination
+        source_pm = pm_by_face_stream.get((face, stream))
+        if source_pm is None:
+            # Fallback to any PM file with same face
+            if face in pm_by_face:
+                source_pm = pm_by_face[face]
+            else:
+                source_pm = primary_pm
+        
+        logging.info(f"Using {source_pm['parsed']['filename']} as source for {target_filename}")
+        
+        # Fetch the corresponding source record
+        source_record = fetch_original_record(conn, source_pm['parsed']['filename'])
+        if not source_record:
+            logging.warning(f"Could not fetch record for {source_pm['parsed']['filename']}, falling back to primary")
+            source_record = original_record
+        
+        face_number = extract_face_number(parsed)
+        stream_number = extract_stream_number(parsed)
+        insert_new_record(conn, source_record, derivative_file, face_number, None, stream_number)
 
 def duplicate_records(conn, file_groups):
     """Process all file groups and duplicate records as needed."""
