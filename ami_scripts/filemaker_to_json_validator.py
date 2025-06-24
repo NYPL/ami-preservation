@@ -9,6 +9,7 @@ from pathlib import Path
 from collections import Counter
 import glob
 import numpy as np
+import shutil
 
 ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks', 'source.physicalDescription.conditionfading',
                      'source.physicalDescription.conditionscratches', 'source.physicalDescription.conditionsplices',
@@ -47,7 +48,6 @@ def get_info(source_directory, metadata_directory):
     print(f'Now Validating JSON files:\n')
 
     schema_directory = Path(metadata_directory, 'versions/2.0/schema')
-
     valid_count = 0
     invalid_count = 0
 
@@ -64,6 +64,17 @@ def get_info(source_directory, metadata_directory):
 
     print(f"\nTotal valid JSON files: {valid_count}")
     print(f"Total invalid JSON files: {invalid_count}")
+
+    # Move all JSON into InvalidJSON if any failed validation
+    if invalid_count > 0:
+        invalid_dir = Path(source_directory) / 'InvalidJSON'
+        invalid_dir.mkdir(parents=True, exist_ok=True)
+        for file in json_list:
+            try:
+                shutil.move(str(file), str(invalid_dir))
+            except Exception as e:
+                print(f"Error moving file {file} to {invalid_dir}: {e}")
+        print(f"\nMoved all JSON files to '{invalid_dir}' due to validation failures.")
 
 
 def get_ajv_command(data, file):
@@ -188,65 +199,62 @@ def main():
         'bibliographic.sequence': object
     })
 
-    # Drop empty columns and the 'asset.fileExt' column
+    # Drop empty columns & prepare DataFrame
     df = df.dropna(axis=1, how="all")
-
-    # Apply the function to the 'source.physicalDescription.dataCapacity.measure' column
-    column_name = 'source.physicalDescription.dataCapacity.measure'
-    if column_name in df.columns:
-        df[column_name] = df[column_name].apply(convert_mixed_types)
-
-    # Fill NaN values with an empty string for fields not in ZERO_VALUE_FIELDS
-    for column in df.columns:
-        if column not in ZERO_VALUE_FIELDS:
-            df[column] = df[column].fillna("")
+    if 'source.physicalDescription.dataCapacity.measure' in df.columns:
+        df['source.physicalDescription.dataCapacity.measure'] = (
+            df['source.physicalDescription.dataCapacity.measure']
+            .apply(convert_mixed_types)
+        )
+    for col in df.columns:
+        if col not in ZERO_VALUE_FIELDS:
+            df[col] = df[col].fillna("")
     df = df.drop(['asset.fileExt'], axis=1)
-    
-    # Set the output directory for JSON files
-    json_directory = Path(args.output).resolve()
 
-    # Create the output directory if it doesn't exist
-    json_directory.mkdir(parents=True, exist_ok=True)
-    json_count = 0  # Add a counter to keep track of the number of JSON files created
+    # Prepare output root
+    json_root = Path(args.output).resolve()
+    json_root.mkdir(parents=True, exist_ok=True)
 
+    # Role → exact directory name mapping
+    role_dirs = {
+        'pm': 'PreservationMasters',
+        'em': 'EditMasters',
+        'sc': 'ServiceCopies',
+        'mz': 'Mezzanines'
+    }
 
-    # Iterate through each row in the DataFrame
-    for (index, row) in df.iterrows():
-        nested_dict = {}
-        json_tree = row.to_dict()
-
-        for key, value in json_tree.items():
-            # Skip null values unless the field is in ZERO_VALUE_FIELDS
-            if pd.isnull(value) and key not in ZERO_VALUE_FIELDS:
+    json_count = 0
+    # Iterate rows → nested dict → write into role-subdir
+    for _, row in df.iterrows():
+        nested = {}
+        for key, val in row.to_dict().items():
+            if pd.isnull(val) and key not in ZERO_VALUE_FIELDS:
                 continue
+            if isinstance(val, pd.Timestamp):
+                val = val.strftime('%Y-%m-%d')
+            if isinstance(val, np.generic):
+                val = val.item()
+            nested = convert_dotKeyToNestedDict(nested, key, val)
 
-            # Convert Timestamp to a string in the format 'YYYY-MM-DD'
-            if type(value) == pd.Timestamp:
-                value = value.strftime('%Y-%m-%d')
+        base = os.path.splitext(row["asset.referenceFilename"])[0]
+        code = base.split("_")[-1]  # expects pm, em, sc, or mz
+        dirname = role_dirs.get(code, 'other')
+        dest_dir = json_root / dirname
+        dest_dir.mkdir(parents=True, exist_ok=True)
 
-            # Convert numpy generic types to native Python types
-            if isinstance(value, np.generic):
-                value = np.asscalar(value)
-
-            # Convert the flat dictionary to a nested dictionary
-            nested_dict = convert_dotKeyToNestedDict(nested_dict, key, value)
-
-        # Save the nested dictionary as a JSON file
-        json_filename = os.path.splitext(row["asset.referenceFilename"])[0] + ".json"
-        json_filepath = json_directory.joinpath(json_filename)
+        out_path = dest_dir / f"{base}.json"
         try:
-            with json_filepath.open('w') as f:
-                json.dump(nested_dict, f, indent=4)
+            with out_path.open("w") as f:
+                json.dump(nested, f, indent=4)
         except IOError as e:
-            print(f"Error writing JSON file '{json_filepath}': {e}")
+            print(f"[ERROR] writing {out_path}: {e}")
         json_count += 1
 
     print(f"\n{json_count} Total JSON files created from MER file: {merge_file}")
 
+    # Validate & possibly shuffle into InvalidJSON
+    get_info(str(json_root), args.metadata)
 
-    output_directory = args.output
-    metadata_directory = args.metadata
-    get_info(output_directory, metadata_directory)
 
 if __name__ == "__main__":
     main()
