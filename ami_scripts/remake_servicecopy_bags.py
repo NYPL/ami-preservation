@@ -8,6 +8,7 @@ import hashlib
 import logging
 from pathlib import Path
 from pymediainfo import MediaInfo
+import re
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -17,6 +18,143 @@ def is_bag(directory):
     """
     required = ['bag-info.txt', 'bagit.txt', 'manifest-md5.txt', 'tagmanifest-md5.txt']
     return all((Path(directory) / fname).exists() for fname in required)
+
+def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120, match_threshold=5):
+    """
+    Detect LTC in a specific channel. Now, in addition to detecting a timecode pattern,
+    we require at least `match_threshold` matches to consider the channel as containing LTC.
+    """
+    # channel_map: c0=c0 for left channel only, c0=c1 for right channel only
+    if channel == 'left':
+        pan_filter = 'pan=mono|c0=c0'
+    else:
+        pan_filter = 'pan=mono|c0=c1'
+
+    # Use a WAV container so ltcdump can correctly interpret the header
+    ffmpeg_command = [
+        "ffmpeg",
+        "-t", str(probe_duration),
+        "-i", str(input_file),
+        "-map", f"0:{stream_index}",
+        "-af", pan_filter,
+        "-ar", "48000",  # sample rate
+        "-ac", "1",      # mono
+        "-f", "wav",     # WAV output
+        "pipe:1"
+    ]
+
+    ltcdump_command = ["ltcdump", "-"]
+
+    ffmpeg_proc = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ltcdump_proc = subprocess.Popen(ltcdump_command, stdin=ffmpeg_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ffmpeg_proc.stdout.close()  # allow ffmpeg_proc to receive SIGPIPE
+    ltcdump_out, ltcdump_err = ltcdump_proc.communicate()
+    ffmpeg_proc.wait()
+
+    # Use regex to extract all timecode matches of the form HH:MM:SS:FF
+    matches = re.findall(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out)
+    print("ltcdump output:", ltcdump_out)
+    print("Found LTC matches:", matches)
+
+    # Only consider LTC valid if we see enough matches (e.g., at least 5)
+    if len(matches) >= match_threshold:
+        return True
+
+    return False
+
+
+def detect_audio_pan(input_file, audio_pan, probe_duration=120):
+    """
+    Returns a list of strings like "[0:1]pan=…[outa0]".
+    If audio_pan == "auto", we also run LTC detection to drop timecode streams.
+    """
+    ffprobe_command = [
+        "ffprobe", "-i", str(input_file),
+        "-show_entries", "stream=index:stream=codec_type",
+        "-select_streams", "a", "-of", "compact=p=0:nk=1", "-v", "0"
+    ]
+    ffprobe_result = subprocess.run(ffprobe_command, capture_output=True, text=True)
+    audio_streams = [int(line.split('|')[0]) for line in ffprobe_result.stdout.splitlines() if "audio" in line]
+
+    print(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
+
+    pan_filters = []
+    pan_filter_idx = 0  # separate counter for pan filters
+    silence_threshold = -60.0  # dB
+
+    for stream_index in audio_streams:
+        print(f"Analyzing audio stream: {stream_index}")
+
+        # Analyze left channel volume
+        left_analysis_command = [
+            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
+            "-map", f"0:{stream_index}",
+            "-af", "pan=mono|c0=c0,volumedetect", "-f", "null", "-"
+        ]
+        left_result = subprocess.run(left_analysis_command, capture_output=True, text=True)
+        left_output = left_result.stderr
+
+        # Analyze right channel volume
+        right_analysis_command = [
+            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
+            "-map", f"0:{stream_index}",
+            "-af", "pan=mono|c0=c1,volumedetect", "-f", "null", "-"
+        ]
+        right_result = subprocess.run(right_analysis_command, capture_output=True, text=True)
+        right_output = right_result.stderr
+
+        def get_mean_volume(output):
+            match = re.search(r"mean_volume:\s*(-?\d+(\.\d+)?)", output)
+            return float(match.group(1)) if match else None
+
+        left_mean_volume = get_mean_volume(left_output)
+        right_mean_volume = get_mean_volume(right_output)
+
+        print(f"Stream {stream_index} - Left channel mean volume: {left_mean_volume}")
+        print(f"Stream {stream_index} - Right channel mean volume: {right_mean_volume}")
+
+        if left_mean_volume is None or right_mean_volume is None:
+            print(f"Stream {stream_index}: Unable to analyze audio. Skipping this stream.")
+            continue
+
+        # Initialize LTC detection flags
+        left_has_ltc = False
+        right_has_ltc = False
+
+        if audio_pan == "auto":
+            left_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'left', probe_duration=probe_duration)
+            right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration=probe_duration)
+
+        # If one channel has LTC but the other channel is silent,
+        # assume this stream is timecode only and skip mapping it.
+        if left_has_ltc and not right_has_ltc:
+            if right_mean_volume <= silence_threshold:
+                print(f"Stream {stream_index}: Left channel LTC with silent right channel detected. Dropping stream.")
+                continue  # Skip mapping this stream
+            else:
+                print(f"Stream {stream_index}: Left channel LTC detected. Using right channel as mono source.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
+        elif right_has_ltc and not left_has_ltc:
+            if left_mean_volume <= silence_threshold:
+                print(f"Stream {stream_index}: Right channel LTC with silent left channel detected. Dropping stream.")
+                continue  # Skip mapping this stream
+            else:
+                print(f"Stream {stream_index}: Right channel LTC detected. Using left channel as mono source.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
+        else:
+            # No (or ambiguous) LTC: apply channel-specific panning or identity for balanced audio
+            if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
+                print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
+            elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
+                print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
+            else:
+                print(f"Stream {stream_index}: Audio is balanced or both channels have sound. No panning applied.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c1[outa{pan_filter_idx}]")
+        pan_filter_idx += 1
+
+    return pan_filters
 
 def get_video_resolution(input_file):
     """
@@ -36,64 +174,91 @@ def get_video_resolution(input_file):
         logging.error(f"Error detecting resolution for {input_file}: {e}")
         raise ValueError(f"Could not determine resolution for {input_file}")
 
-def remake_scs_from_pm(bag_path):
+def remake_scs_from_pm(bag_path, audio_pan="none"):
     """
-    Create new Service Copy MP4 files from the Preservation Master MKV.
-    - If NTSC (720x486), applies deinterlacing, crops to 720x480, and sets DAR 4:3.
-    - If PAL (720x576), applies deinterlacing but no cropping.
-    Returns a list of the newly updated SC .mp4 paths.
+    Create new Service Copy MP4 files from the Preservation Master MKV
+    using a single filter_complex for video + audio.
     """
     modified_files = []
-    servicecopies_dir = Path(bag_path) / 'data' / 'ServiceCopies'
+    sc_dir = Path(bag_path) / 'data' / 'ServiceCopies'
     pm_dir = Path(bag_path) / 'data' / 'PreservationMasters'
 
-    for sc_file in servicecopies_dir.glob('*_sc.mp4'):
+    for sc_file in sc_dir.glob('*_sc.mp4'):
         pm_basename = sc_file.name.replace('_sc.mp4', '_pm.mkv')
         pm_file = pm_dir / pm_basename
+        if not pm_file.is_file():
+            logging.warning(f"No PM found for {sc_file}; expected {pm_file}")
+            continue
 
-        if pm_file.is_file():
-            logging.info(f"Transcoding new SC from PM: {pm_file} -> {sc_file}")
-            temp_filepath = sc_file.with_suffix('.temp.mp4')
+        logging.info(f"Transcoding SC from PM: {pm_file} → {sc_file}")
+        temp_fp = sc_file.with_suffix('.temp.mp4')
 
-            # Detect resolution and decide cropping
-            try:
-                width, height = get_video_resolution(str(pm_file))
-            except ValueError as e:
-                logging.error(e)
-                continue
+        # 1) choose video filter
+        try:
+            w, h = get_video_resolution(str(pm_file))
+        except ValueError as e:
+            logging.error(e)
+            continue
 
-            if width == 720 and height == 486:  # NTSC
-                video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=4/3"
-            elif width == 720 and height == 576:  # PAL
-                video_filter = "idet,bwdif=1"
-            else:
-                logging.warning(f"Unknown resolution {width}x{height}. Skipping cropping.")
-                video_filter = "idet,bwdif=1"
-
-            cmd = [
-                "ffmpeg",
-                "-i", str(pm_file),
-                "-c:v", "libx264",
-                "-movflags", "faststart",
-                "-pix_fmt", "yuv420p",
-                "-crf", "21",
-                "-vf", video_filter,
-                "-c:a", "aac",
-                "-b:a", "320000", 
-                "-ar", "48000",
-                str(temp_filepath)
-            ]
-            subprocess.run(cmd, check=True)
-
-            os.remove(sc_file)
-            os.rename(temp_filepath, sc_file)
-            modified_files.append(str(sc_file))
+        if (w, h) == (720, 486):
+            vid_filt = "idet,bwdif=1,crop=720:480:0:4,setdar=4/3"
+        elif (w, h) == (720, 576):
+            vid_filt = "idet,bwdif=1"
         else:
-            logging.warning(f"No Preservation Master found for {sc_file}. Expected: {pm_file}")
+            logging.warning(f"Unknown res {w}×{h}; using deinterlace only")
+            vid_filt = "idet,bwdif=1"
+
+        # 2) build audio pan filters
+        pan_filters = []
+        if audio_pan != "none":
+            pan_filters = detect_audio_pan(pm_file, audio_pan)
+
+        # 3) assemble filter_complex parts
+        fc_parts = []
+        # video chain → [v]
+        fc_parts.append(f"[0:v]{vid_filt}[v]")
+        # audio chains already come as "[0:i]pan=…[outaX]"
+        fc_parts.extend(pan_filters)
+
+        # join into one string
+        filter_complex = ";".join(fc_parts)
+
+        # 4) build ffmpeg command
+        cmd = [
+            "ffmpeg", "-i", str(pm_file),
+            "-filter_complex", filter_complex,
+            # video map + encode:
+            "-map", "[v]",
+            "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p", "-crf", "21",
+        ]
+
+        # 5) map audio outputs
+        if pan_filters:
+            for idx in range(len(pan_filters)):
+                cmd += [
+                    "-map", f"[outa{idx}]",
+                    "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+                ]
+        else:
+            # fallback: map first audio stream
+            cmd += [
+                "-map", "0:a:0",
+                "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+            ]
+
+        cmd.append(str(temp_fp))
+
+        # 6) run & replace
+        logging.debug("FFmpeg command: " + " ".join(cmd))
+        subprocess.run(cmd, check=True)
+
+        sc_file.unlink()
+        temp_fp.rename(sc_file)
+        modified_files.append(str(sc_file))
 
     return modified_files
 
-def remake_scs_from_sc(bag_path):
+def remake_scs_from_sc(bag_path, audio_pan="none"):
     """
     Create new Service Copy MP4 files from existing Service Copy MP4 files.
     Returns a list of the newly updated SC .mp4 paths.
@@ -105,6 +270,10 @@ def remake_scs_from_sc(bag_path):
         logging.info(f"Re-transcoding existing SC file for anamorphic fix: {sc_file}")
         temp_filepath = sc_file.with_suffix('.temp.mp4')
 
+        pan_filters = []
+        if audio_pan != "none":
+            pan_filters = detect_audio_pan(sc_file, audio_pan)
+
         cmd = [
             "ffmpeg",
             "-i", str(sc_file),
@@ -113,9 +282,18 @@ def remake_scs_from_sc(bag_path):
             "-pix_fmt", "yuv420p",
             "-crf", "21",
             "-vf", "setdar=16/9",
-            "-c:a", "copy",
             str(temp_filepath)
         ]
+        if pan_filters:
+            # add filter_complex and map each outaN
+            cmd += ["-filter_complex", ";".join(pan_filters)]
+            for idx in range(len(pan_filters)):
+                cmd += ["-map", f"[outa{idx}]", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
+        else:
+            # no pan filters: copy the single main audio track
+            cmd += ["-map", "0:a", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
+
+        cmd.append(str(temp_filepath))        
         subprocess.run(cmd, check=True)
 
         os.remove(sc_file)
@@ -124,53 +302,75 @@ def remake_scs_from_sc(bag_path):
 
     return modified_files
 
+import os
+import re
+import json
+import logging
+from pymediainfo import MediaInfo
+
 def modify_json(data_dir):
     """
     Update metadata in all *_sc.json sidecar files within `data_dir`.
-    - dateCreated (from file_last_modification_date)
-    - fileSize (in bytes)
+    - dateCreated (YYYY-MM-DD extracted via regex)
+    - fileSize.measure (in bytes)
     Returns a list of JSON files that were updated.
     """
+    date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
     modified_json_files = []
 
     for root, dirs, files in os.walk(data_dir):
         for file in files:
-            if file.endswith('_sc.json'):
-                json_path = os.path.join(root, file)
-                sc_mp4_path = os.path.join(root, file.replace('_sc.json', '_sc.mp4'))
+            if not file.endswith('_sc.json'):
+                continue
 
-                # Check if the .mp4 actually exists
-                if not os.path.exists(sc_mp4_path):
-                    logging.warning(f"Skipping {json_path}; no corresponding SC MP4 found.")
-                    continue
+            json_path = os.path.join(root, file)
+            sc_mp4_path = json_path.replace('_sc.json', '_sc.mp4')
 
-                logging.info(f"Updating sidecar JSON: {json_path}")
-                media_info = MediaInfo.parse(sc_mp4_path)
-                general_tracks = [t for t in media_info.tracks if t.track_type == "General"]
-                if not general_tracks:
-                    logging.warning(f"No 'General' track found in {sc_mp4_path}.")
-                    continue
+            if not os.path.exists(sc_mp4_path):
+                logging.warning(f"Skipping {json_path}; no corresponding SC MP4 found.")
+                continue
 
-                general_data = general_tracks[0].to_data()
-                date_created = general_data.get('file_last_modification_date', '')
-                file_size = general_data.get('file_size', '0')
+            logging.info(f"Updating sidecar JSON: {json_path}")
+            media_info = MediaInfo.parse(sc_mp4_path)
+            general_tracks = [t for t in media_info.tracks if t.track_type == "General"]
+            if not general_tracks:
+                logging.warning(f"No 'General' track found in {sc_mp4_path}.")
+                continue
 
-                with open(json_path, 'r+', encoding='utf-8-sig') as jf:
-                    data = json.load(jf)
-                    # Safely navigate the JSON structure; adjust as needed
-                    if "technical" in data:
-                        data["technical"]["dateCreated"] = date_created.split(' ')[0] if date_created else ""
-                        if "fileSize" in data["technical"]:
-                            data["technical"]["fileSize"]["measure"] = int(file_size)
-                        else:
-                            # If "fileSize" doesn't exist, create it
-                            data["technical"]["fileSize"] = {"measure": int(file_size), "unit": "bytes"}
-                    # Overwrite JSON
-                    jf.seek(0)
-                    json.dump(data, jf, indent=4)
-                    jf.truncate()
+            general_data = general_tracks[0].to_data()
+            raw_date   = general_data.get('file_last_modification_date', '') or ''
+            file_size  = general_data.get('file_size', '0')
 
-                modified_json_files.append(json_path)
+            # extract YYYY-MM-DD
+            m = date_pattern.search(raw_date)
+            date_val = m.group(0) if m else ""
+
+            # now update JSON
+            with open(json_path, 'r+', encoding='utf-8-sig') as jf:
+                data = json.load(jf)
+
+                tech = data.get("technical", {})
+                # set or overwrite dateCreated
+                tech["dateCreated"] = date_val
+
+                # update or create fileSize.measure
+                try:
+                    size_int = int(file_size)
+                except ValueError:
+                    size_int = 0
+
+                if "fileSize" in tech and isinstance(tech["fileSize"], dict):
+                    tech["fileSize"]["measure"] = size_int
+                else:
+                    tech["fileSize"] = {"measure": size_int, "unit": "bytes"}
+
+                data["technical"] = tech
+
+                jf.seek(0)
+                json.dump(data, jf, indent=4)
+                jf.truncate()
+
+            modified_json_files.append(json_path)
 
     return modified_json_files
 
@@ -336,6 +536,12 @@ def main():
                         help=("Choose the source for re-encoding service copies: "
                               "'pm' for Preservation Master MKV (default), "
                               "'sc' for the existing service copy MP4."))
+    parser.add_argument(
+        "-p", "--audio-pan",
+        choices=["none", "left", "right", "center", "auto"],
+        default="none",
+        help="Pan audio: left/right/center; auto includes LTC timecode detection"
+    )
 
     args = parser.parse_args()
     top_dir = Path(args.directory)
@@ -347,9 +553,9 @@ def main():
 
             # 1) Depending on the --source argument, re-encode from PM or SC
             if args.source == 'sc':
-                sc_modified = remake_scs_from_sc(bag_path)
+                sc_modified = remake_scs_from_sc(bag_path, args.audio_pan)
             else:
-                sc_modified = remake_scs_from_pm(bag_path)
+                sc_modified = remake_scs_from_pm(bag_path, args.audio_pan)
 
             # 2) Update sidecar JSON. 
             #    This might modify a few JSON files that also need fresh checksums.
