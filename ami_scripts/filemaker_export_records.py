@@ -22,15 +22,10 @@ ROLE_DIRS = {
     'mz': 'Mezzanines',
 }
 
-ZERO_VALUE_FIELDS = ['source.physicalDescription.conditionfading',
-                     'source.physicalDescription.conditionscratches', 'source.physicalDescription.conditionsplices',
-                     'source.physicalDescription.conditionperforationdamage', 'source.physicalDescription.conditiondistortion',
-                     'source.physicalDescription.shrinkage.measure', 'source.physicalDescription.acetateDecayLevel']
-
-
 # Fields (top-level JSON keys) to drop entirely:
 DROP_TOP_LEVEL = {
     "Archival box number",
+    "Archival box barcode",
     "__zkill_workorder",
     "id",
     "__creationTimestamp",
@@ -48,15 +43,28 @@ DROP_TOP_LEVEL = {
     "ref_ami_files_record_id"
 }
 
-# Fields to coerce into JSON numbers
 NUMERIC_MEASURE_FIELDS = {
     'technical.fileSize.measure',
-    'source.physicalDescription.dataCapacity.measure'
+    'source.physicalDescription.dataCapacity.measure',
+    'source.physicalDescription.conditionFading',
+    'source.physicalDescription.conditionScratches',
+    'source.physicalDescription.conditionSplices',
+    'source.physicalDescription.conditionPerforationDamage',
+    'source.physicalDescription.conditionDistortion',
+    'source.physicalDescription.shrinkage.measure',
+    'source.physicalDescription.acetateDecayLevel',
+    'source.contentSpecifications.frameRate.measure',
+    'source.contentSpecifications.regionCode',
 }
 
 # Fields to force‐into strings (even if they look numeric)
 STRING_MEASURE_FIELDS = {
     'digitizationProcess.playbackDevice.phonoCartridge.stylusSize.measure'
+}
+
+# Fields where 0 is a valid/required value and should not be dropped
+PRESERVE_ZERO_FIELDS = {
+    'source.audioRecording.numberOfAudioTracks',
 }
 
 # Load other environment variables
@@ -224,40 +232,61 @@ def export_json_for_file(conn, media_file: Path, output_root: Path):
     if not parsed:
         logging.warning(f"Could not parse {media_file.name}; skipping")
         return
+    
+    # 0) figure out media_type right up front
+    media_type = 'video' if parsed['extension'] in VIDEO_EXTENSIONS else 'audio'
 
     role = parsed['role']
     refname = parsed['filename']  # e.g. "mym_531986_v01f01_pm.wav"
     record = fetch_original_record(conn, refname)
+    # 2) if it’s a FLAC and we found nothing, retry with WAV
+    if record is None and parsed['extension'] == '.flac':
+        wav_name = Path(refname).with_suffix('.wav').name
+        logging.info(f"No FM record for {refname}; retrying with {wav_name}")
+        record = fetch_original_record(conn, wav_name)
+    
     if record is None:
-        logging.error(f"No FileMaker record for {refname}")
+        logging.error(f"No FileMaker record for {refname} (or its .wav equivalent); skipping")
         return
 
     # Build nested JSON object
     nested = {}
     for col, val in record.items():
-        # drop asset.fileExt entirely if you still don’t want it
+        # drop asset.fileExt entirely if you still don't want it
         if col == 'asset.fileExt':
             continue
 
-        # only skip None/'' when it's _not_ one of your zero‐fields
-        if (val is None or val == '') and col not in ZERO_VALUE_FIELDS:
+        # 1) skip any blank or NULL value
+        if val is None or val == '':
             continue
 
-        # 1) force real numbers where your schema wants numbers
+        # 2) for an audio file, drop zero‐track entries only
+        if (
+            media_type == 'audio' and
+            col == 'source.audioRecording.numberOfAudioTracks' and
+            val == 0
+        ):
+            continue
+
+        # 3) force real numbers where your schema wants numbers
         if col in NUMERIC_MEASURE_FIELDS:
             val = convert_mixed_types(val)
 
-        # 2) force string where your schema wants a string
+        # 4) force string where your schema wants a string
         elif col in STRING_MEASURE_FIELDS:
             val = str(val)
 
-        # 3) everything else falls through unchanged
+        # 5) everything else falls through unchanged
         nested = convert_dotKeyToNestedDict(nested, col, val)
 
 
     # ---- drop just digitizationProcess.playbackDevice.id ----
     pdp = nested.get('digitizationProcess', {}).get('playbackDevice', {})
     pdp.pop('id', None)
+
+    # drop timeBaseCorrector.id
+    tbc = nested.get('digitizationProcess', {}).get('timeBaseCorrector', {})
+    tbc.pop('id', None)
 
     # ---- NEW: prune out any unwanted top-level keys ----
     clean = {k: v for k, v in nested.items() if k not in DROP_TOP_LEVEL}
@@ -280,9 +309,6 @@ def convert_dotKeyToNestedDict(tree: dict, key: str, value) -> dict:
     Returns:
         The updated dictionary with the key-value pair added, excluding keys with empty values.
     """
-    # If the value is an empty string or NaN, return the tree without adding the key
-    if pd.isna(value) or value == "":
-        return tree
 
     if "." in key:
         # Split the key by the first dot and recursively call the function
@@ -307,21 +333,16 @@ def fetch_original_record(conn, reference_filename):
         record = curs.fetchone()
         if record:
             columns = [desc[0] for desc in curs.description]
+            # Get the column types from cursor description
+            column_types = {desc[0]: desc[1] for desc in curs.description}
             record_dict = {}
             
-            # Process each field with awareness of its original type
             for col, value in zip(columns, record):
                 if value is None or value == '':
                     record_dict[col] = None
                 elif isinstance(value, float):
-                    # For fields in ZERO_VALUE_FIELDS, preserve zero values
-                    if col in ZERO_VALUE_FIELDS:
-                        if value.is_integer():
-                            record_dict[col] = int(value)
-                        else:
-                            record_dict[col] = value
-                    elif value == 0.0:
-                        # For other numeric fields (including numberOfAudioTracks), treat 0.0 as blank
+                    # FIXED: Don't drop 0.0 for fields that require zero values
+                    if value == 0.0 and col not in PRESERVE_ZERO_FIELDS:
                         record_dict[col] = None
                     elif value.is_integer():
                         record_dict[col] = int(value)
