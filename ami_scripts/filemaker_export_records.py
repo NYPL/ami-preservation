@@ -40,7 +40,13 @@ DROP_TOP_LEVEL = {
     "uk_1",
     "projectType",
     "zkill_digitizationProcess",
-    "ref_ami_files_record_id"
+    "ref_ami_files_record_id",
+    "cmsCollectionRepository",
+    "__migrationExceptions",
+    "__captureIssueCategory",
+    "__captureIssueNote",
+    "MARK",
+    "issue"
 }
 
 NUMERIC_MEASURE_FIELDS = {
@@ -64,7 +70,7 @@ STRING_MEASURE_FIELDS = {
 
 # Fields where 0 is a valid/required value and should not be dropped
 PRESERVE_ZERO_FIELDS = {
-    'source.audioRecording.numberOfAudioTracks',
+    'source.audioRecording.numberOfAudioTracks'
 }
 
 # Load other environment variables
@@ -235,10 +241,12 @@ def export_json_for_file(conn, media_file: Path, output_root: Path):
     
     # 0) figure out media_type right up front
     media_type = 'video' if parsed['extension'] in VIDEO_EXTENSIONS else 'audio'
+    is_iso     = (parsed['extension'] == '.iso')
 
     role = parsed['role']
     refname = parsed['filename']  # e.g. "mym_531986_v01f01_pm.wav"
     record = fetch_original_record(conn, refname)
+
     # 2) if it’s a FLAC and we found nothing, retry with WAV
     if record is None and parsed['extension'] == '.flac':
         wav_name = Path(refname).with_suffix('.wav').name
@@ -252,15 +260,34 @@ def export_json_for_file(conn, media_file: Path, output_root: Path):
     # Build nested JSON object
     nested = {}
     for col, val in record.items():
-        # drop asset.fileExt entirely if you still don't want it
+        # 1) drop asset.fileExt entirely 
         if col == 'asset.fileExt':
             continue
 
-        # 1) skip any blank or NULL value
+        # 2) if ISO and this is the capacity field, override None→'unknown'
+        if is_iso and col == 'source.physicalDescription.dataCapacity.measure':
+            if val is None:
+                val = 'unknown'
+
+        # 2a) only for grooved‐disc/cylinder AND matching unit, default measure None→0
+        obj_type = record.get('source.object.type')
+        if obj_type in ('audio grooved disc', 'audio grooved cylinder'):
+            # eqRolloff: measure key + check unit == 'dB'
+            if col == 'digitizationProcess.phonoPreamp.eqRolloff.measure':
+                unit = record.get('digitizationProcess.phonoPreamp.eqRolloff.unit')
+                if unit == 'dB' and val is None:
+                    val = 0
+            # eqTurnover: measure key + check unit == 'Hz'
+            elif col == 'digitizationProcess.phonoPreamp.eqTurnover.measure':
+                unit = record.get('digitizationProcess.phonoPreamp.eqTurnover.unit')
+                if unit == 'Hz' and val is None:
+                    val = 0
+
+        # 3) skip any blank or NULL value
         if val is None or val == '':
             continue
 
-        # 2) for an audio file, drop zero‐track entries only
+        # 4) for an audio file, drop zero‐track entries only
         if (
             media_type == 'audio' and
             col == 'source.audioRecording.numberOfAudioTracks' and
@@ -268,17 +295,16 @@ def export_json_for_file(conn, media_file: Path, output_root: Path):
         ):
             continue
 
-        # 3) force real numbers where your schema wants numbers
+        # 5) force real numbers where your schema wants numbers
         if col in NUMERIC_MEASURE_FIELDS:
             val = convert_mixed_types(val)
 
-        # 4) force string where your schema wants a string
+        # 6) force string where your schema wants a string
         elif col in STRING_MEASURE_FIELDS:
             val = str(val)
 
-        # 5) everything else falls through unchanged
+        # 7) everything else…
         nested = convert_dotKeyToNestedDict(nested, col, val)
-
 
     # ---- drop just digitizationProcess.playbackDevice.id ----
     pdp = nested.get('digitizationProcess', {}).get('playbackDevice', {})
