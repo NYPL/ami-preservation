@@ -293,6 +293,10 @@ def main():
     
     all_file_data.sort(key=lambda row: str(row[0]))
 
+    # duplicate dateCreated into a second column
+    for row in all_file_data:
+        row.insert(6, row[5])
+
     with open(args.output, 'w', newline='') as f:
         md_csv = csv.writer(f)
         header = [
@@ -302,6 +306,7 @@ def main():
             'technical.extension',
             'technical.fileSize.measure',
             'technical.dateCreated',
+            'technical.dateCreatedText',
             'technical.fileFormat',
             'technical.audioCodec',
             'technical.videoCodec',
