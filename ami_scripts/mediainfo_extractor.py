@@ -11,6 +11,9 @@ from pathlib import Path
 from pprint import pprint
 from datetime import datetime, timedelta
 from pymediainfo import MediaInfo
+import jaydebeapi
+import os
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,12 +30,28 @@ def make_parser():
                         help="path to folder full of media files",
                         required=False)
     parser.add_argument("-o", "--output",
-                        help="path to save csv",
-                        required=True)
+                        help="path to save csv")
     parser.add_argument("-v", "--vendor", action='store_true', 
                         help="process as BagIt with sidecar JSON metadata")
 
     return parser
+
+def filter_for_jdbc(record):
+    jdbc_fields = [
+        "asset.referenceFilename",
+        "technical.filename",
+        "technical.extension",
+        "technical.fileSize.measure",
+        "technical.dateCreated",
+        "technical.dateCreatedText",
+        "technical.fileFormat",
+        "technical.audioCodec",
+        "technical.videoCodec",
+        "technical.durationMilli.measure",
+        "technical.durationHuman",
+        "inhouse_bag_batch_id"
+    ]
+    return {k: record[k] for k in jdbc_fields if k in record}
 
 def is_bag(directory):
     required_files = {'bag-info.txt', 'bagit.txt', 'manifest-md5.txt', 'tagmanifest-md5.txt'}
@@ -171,6 +190,7 @@ def extract_track_info(media_info, path, valid_extensions):
         division = file_no_ext.split('_')[0]
         driveID  = path.parts[2] if len(path.parts) > 2 else None
         primaryID = file_no_ext.split('_')[1] if len(file_no_ext.split('_')) > 1 else None
+        bag_id = next((part for part in path.parts if part.startswith("MDR")), None)
 
         return [
             path,                                        # filePath
@@ -188,7 +208,8 @@ def extract_track_info(media_info, path, valid_extensions):
             role,                                        # asset.fileRole
             division,                                    # bibliographic.vernacularDivisionCode
             driveID,                                     # driveID
-            primaryID                                   # bibliographic.primaryID
+            primaryID,                                   # bibliographic.primaryID
+            bag_id                                       # MDR WorkOrder
         ]
     
     # --- Fallback for everything else (Video & WAV/FLAC) ---
@@ -235,6 +256,10 @@ def extract_track_info(media_info, path, valid_extensions):
             file_data.extend([role, division, driveID])
             primaryID = path.stem
             file_data.append(primaryID.split('_')[1] if len(primaryID.split('_')) > 1 else None)
+
+            bag_id = next((part for part in path.parts if part.startswith("MDR")), None)
+            print(bag_id)
+            file_data.append(bag_id)  
 
             return file_data
 
@@ -297,10 +322,73 @@ def main():
     for row in all_file_data:
         row.insert(6, row[5])
 
-    with open(args.output, 'w', newline='') as f:
-        md_csv = csv.writer(f)
-        header = [
-            'filePath',
+    if args.output:
+        with open(args.output, 'w', newline='') as f:
+            md_csv = csv.writer(f)
+            header = [
+                'filePath',
+                'asset.referenceFilename',
+                'technical.filename',
+                'technical.extension',
+                'technical.fileSize.measure',
+                'technical.dateCreated',
+                'technical.dateCreatedText',
+                'technical.fileFormat',
+                'technical.audioCodec',
+                'technical.videoCodec',
+                'technical.durationMilli.measure',
+                'technical.durationHuman',
+                'mediaType',
+                'asset.fileRole',
+                'bibliographic.vernacularDivisionCode',
+                'driveID',
+                'bibliographic.primaryID',
+                'bibliographic.cmsCollectionID',
+                'source.object.type',
+                'source.object.format'
+            ]
+            md_csv.writerow(header)
+            md_csv.writerows(all_file_data)
+            logging.info(f"CSV file created successfully at {args.output}")
+    else:
+        server_ip = os.getenv('FM_SERVER')
+        database_name = os.getenv('AMI_DATABASE')
+        username = os.getenv('AMI_DATABASE_USERNAME')
+        password = os.getenv('AMI_DATABASE_PASSWORD')
+        jdbc_path = os.path.expanduser('~/Desktop/ami-preservation/ami_scripts/jdbc/fmjdbc.jar')
+
+        def insert_records(conn, insert_data):
+            curs = conn.cursor()
+            try:
+                for record in insert_data:
+                    placeholders = ', '.join(['?'] * len(record))
+                    columns = ', '.join(f'"{col}"' for col in record.keys())
+                    sql = f"INSERT INTO tbl_techinfo ({columns}) VALUES ({placeholders})"
+                    print(f"Executing SQL: {sql} with values {list(record.values())}")
+                    curs.execute(sql, list(record.values()))
+                conn.commit()
+                logging.info("Records inserted successfully into tbl_techinfo.")
+            except Exception as e:
+                logging.error(f"Failed to insert records: {e}")
+                conn.rollback()
+
+        def check_corresponding_records(conn, filenames):
+            curs = conn.cursor()
+            found, not_found = 0, 0
+            logging.info(f"Checking for corresponding records for {len(filenames)} media files in the PRODUCTION table.")
+            for filename in filenames:
+                curs.execute('SELECT COUNT(*) FROM tbl_metadata WHERE "asset.referenceFilename" = ?', [filename])
+                if curs.fetchone()[0] > 0:
+                    found += 1
+                    logging.info(f"✓ Found: {filename}")
+                else:
+                    not_found += 1
+                    logging.warning(f"✗ Not found: {filename}")
+            logging.info(f"{found} corresponding records found.")
+            logging.info(f"{not_found} corresponding records not found.")
+
+        # Convert flat rows to dicts for JDBC
+        field_names = [
             'asset.referenceFilename',
             'technical.filename',
             'technical.extension',
@@ -317,13 +405,37 @@ def main():
             'bibliographic.vernacularDivisionCode',
             'driveID',
             'bibliographic.primaryID',
-            'bibliographic.cmsCollectionID',  # Added from JSON
-            'source.object.type',    # Added from JSON
-            'source.object.format'   # Added from JSON
+            'bibliographic.cmsCollectionID',
+            'source.object.type',
+            'source.object.format',
+            'inhouse_bag_batch_id'
         ]
-        md_csv.writerow(header)
-        md_csv.writerows(all_file_data)
-        logging.info(f"CSV file created successfully at {args.output}")
+        all_records = []
+        filenames = []
+
+        for row in all_file_data:
+            full_record = dict(zip(field_names, row[1:]))  # skip filePath
+            all_records.append(full_record)
+            filenames.append(full_record['asset.referenceFilename'])
+
+        # ✅ Filter only the fields we want to insert into the DB
+        insert_data = [filter_for_jdbc(r) for r in all_records]
+
+        try:
+            conn = jaydebeapi.connect(
+                'com.filemaker.jdbc.Driver',
+                f'jdbc:filemaker://{server_ip}/{database_name}',
+                [username, password],
+                jdbc_path
+            )
+            logging.info("Connection to AMIDB successful!")
+            check_corresponding_records(conn, filenames)
+            insert_records(conn, insert_data)
+        except Exception as e:
+            logging.error(f"Database connection or execution error: {e}")
+        finally:
+            if 'conn' in locals():
+                conn.close()
 
 if __name__ == "__main__":
     main()
