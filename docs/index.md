@@ -5,9 +5,9 @@ nav_order: 1
 ---
 
 # NYPL AMI Preservation Documentation Portal
-The Audio and Moving Image (AMI) Preservation team is part of the Preservation and Collections Processing Department at The New York Public Library (NYPL).
+The Audio and Moving Image (AMI) Preservation team is part of Collections and Research Services at The New York Public Library (NYPL).
 
-This site provides documentation for the unit's programmatic workflows, including command-line instructions for various tools and step-by-step guidance for executing in-house and outsourced digitization and reformatting projects.
+This site provides documentation for the unit's programmatic workflows, including instructions for command-line tools and step-by-step guidance for executing in-house and outsourced digitization projects.
 
 Scripts referenced in the documentation can be found within [AMI Production Scripts on GitHub](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts).
 
@@ -34,4 +34,3 @@ Scripts referenced in the documentation can be found within [AMI Production Scri
 
 #### Jeff Willens, Media Preservation Engineer - Audio
 {: .no_toc }
-
