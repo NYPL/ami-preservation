@@ -20,6 +20,7 @@ AUDIO_ANALOG = '2024_audio_analog.xml'
 AUDIO_DIGITAL_DAT = '2024_audio_digital_DAT.xml'
 AUDIO_DIGITAL = '2024_audio_digital.xml'
 AUDIO_OPTICAL = '2024_audio_optical.xml'
+AUDIO_OPTICAL_MINIDISC = None
 FILM16_PM_COMP = '2024_film16_PM_compsound.xml'
 FILM16_PM_FLEX = '2024_film16_PM.xml'
 FILM16_PM_SLNT = '2024_film16_PM_silent.xml'
@@ -103,7 +104,7 @@ def parse_args():
     return parser.parse_args()
 
 def get_asset_paths(dir_path):
-    non_asset_exts = ('.cue', '.gz', '.jpeg', '.jpg', '.json', '.old', '.scc')
+    non_asset_exts = ('.csv', '.cue', '.gz', '.jpeg', '.jpg', '.json', '.old', '.scc')
     return sorted([item for item in dir_path.rglob('*.*') 
                    if 'data' in item.parts 
                    and not (item.suffix.lower() in non_asset_exts
@@ -127,7 +128,10 @@ def get_json_values(asset_path):
 
 def assign_audio_policy(jformat, jtype, f1):
     if re.search('optical', jtype):
-        policy = AUDIO_OPTICAL
+        if re.search('minidisc', jformat):
+            policy = AUDIO_OPTICAL_MINIDISC
+        else:
+            policy = AUDIO_OPTICAL
     elif re.search('digital', jtype):
         if jformat in ('dat', 'adat'):
             policy = AUDIO_DIGITAL_DAT
