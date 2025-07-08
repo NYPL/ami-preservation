@@ -93,9 +93,11 @@
               <rule name="Video/DisplayAspectRatio is 1.364" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.364</rule>
               <rule name="Video/PixelAspectRatio is 1.091" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.091</rule>
             </policy>
-            <!-- <policy type="and" name="PAL DAR + PAR 16:9 v3"> -->
-
-            <!-- </policy> -->
+            <policy type="and" name="PAL DAR + PAR 16:9 v3">
+              <rule name="Video/DisplayAspectRatio is 1.818" value="DisplayAspectRatio" tracktype="Video" occurrence="*" operator="=">1.818</rule>
+              <rule name="Video/PixelAspectRatio is 1.455" value="PixelAspectRatio" tracktype="Video" occurrence="*" operator="=">1.455</rule>
+            </policy>
+            <!-- check ^ -->
           </policy>
         </policy>
       </policy>
