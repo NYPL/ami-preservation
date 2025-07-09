@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 from pymediainfo import MediaInfo
 import re
+import json
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -277,13 +279,14 @@ def remake_scs_from_sc(bag_path, audio_pan="none"):
         cmd = [
             "ffmpeg",
             "-i", str(sc_file),
+            "-map", "0:v",
             "-c:v", "libx264",
             "-movflags", "faststart",
             "-pix_fmt", "yuv420p",
             "-crf", "21",
-            "-vf", "setdar=16/9",
-            str(temp_filepath)
+            "-vf", "setdar=16/9"
         ]
+
         if pan_filters:
             # add filter_complex and map each outaN
             cmd += ["-filter_complex", ";".join(pan_filters)]
@@ -293,7 +296,8 @@ def remake_scs_from_sc(bag_path, audio_pan="none"):
             # no pan filters: copy the single main audio track
             cmd += ["-map", "0:a", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
 
-        cmd.append(str(temp_filepath))        
+        cmd.append(str(temp_filepath)) 
+        print(cmd)       
         subprocess.run(cmd, check=True)
 
         os.remove(sc_file)
@@ -302,11 +306,6 @@ def remake_scs_from_sc(bag_path, audio_pan="none"):
 
     return modified_files
 
-import os
-import re
-import json
-import logging
-from pymediainfo import MediaInfo
 
 def modify_json(data_dir):
     """
