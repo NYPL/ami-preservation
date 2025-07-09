@@ -1,581 +1,865 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
-import subprocess
-import json
 import hashlib
-import logging
-from pathlib import Path
-from pymediainfo import MediaInfo
-import re
 import json
+import logging
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import List, Optional, Tuple
+
+try:
+    from pymediainfo import MediaInfo
+except ImportError:
+    print("Error: pymediainfo is required. Install with: pip install pymediainfo")
+    sys.exit(1)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Constants
+REQUIRED_BAGIT_FILES = ['bag-info.txt', 'bagit.txt', 'manifest-md5.txt', 'tagmanifest-md5.txt']
+SILENCE_THRESHOLD = -60.0  # dB
+DEFAULT_MATCH_THRESHOLD = 5
+DEFAULT_PROBE_DURATION = 120
+CHUNK_SIZE = 4096
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def is_bag(directory):
+def is_bag(directory: Path) -> bool:
     """
     Check that a directory has the required BagIt metadata files.
+    
+    Args:
+        directory: Path to directory to check
+        
+    Returns:
+        True if directory contains all required BagIt files
     """
-    required = ['bag-info.txt', 'bagit.txt', 'manifest-md5.txt', 'tagmanifest-md5.txt']
-    return all((Path(directory) / fname).exists() for fname in required)
+    if not directory.is_dir():
+        return False
+    
+    return all((directory / fname).exists() for fname in REQUIRED_BAGIT_FILES)
 
-def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120, match_threshold=5):
-    """
-    Detect LTC in a specific channel. Now, in addition to detecting a timecode pattern,
-    we require at least `match_threshold` matches to consider the channel as containing LTC.
-    """
-    # channel_map: c0=c0 for left channel only, c0=c1 for right channel only
-    if channel == 'left':
-        pan_filter = 'pan=mono|c0=c0'
-    else:
-        pan_filter = 'pan=mono|c0=c1'
 
-    # Use a WAV container so ltcdump can correctly interpret the header
-    ffmpeg_command = [
+def run_command(cmd: List[str], input_data: Optional[bytes] = None, 
+                capture_output: bool = True, check: bool = False) -> subprocess.CompletedProcess:
+    """
+    Run a subprocess command with consistent error handling.
+    
+    Args:
+        cmd: Command and arguments to run
+        input_data: Optional input data to pass to stdin
+        capture_output: Whether to capture stdout/stderr
+        check: Whether to raise exception on non-zero exit
+        
+    Returns:
+        CompletedProcess result
+        
+    Raises:
+        subprocess.CalledProcessError: If check=True and command fails
+    """
+    try:
+        result = subprocess.run(
+            cmd, 
+            input=input_data, 
+            capture_output=capture_output, 
+            text=True if input_data is None else False,
+            check=check
+        )
+        return result
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Command failed: {' '.join(cmd)}")
+        logger.error(f"Error output: {e.stderr}")
+        raise
+    except FileNotFoundError:
+        logger.error(f"Command not found: {cmd[0]}")
+        raise
+
+
+def detect_ltc_in_channel(input_file: Path, stream_index: int, channel: str, 
+                         probe_duration: int = DEFAULT_PROBE_DURATION, 
+                         match_threshold: int = DEFAULT_MATCH_THRESHOLD) -> bool:
+    """
+    Detect LTC (Linear Time Code) in a specific audio channel.
+    
+    Args:
+        input_file: Path to input media file
+        stream_index: Audio stream index
+        channel: 'left' or 'right'
+        probe_duration: Duration in seconds to analyze
+        match_threshold: Minimum matches required to consider LTC valid
+        
+    Returns:
+        True if LTC is detected with sufficient matches
+    """
+    if channel not in ['left', 'right']:
+        raise ValueError("Channel must be 'left' or 'right'")
+    
+    # Set up channel mapping
+    pan_filter = 'pan=mono|c0=c0' if channel == 'left' else 'pan=mono|c0=c1'
+
+    # Build FFmpeg command for audio extraction
+    ffmpeg_cmd = [
         "ffmpeg",
         "-t", str(probe_duration),
         "-i", str(input_file),
         "-map", f"0:{stream_index}",
         "-af", pan_filter,
-        "-ar", "48000",  # sample rate
-        "-ac", "1",      # mono
-        "-f", "wav",     # WAV output
+        "-ar", "48000",
+        "-ac", "1",
+        "-f", "wav",
         "pipe:1"
     ]
 
-    ltcdump_command = ["ltcdump", "-"]
+    ltcdump_cmd = ["ltcdump", "-"]
 
-    ffmpeg_proc = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    ltcdump_proc = subprocess.Popen(ltcdump_command, stdin=ffmpeg_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    ffmpeg_proc.stdout.close()  # allow ffmpeg_proc to receive SIGPIPE
-    ltcdump_out, ltcdump_err = ltcdump_proc.communicate()
-    ffmpeg_proc.wait()
+    try:
+        # Run FFmpeg -> ltcdump pipeline
+        with subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as ffmpeg_proc:
+            with subprocess.Popen(ltcdump_cmd, stdin=ffmpeg_proc.stdout, 
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+                                text=True) as ltcdump_proc:
+                ffmpeg_proc.stdout.close()  # Allow ffmpeg to receive SIGPIPE
+                ltcdump_out, ltcdump_err = ltcdump_proc.communicate()
+                ffmpeg_proc.wait()
 
-    # Use regex to extract all timecode matches of the form HH:MM:SS:FF
-    matches = re.findall(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out)
-    print("ltcdump output:", ltcdump_out)
-    print("Found LTC matches:", matches)
+        # Extract timecode matches (HH:MM:SS:FF format)
+        matches = re.findall(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out)
+        
+        logger.debug(f"LTC analysis for {input_file} stream {stream_index} {channel}: {len(matches)} matches")
+        if matches:
+            logger.debug(f"First few matches: {matches[:5]}")
 
-    # Only consider LTC valid if we see enough matches (e.g., at least 5)
-    if len(matches) >= match_threshold:
-        return True
+        return len(matches) >= match_threshold
 
-    return False
+    except Exception as e:
+        logger.warning(f"LTC detection failed for {input_file} stream {stream_index} {channel}: {e}")
+        return False
 
 
-def detect_audio_pan(input_file, audio_pan, probe_duration=120):
+def analyze_audio_volume(input_file: Path, stream_index: int, channel: str, 
+                        probe_duration: int = DEFAULT_PROBE_DURATION) -> Optional[float]:
     """
-    Returns a list of strings like "[0:1]pan=…[outa0]".
-    If audio_pan == "auto", we also run LTC detection to drop timecode streams.
+    Analyze the volume of a specific audio channel.
+    
+    Args:
+        input_file: Path to input media file
+        stream_index: Audio stream index
+        channel: 'left' or 'right'
+        probe_duration: Duration in seconds to analyze
+        
+    Returns:
+        Mean volume in dB, or None if analysis fails
     """
-    ffprobe_command = [
+    if channel not in ['left', 'right']:
+        raise ValueError("Channel must be 'left' or 'right'")
+    
+    pan_filter = 'pan=mono|c0=c0' if channel == 'left' else 'pan=mono|c0=c1'
+    
+    cmd = [
+        "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
+        "-map", f"0:{stream_index}",
+        "-af", f"{pan_filter},volumedetect", "-f", "null", "-"
+    ]
+    
+    try:
+        result = run_command(cmd, capture_output=True)
+        match = re.search(r"mean_volume:\s*(-?\d+(?:\.\d+)?)", result.stderr)
+        return float(match.group(1)) if match else None
+    except Exception as e:
+        logger.warning(f"Volume analysis failed for {input_file} stream {stream_index} {channel}: {e}")
+        return None
+
+
+def detect_audio_pan(input_file: Path, audio_pan: str, 
+                    probe_duration: int = DEFAULT_PROBE_DURATION) -> List[str]:
+    """
+    Generate pan filter strings for audio streams based on analysis.
+    
+    Args:
+        input_file: Path to input media file
+        audio_pan: Pan mode ('none', 'left', 'right', 'center', 'auto')
+        probe_duration: Duration in seconds to analyze
+        
+    Returns:
+        List of FFmpeg pan filter strings
+    """
+    if audio_pan not in ['none', 'left', 'right', 'center', 'auto']:
+        raise ValueError(f"Invalid audio_pan value: {audio_pan}")
+    
+    # Get audio stream indices
+    ffprobe_cmd = [
         "ffprobe", "-i", str(input_file),
         "-show_entries", "stream=index:stream=codec_type",
         "-select_streams", "a", "-of", "compact=p=0:nk=1", "-v", "0"
     ]
-    ffprobe_result = subprocess.run(ffprobe_command, capture_output=True, text=True)
-    audio_streams = [int(line.split('|')[0]) for line in ffprobe_result.stdout.splitlines() if "audio" in line]
+    
+    try:
+        result = run_command(ffprobe_cmd)
+        audio_streams = [
+            int(line.split('|')[0]) 
+            for line in result.stdout.splitlines() 
+            if "audio" in line
+        ]
+    except Exception as e:
+        logger.error(f"Failed to detect audio streams in {input_file}: {e}")
+        return []
 
-    print(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
+    logger.info(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
 
     pan_filters = []
-    pan_filter_idx = 0  # separate counter for pan filters
-    silence_threshold = -60.0  # dB
+    pan_filter_idx = 0
 
     for stream_index in audio_streams:
-        print(f"Analyzing audio stream: {stream_index}")
+        logger.info(f"Analyzing audio stream: {stream_index}")
 
-        # Analyze left channel volume
-        left_analysis_command = [
-            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
-            "-map", f"0:{stream_index}",
-            "-af", "pan=mono|c0=c0,volumedetect", "-f", "null", "-"
-        ]
-        left_result = subprocess.run(left_analysis_command, capture_output=True, text=True)
-        left_output = left_result.stderr
+        # Analyze channel volumes
+        left_volume = analyze_audio_volume(input_file, stream_index, 'left', probe_duration)
+        right_volume = analyze_audio_volume(input_file, stream_index, 'right', probe_duration)
 
-        # Analyze right channel volume
-        right_analysis_command = [
-            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
-            "-map", f"0:{stream_index}",
-            "-af", "pan=mono|c0=c1,volumedetect", "-f", "null", "-"
-        ]
-        right_result = subprocess.run(right_analysis_command, capture_output=True, text=True)
-        right_output = right_result.stderr
-
-        def get_mean_volume(output):
-            match = re.search(r"mean_volume:\s*(-?\d+(\.\d+)?)", output)
-            return float(match.group(1)) if match else None
-
-        left_mean_volume = get_mean_volume(left_output)
-        right_mean_volume = get_mean_volume(right_output)
-
-        print(f"Stream {stream_index} - Left channel mean volume: {left_mean_volume}")
-        print(f"Stream {stream_index} - Right channel mean volume: {right_mean_volume}")
-
-        if left_mean_volume is None or right_mean_volume is None:
-            print(f"Stream {stream_index}: Unable to analyze audio. Skipping this stream.")
+        if left_volume is None or right_volume is None:
+            logger.warning(f"Stream {stream_index}: Unable to analyze audio. Skipping.")
             continue
 
-        # Initialize LTC detection flags
+        logger.info(f"Stream {stream_index} - Left: {left_volume}dB, Right: {right_volume}dB")
+
+        # LTC detection for auto mode
         left_has_ltc = False
         right_has_ltc = False
-
+        
         if audio_pan == "auto":
-            left_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'left', probe_duration=probe_duration)
-            right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration=probe_duration)
+            left_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'left', probe_duration)
+            right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration)
 
-        # If one channel has LTC but the other channel is silent,
-        # assume this stream is timecode only and skip mapping it.
+        # Apply logic for stream processing
         if left_has_ltc and not right_has_ltc:
-            if right_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Left channel LTC with silent right channel detected. Dropping stream.")
-                continue  # Skip mapping this stream
+            if right_volume <= SILENCE_THRESHOLD:
+                logger.info(f"Stream {stream_index}: LTC + silence detected. Dropping stream.")
+                continue
             else:
-                print(f"Stream {stream_index}: Left channel LTC detected. Using right channel as mono source.")
+                logger.info(f"Stream {stream_index}: Left LTC detected. Using right channel.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
         elif right_has_ltc and not left_has_ltc:
-            if left_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Right channel LTC with silent left channel detected. Dropping stream.")
-                continue  # Skip mapping this stream
+            if left_volume <= SILENCE_THRESHOLD:
+                logger.info(f"Stream {stream_index}: LTC + silence detected. Dropping stream.")
+                continue
             else:
-                print(f"Stream {stream_index}: Right channel LTC detected. Using left channel as mono source.")
+                logger.info(f"Stream {stream_index}: Right LTC detected. Using left channel.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
         else:
-            # No (or ambiguous) LTC: apply channel-specific panning or identity for balanced audio
-            if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
+            # Handle volume-based panning
+            if right_volume > SILENCE_THRESHOLD and left_volume <= SILENCE_THRESHOLD:
+                logger.info(f"Stream {stream_index}: Right-only audio. Panning to center.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
-            elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
+            elif left_volume > SILENCE_THRESHOLD and right_volume <= SILENCE_THRESHOLD:
+                logger.info(f"Stream {stream_index}: Left-only audio. Panning to center.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
             else:
-                print(f"Stream {stream_index}: Audio is balanced or both channels have sound. No panning applied.")
+                logger.info(f"Stream {stream_index}: Balanced audio. No panning.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c1[outa{pan_filter_idx}]")
+        
         pan_filter_idx += 1
 
     return pan_filters
 
-def get_video_resolution(input_file):
+
+def get_video_resolution(input_file: Path) -> Tuple[int, int]:
     """
-    Get the width and height of a video file using ffprobe.
-    Returns (width, height) as integers.
+    Get video resolution using ffprobe.
+    
+    Args:
+        input_file: Path to video file
+        
+    Returns:
+        Tuple of (width, height) as integers
+        
+    Raises:
+        ValueError: If resolution cannot be determined
     """
-    ffprobe_command = [
+    cmd = [
         "ffprobe", "-v", "error", "-select_streams", "v:0",
-        "-show_entries", "stream=width,height", "-of", "csv=p=0", input_file
+        "-show_entries", "stream=width,height", "-of", "csv=p=0", str(input_file)
     ]
 
     try:
-        result = subprocess.run(ffprobe_command, capture_output=True, text=True, check=True)
-        width, height = map(int, result.stdout.strip().split(","))
-        return width, height
+        result = run_command(cmd, check=True)
+        width_str, height_str = result.stdout.strip().split(",")
+        return int(width_str), int(height_str)
     except Exception as e:
-        logging.error(f"Error detecting resolution for {input_file}: {e}")
+        logger.error(f"Failed to get resolution for {input_file}: {e}")
         raise ValueError(f"Could not determine resolution for {input_file}")
 
-def remake_scs_from_pm(bag_path, audio_pan="none"):
+
+def get_video_filter(width: int, height: int) -> str:
     """
-    Create new Service Copy MP4 files from the Preservation Master MKV
-    using a single filter_complex for video + audio.
+    Determine appropriate video filter based on resolution.
+    
+    Args:
+        width: Video width in pixels
+        height: Video height in pixels
+        
+    Returns:
+        FFmpeg video filter string
+    """
+    if (width, height) == (720, 486):
+        return "idet,bwdif=1,crop=720:480:0:4,setdar=4/3"
+    elif (width, height) == (720, 576):
+        return "idet,bwdif=1"
+    else:
+        logger.warning(f"Unknown resolution {width}×{height}; using deinterlace only")
+        return "idet,bwdif=1"
+
+
+def remake_scs_from_pm(bag_path: Path, audio_pan: str = "none") -> List[str]:
+    """
+    Create new Service Copy MP4 files from Preservation Master MKV files.
+    
+    Args:
+        bag_path: Path to BagIt bag directory
+        audio_pan: Audio panning mode
+        
+    Returns:
+        List of modified file paths
     """
     modified_files = []
-    sc_dir = Path(bag_path) / 'data' / 'ServiceCopies'
-    pm_dir = Path(bag_path) / 'data' / 'PreservationMasters'
+    sc_dir = bag_path / 'data' / 'ServiceCopies'
+    pm_dir = bag_path / 'data' / 'PreservationMasters'
+
+    if not sc_dir.exists() or not pm_dir.exists():
+        logger.warning(f"Required directories not found in {bag_path}")
+        return modified_files
 
     for sc_file in sc_dir.glob('*_sc.mp4'):
         pm_basename = sc_file.name.replace('_sc.mp4', '_pm.mkv')
         pm_file = pm_dir / pm_basename
+        
         if not pm_file.is_file():
-            logging.warning(f"No PM found for {sc_file}; expected {pm_file}")
+            logger.warning(f"No PM found for {sc_file.name}; expected {pm_file.name}")
             continue
 
-        logging.info(f"Transcoding SC from PM: {pm_file} → {sc_file}")
-        temp_fp = sc_file.with_suffix('.temp.mp4')
+        logger.info(f"Transcoding SC from PM: {pm_file.name} → {sc_file.name}")
+        temp_file = sc_file.with_suffix('.temp.mp4')
 
-        # 1) choose video filter
         try:
-            w, h = get_video_resolution(str(pm_file))
-        except ValueError as e:
-            logging.error(e)
-            continue
+            # Get video properties and filter
+            width, height = get_video_resolution(pm_file)
+            video_filter = get_video_filter(width, height)
 
-        if (w, h) == (720, 486):
-            vid_filt = "idet,bwdif=1,crop=720:480:0:4,setdar=4/3"
-        elif (w, h) == (720, 576):
-            vid_filt = "idet,bwdif=1"
-        else:
-            logging.warning(f"Unknown res {w}×{h}; using deinterlace only")
-            vid_filt = "idet,bwdif=1"
+            # Get audio pan filters
+            pan_filters = []
+            if audio_pan != "none":
+                pan_filters = detect_audio_pan(pm_file, audio_pan)
 
-        # 2) build audio pan filters
-        pan_filters = []
-        if audio_pan != "none":
-            pan_filters = detect_audio_pan(pm_file, audio_pan)
+            # Build filter_complex
+            filter_parts = [f"[0:v]{video_filter}[v]"]
+            filter_parts.extend(pan_filters)
+            filter_complex = ";".join(filter_parts)
 
-        # 3) assemble filter_complex parts
-        fc_parts = []
-        # video chain → [v]
-        fc_parts.append(f"[0:v]{vid_filt}[v]")
-        # audio chains already come as "[0:i]pan=…[outaX]"
-        fc_parts.extend(pan_filters)
-
-        # join into one string
-        filter_complex = ";".join(fc_parts)
-
-        # 4) build ffmpeg command
-        cmd = [
-            "ffmpeg", "-i", str(pm_file),
-            "-filter_complex", filter_complex,
-            # video map + encode:
-            "-map", "[v]",
-            "-c:v", "libx264", "-movflags", "faststart", "-pix_fmt", "yuv420p", "-crf", "21",
-        ]
-
-        # 5) map audio outputs
-        if pan_filters:
-            for idx in range(len(pan_filters)):
-                cmd += [
-                    "-map", f"[outa{idx}]",
-                    "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
-                ]
-        else:
-            # fallback: map first audio stream
-            cmd += [
-                "-map", "0:a:0",
-                "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+            # Build FFmpeg command
+            cmd = [
+                "ffmpeg", "-i", str(pm_file),
+                "-filter_complex", filter_complex,
+                "-map", "[v]",
+                "-c:v", "libx264", "-movflags", "faststart", 
+                "-pix_fmt", "yuv420p", "-crf", "21",
             ]
 
-        cmd.append(str(temp_fp))
+            # Add audio mapping
+            if pan_filters:
+                for idx in range(len(pan_filters)):
+                    cmd.extend([
+                        "-map", f"[outa{idx}]",
+                        "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+                    ])
+            else:
+                cmd.extend([
+                    "-map", "0:a:0",
+                    "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+                ])
 
-        # 6) run & replace
-        logging.debug("FFmpeg command: " + " ".join(cmd))
-        subprocess.run(cmd, check=True)
+            cmd.append(str(temp_file))
 
-        sc_file.unlink()
-        temp_fp.rename(sc_file)
-        modified_files.append(str(sc_file))
+            # Execute transcoding
+            logger.debug(f"FFmpeg command: {' '.join(cmd)}")
+            run_command(cmd, check=True)
+
+            # Replace original file
+            sc_file.unlink()
+            temp_file.rename(sc_file)
+            modified_files.append(str(sc_file))
+
+        except Exception as e:
+            logger.error(f"Failed to process {sc_file}: {e}")
+            if temp_file.exists():
+                temp_file.unlink()
+            continue
 
     return modified_files
 
-def remake_scs_from_sc(bag_path, audio_pan="none"):
+
+def remake_scs_from_sc(bag_path: Path, audio_pan: str = "none") -> List[str]:
     """
-    Create new Service Copy MP4 files from existing Service Copy MP4 files.
-    Returns a list of the newly updated SC .mp4 paths.
+    Create new Service Copy MP4 files from existing Service Copy files.
+    
+    Args:
+        bag_path: Path to BagIt bag directory
+        audio_pan: Audio panning mode
+        
+    Returns:
+        List of modified file paths
     """
     modified_files = []
-    servicecopies_dir = Path(bag_path) / 'data' / 'ServiceCopies'
+    sc_dir = bag_path / 'data' / 'ServiceCopies'
 
-    for sc_file in servicecopies_dir.glob('*_sc.mp4'):
-        logging.info(f"Re-transcoding existing SC file for anamorphic fix: {sc_file}")
-        temp_filepath = sc_file.with_suffix('.temp.mp4')
+    if not sc_dir.exists():
+        logger.warning(f"ServiceCopies directory not found in {bag_path}")
+        return modified_files
 
-        pan_filters = []
-        if audio_pan != "none":
-            pan_filters = detect_audio_pan(sc_file, audio_pan)
+    for sc_file in sc_dir.glob('*_sc.mp4'):
+        logger.info(f"Re-transcoding SC file: {sc_file.name}")
+        temp_file = sc_file.with_suffix('.temp.mp4')
 
-        cmd = [
-            "ffmpeg",
-            "-i", str(sc_file),
-            "-map", "0:v",
-            "-c:v", "libx264",
-            "-movflags", "faststart",
-            "-pix_fmt", "yuv420p",
-            "-crf", "21",
-            "-vf", "setdar=16/9"
-        ]
+        try:
+            # Get audio pan filters
+            pan_filters = []
+            if audio_pan != "none":
+                pan_filters = detect_audio_pan(sc_file, audio_pan)
 
-        if pan_filters:
-            # add filter_complex and map each outaN
-            cmd += ["-filter_complex", ";".join(pan_filters)]
-            for idx in range(len(pan_filters)):
-                cmd += ["-map", f"[outa{idx}]", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
-        else:
-            # no pan filters: copy the single main audio track
-            cmd += ["-map", "0:a", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
+            # Build base command
+            cmd = [
+                "ffmpeg", "-i", str(sc_file),
+                "-map", "0:v",
+                "-c:v", "libx264", "-movflags", "faststart",
+                "-pix_fmt", "yuv420p", "-crf", "21",
+                "-vf", "setdar=16/9"
+            ]
 
-        cmd.append(str(temp_filepath)) 
-        print(cmd)       
-        subprocess.run(cmd, check=True)
+            # Add audio processing
+            if pan_filters:
+                cmd.extend(["-filter_complex", ";".join(pan_filters)])
+                for idx in range(len(pan_filters)):
+                    cmd.extend([
+                        "-map", f"[outa{idx}]", 
+                        "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+                    ])
+            else:
+                cmd.extend([
+                    "-map", "0:a", 
+                    "-c:a", "aac", "-b:a", "320k", "-ar", "48000"
+                ])
 
-        os.remove(sc_file)
-        os.rename(temp_filepath, sc_file)
-        modified_files.append(str(sc_file))
+            cmd.append(str(temp_file))
+
+            # Execute transcoding
+            logger.debug(f"FFmpeg command: {' '.join(cmd)}")
+            run_command(cmd, check=True)
+
+            # Replace original file
+            sc_file.unlink()
+            temp_file.rename(sc_file)
+            modified_files.append(str(sc_file))
+
+        except Exception as e:
+            logger.error(f"Failed to process {sc_file}: {e}")
+            if temp_file.exists():
+                temp_file.unlink()
+            continue
 
     return modified_files
 
 
-def modify_json(data_dir):
+def update_sidecar_json(data_dir: Path) -> List[str]:
     """
-    Update metadata in all *_sc.json sidecar files within `data_dir`.
-    - dateCreated (YYYY-MM-DD extracted via regex)
-    - fileSize.measure (in bytes)
-    Returns a list of JSON files that were updated.
+    Update metadata in Service Copy JSON sidecar files.
+    
+    Args:
+        data_dir: Path to bag data directory
+        
+    Returns:
+        List of modified JSON file paths
     """
     date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
-    modified_json_files = []
+    modified_files = []
 
-    for root, dirs, files in os.walk(data_dir):
-        for file in files:
-            if not file.endswith('_sc.json'):
-                continue
+    for json_file in data_dir.rglob('*_sc.json'):
+        mp4_file = json_file.with_suffix('.mp4')
 
-            json_path = os.path.join(root, file)
-            sc_mp4_path = json_path.replace('_sc.json', '_sc.mp4')
+        if not mp4_file.exists():
+            logger.warning(f"No corresponding MP4 for {json_file}")
+            continue
 
-            if not os.path.exists(sc_mp4_path):
-                logging.warning(f"Skipping {json_path}; no corresponding SC MP4 found.")
-                continue
-
-            logging.info(f"Updating sidecar JSON: {json_path}")
-            media_info = MediaInfo.parse(sc_mp4_path)
+        try:
+            logger.info(f"Updating sidecar: {json_file.name}")
+            
+            # Get media info
+            media_info = MediaInfo.parse(str(mp4_file))
             general_tracks = [t for t in media_info.tracks if t.track_type == "General"]
+            
             if not general_tracks:
-                logging.warning(f"No 'General' track found in {sc_mp4_path}.")
+                logger.warning(f"No general track found in {mp4_file}")
                 continue
 
             general_data = general_tracks[0].to_data()
-            raw_date   = general_data.get('file_last_modification_date', '') or ''
-            file_size  = general_data.get('file_size', '0')
+            raw_date = general_data.get('file_last_modification_date', '') or ''
+            file_size = general_data.get('file_size', '0')
 
-            # extract YYYY-MM-DD
-            m = date_pattern.search(raw_date)
-            date_val = m.group(0) if m else ""
+            # Extract date
+            date_match = date_pattern.search(raw_date)
+            date_value = date_match.group(0) if date_match else ""
 
-            # now update JSON
-            with open(json_path, 'r+', encoding='utf-8-sig') as jf:
-                data = json.load(jf)
+            # Parse file size
+            try:
+                size_int = int(file_size)
+            except (ValueError, TypeError):
+                size_int = 0
 
-                tech = data.get("technical", {})
-                # set or overwrite dateCreated
-                tech["dateCreated"] = date_val
+            # Update JSON file
+            with open(json_file, 'r', encoding='utf-8-sig') as f:
+                data = json.load(f)
 
-                # update or create fileSize.measure
-                try:
-                    size_int = int(file_size)
-                except ValueError:
-                    size_int = 0
+            # Update technical metadata
+            technical = data.setdefault("technical", {})
+            technical["dateCreated"] = date_value
+            
+            # Update file size
+            if isinstance(technical.get("fileSize"), dict):
+                technical["fileSize"]["measure"] = size_int
+            else:
+                technical["fileSize"] = {"measure": size_int, "unit": "bytes"}
 
-                if "fileSize" in tech and isinstance(tech["fileSize"], dict):
-                    tech["fileSize"]["measure"] = size_int
-                else:
-                    tech["fileSize"] = {"measure": size_int, "unit": "bytes"}
+            # Write updated JSON
+            with open(json_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
 
-                data["technical"] = tech
+            modified_files.append(str(json_file))
 
-                jf.seek(0)
-                json.dump(data, jf, indent=4)
-                jf.truncate()
+        except Exception as e:
+            logger.error(f"Failed to update {json_file}: {e}")
+            continue
 
-            modified_json_files.append(json_path)
+    return modified_files
 
-    return modified_json_files
 
-def calculate_md5(file_path):
+def calculate_md5(file_path: Path) -> str:
     """
-    Return the MD5 checksum for the file at file_path.
+    Calculate MD5 checksum for a file.
+    
+    Args:
+        file_path: Path to file
+        
+    Returns:
+        MD5 checksum as hex string
     """
-    logging.info(f"Calculating MD5 for: {file_path}")
+    logger.debug(f"Calculating MD5 for: {file_path}")
     hash_md5 = hashlib.md5()
-    with open(file_path, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
+    
+    try:
+        with open(file_path, 'rb') as f:
+            for chunk in iter(lambda: f.read(CHUNK_SIZE), b''):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    except Exception as e:
+        logger.error(f"Failed to calculate MD5 for {file_path}: {e}")
+        raise
 
-def update_manifests(bag_path, modified_paths):
-    """
-    Update manifest-md5.txt checksums for each file in `modified_paths`.
-    Then update the tagmanifest-md5.txt with the new manifest-md5.txt checksum.
-    `modified_paths` should be relative to bag_path.
-    """
-    manifest_path = Path(bag_path) / 'manifest-md5.txt'
-    tag_manifest_path = Path(bag_path) / 'tagmanifest-md5.txt'
 
-    # 1) Update manifest-md5.txt
+def update_manifests(bag_path: Path, modified_paths: List[str]) -> None:
+    """
+    Update BagIt manifest files with new checksums.
+    
+    Args:
+        bag_path: Path to BagIt bag directory
+        modified_paths: List of modified file paths relative to bag_path
+    """
+    manifest_path = bag_path / 'manifest-md5.txt'
+    tag_manifest_path = bag_path / 'tagmanifest-md5.txt'
+
+    # Update manifest-md5.txt
     if manifest_path.exists():
-        with manifest_path.open('r') as f:
-            lines = f.readlines()
+        try:
+            with open(manifest_path, 'r') as f:
+                lines = f.readlines()
 
-        new_lines = []
-        for line in lines:
-            parts = line.strip().split(' ', 1)
-            if len(parts) != 2:
-                new_lines.append(line)
-                continue
-            old_checksum, rel_path = parts
-            rel_path = rel_path.strip()
-            if rel_path in modified_paths:
-                full_path = os.path.join(bag_path, rel_path)
-                if os.path.isfile(full_path):
-                    new_checksum = calculate_md5(full_path)
-                    new_line = f"{new_checksum} {rel_path}\n"
-                    new_lines.append(new_line)
+            updated_lines = []
+            for line in lines:
+                parts = line.strip().split(' ', 1)
+                if len(parts) != 2:
+                    updated_lines.append(line)
+                    continue
+                    
+                old_checksum, rel_path = parts
+                rel_path = rel_path.strip()
+                
+                if rel_path in modified_paths:
+                    full_path = bag_path / rel_path
+                    if full_path.is_file():
+                        new_checksum = calculate_md5(full_path)
+                        updated_lines.append(f"{new_checksum} {rel_path}\n")
+                    else:
+                        logger.warning(f"File not found for manifest update: {full_path}")
+                        updated_lines.append(line)
                 else:
-                    logging.warning(f"Could not find file for manifest update: {full_path}")
-                    new_lines.append(line)
-            else:
-                new_lines.append(line)
+                    updated_lines.append(line)
 
-        with manifest_path.open('w') as f:
-            f.write(''.join(new_lines))
+            with open(manifest_path, 'w') as f:
+                f.writelines(updated_lines)
+                
+            logger.info("Updated manifest-md5.txt")
 
-    # 2) Update tagmanifest-md5.txt for the changed manifest
+        except Exception as e:
+            logger.error(f"Failed to update manifest: {e}")
+            raise
+
+    # Update tagmanifest-md5.txt
     if tag_manifest_path.exists() and manifest_path.exists():
-        with tag_manifest_path.open('r') as f:
-            lines = f.readlines()
+        try:
+            with open(tag_manifest_path, 'r') as f:
+                lines = f.readlines()
 
-        new_lines = []
-        for line in lines:
-            parts = line.strip().split(' ', 1)
-            if len(parts) != 2:
-                new_lines.append(line)
-                continue
-            old_checksum, file_ref = parts
-            if 'manifest-md5.txt' in file_ref:
-                # Recalculate the manifest's MD5
-                new_manifest_md5 = calculate_md5(manifest_path)
-                new_line = f"{new_manifest_md5} {file_ref}\n"
-                new_lines.append(new_line)
-            else:
-                new_lines.append(line)
+            updated_lines = []
+            for line in lines:
+                parts = line.strip().split(' ', 1)
+                if len(parts) != 2:
+                    updated_lines.append(line)
+                    continue
+                    
+                old_checksum, filename = parts
+                if 'manifest-md5.txt' in filename:
+                    new_checksum = calculate_md5(manifest_path)
+                    updated_lines.append(f"{new_checksum} {filename}\n")
+                else:
+                    updated_lines.append(line)
 
-        with tag_manifest_path.open('w') as f:
-            f.write(''.join(new_lines))
+            with open(tag_manifest_path, 'w') as f:
+                f.writelines(updated_lines)
+                
+        except Exception as e:
+            logger.error(f"Failed to update tagmanifest: {e}")
+            raise
 
-def update_payload_oxum(bag_path):
+
+def update_payload_oxum(bag_path: Path) -> None:
     """
-    Recalculate Payload-Oxum (total size in bytes . number of files) for all files under data/.
-    Update bag-info.txt accordingly.
+    Recalculate and update Payload-Oxum in bag-info.txt.
+    
+    Args:
+        bag_path: Path to BagIt bag directory
     """
-    data_path = Path(bag_path) / 'data'
-    bag_info_path = Path(bag_path) / 'bag-info.txt'
+    data_path = bag_path / 'data'
+    bag_info_path = bag_path / 'bag-info.txt'
 
+    if not data_path.exists():
+        logger.warning(f"Data directory not found: {data_path}")
+        return
+
+    # Calculate totals
     total_size = 0
     total_files = 0
 
-    for file in data_path.rglob('*'):
-        if file.is_file():
-            total_size += file.stat().st_size
+    for file_path in data_path.rglob('*'):
+        if file_path.is_file():
+            total_size += file_path.stat().st_size
             total_files += 1
 
     new_oxum = f"{total_size}.{total_files}"
-    logging.info(f"Calculated new Payload-Oxum: {new_oxum}")
+    logger.info(f"Calculated Payload-Oxum: {new_oxum}")
 
+    # Update bag-info.txt
     if bag_info_path.exists():
-        with bag_info_path.open('r') as f:
-            lines = f.readlines()
+        try:
+            with open(bag_info_path, 'r') as f:
+                lines = f.readlines()
 
-        new_lines = []
-        found_oxum = False
-        for line in lines:
-            if line.startswith('Payload-Oxum:'):
-                new_lines.append(f'Payload-Oxum: {new_oxum}\n')
-                found_oxum = True
-            else:
-                new_lines.append(line)
+            updated_lines = []
+            oxum_found = False
+            
+            for line in lines:
+                if line.startswith('Payload-Oxum:'):
+                    updated_lines.append(f'Payload-Oxum: {new_oxum}\n')
+                    oxum_found = True
+                else:
+                    updated_lines.append(line)
 
-        # If there wasn't a Payload-Oxum line, add it
-        if not found_oxum:
-            new_lines.append(f'Payload-Oxum: {new_oxum}\n')
+            if not oxum_found:
+                updated_lines.append(f'Payload-Oxum: {new_oxum}\n')
 
-        with bag_info_path.open('w') as f:
-            f.write(''.join(new_lines))
+            with open(bag_info_path, 'w') as f:
+                f.writelines(updated_lines)
+                
+        except Exception as e:
+            logger.error(f"Failed to update bag-info.txt: {e}")
+            raise
 
-def update_tagmanifest(bag_path):
+
+def update_tagmanifest(bag_path: Path) -> None:
     """
-    Update the tagmanifest-md5.txt to capture any changes to:
-      - bag-info.txt
-      - manifest-md5.txt
+    Update tagmanifest-md5.txt with new checksums for metadata files.
+    
+    Args:
+        bag_path: Path to BagIt bag directory
     """
-    tag_manifest_path = Path(bag_path) / 'tagmanifest-md5.txt'
-    bag_info_path = Path(bag_path) / 'bag-info.txt'
-    manifest_path = Path(bag_path) / 'manifest-md5.txt'
+    tag_manifest_path = bag_path / 'tagmanifest-md5.txt'
+    bag_info_path = bag_path / 'bag-info.txt'
+    manifest_path = bag_path / 'manifest-md5.txt'
 
     if not tag_manifest_path.exists():
+        logger.warning(f"tagmanifest-md5.txt not found: {tag_manifest_path}")
         return
 
-    with tag_manifest_path.open('r') as f:
-        lines = f.readlines()
+    try:
+        with open(tag_manifest_path, 'r') as f:
+            lines = f.readlines()
 
-    new_lines = []
-    for line in lines:
-        parts = line.strip().split(' ', 1)
-        if len(parts) != 2:
-            new_lines.append(line)
-            continue
-        old_checksum, filename = parts
+        updated_lines = []
+        for line in lines:
+            parts = line.strip().split(' ', 1)
+            if len(parts) != 2:
+                updated_lines.append(line)
+                continue
+                
+            old_checksum, filename = parts
 
-        # If the line references manifest-md5.txt, recalc and replace
-        if 'manifest-md5.txt' in filename and manifest_path.exists():
-            new_manifest_md5 = calculate_md5(manifest_path)
-            new_line = f"{new_manifest_md5} {filename}\n"
-            new_lines.append(new_line)
-        # If the line references bag-info.txt, recalc and replace
-        elif 'bag-info.txt' in filename and bag_info_path.exists():
-            new_baginfo_md5 = calculate_md5(bag_info_path)
-            new_line = f"{new_baginfo_md5} {filename}\n"
-            new_lines.append(new_line)
+            if 'manifest-md5.txt' in filename and manifest_path.exists():
+                new_checksum = calculate_md5(manifest_path)
+                updated_lines.append(f"{new_checksum} {filename}\n")
+            elif 'bag-info.txt' in filename and bag_info_path.exists():
+                new_checksum = calculate_md5(bag_info_path)
+                updated_lines.append(f"{new_checksum} {filename}\n")
+            else:
+                updated_lines.append(line)
+
+        with open(tag_manifest_path, 'w') as f:
+            f.writelines(updated_lines)
+            
+        logger.info("Updated tagmanifest-md5.txt")
+
+    except Exception as e:
+        logger.error(f"Failed to update tagmanifest: {e}")
+        raise
+
+
+def process_bag(bag_path: Path, source: str, audio_pan: str) -> None:
+    """
+    Process a single BagIt bag.
+    
+    Args:
+        bag_path: Path to BagIt bag directory
+        source: Source type ('pm' or 'sc')
+        audio_pan: Audio panning mode
+    """
+    logger.info(f"Processing BagIt bag: {bag_path}")
+
+    try:
+        # Re-encode service copies
+        if source == 'sc':
+            sc_modified = remake_scs_from_sc(bag_path, audio_pan)
         else:
-            new_lines.append(line)
+            sc_modified = remake_scs_from_pm(bag_path, audio_pan)
 
-    with tag_manifest_path.open('w') as f:
-        f.write(''.join(new_lines))
+        # Update JSON sidecars
+        json_modified = update_sidecar_json(bag_path / 'data')
 
-    logging.info("tagmanifest-md5.txt updated successfully.")
+        # Convert to relative paths
+        all_modified = sc_modified + json_modified
+        rel_modified = [
+            os.path.relpath(path, start=bag_path).replace('\\', '/')
+            for path in all_modified
+        ]
 
-def main():
+        if rel_modified:
+            # Update BagIt metadata
+            update_manifests(bag_path, rel_modified)
+            update_payload_oxum(bag_path)
+            update_tagmanifest(bag_path)
+            
+            logger.info(f"Successfully processed {len(rel_modified)} files in {bag_path}")
+        else:
+            logger.info(f"No files modified in {bag_path}")
+
+    except Exception as e:
+        logger.error(f"Failed to process bag {bag_path}: {e}")
+        raise
+
+
+def main() -> None:
+    """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Remake or fix Service Copy MP4 files in BagIt packages'
+        description='Remake or fix Service Copy MP4 files in BagIt packages',
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument('-d', '--directory', required=True,
-                        help='Directory containing BagIt packages')
-    parser.add_argument('--source', choices=['pm', 'sc'], default='pm',
-                        help=("Choose the source for re-encoding service copies: "
-                              "'pm' for Preservation Master MKV (default), "
-                              "'sc' for the existing service copy MP4."))
+    
     parser.add_argument(
-        "-p", "--audio-pan",
-        choices=["none", "left", "right", "center", "auto"],
-        default="none",
-        help="Pan audio: left/right/center; auto includes LTC timecode detection"
+        '-d', '--directory', 
+        required=True,
+        type=Path,
+        help='Directory containing BagIt packages'
+    )
+    
+    parser.add_argument(
+        '--source', 
+        choices=['pm', 'sc'], 
+        default='pm',
+        help='Source for re-encoding: pm (Preservation Master) or sc (Service Copy)'
+    )
+    
+    parser.add_argument(
+        '-p', '--audio-pan',
+        choices=['none', 'left', 'right', 'center', 'auto'],
+        default='none',
+        help='Audio panning mode: none, left, right, center, or auto (includes LTC detection)'
+    )
+    
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose debug logging'
     )
 
     args = parser.parse_args()
-    top_dir = Path(args.directory)
+    
+    # Configure logging level
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    top_dir = args.directory
+    
+    if not top_dir.exists():
+        logger.error(f"Directory not found: {top_dir}")
+        sys.exit(1)
+    
+    if not top_dir.is_dir():
+        logger.error(f"Path is not a directory: {top_dir}")
+        sys.exit(1)
 
-    for bag_name in os.listdir(top_dir):
-        bag_path = top_dir / bag_name
-        if bag_path.is_dir() and is_bag(bag_path):
-            logging.info(f"Processing BagIt bag: {bag_path}")
+    # Process each bag
+    processed_count = 0
+    error_count = 0
+    
+    for item in top_dir.iterdir():
+        if item.is_dir() and is_bag(item):
+            try:
+                process_bag(item, args.source, args.audio_pan)
+                processed_count += 1
+            except Exception as e:
+                logger.error(f"Failed to process bag {item}: {e}")
+                error_count += 1
+                continue
+        else:
+            logger.debug(f"Skipping non-bag directory: {item}")
+    
+    # Summary
+    logger.info(f"Processing complete: {processed_count} bags processed, {error_count} errors")
+    
+    if error_count > 0:
+        sys.exit(1)
 
-            # 1) Depending on the --source argument, re-encode from PM or SC
-            if args.source == 'sc':
-                sc_modified = remake_scs_from_sc(bag_path, args.audio_pan)
-            else:
-                sc_modified = remake_scs_from_pm(bag_path, args.audio_pan)
-
-            # 2) Update sidecar JSON. 
-            #    This might modify a few JSON files that also need fresh checksums.
-            json_modified = modify_json(bag_path / 'data')
-
-            # 3) Combine the newly modified files
-            #    We need their paths relative to the bag root for manifest updates.
-            all_modified = sc_modified + json_modified
-            rel_modified = [
-                os.path.relpath(path, start=bag_path).replace('\\', '/')
-                for path in all_modified
-            ]
-
-            # 4) Update the payload manifest
-            update_manifests(bag_path, rel_modified)
-
-            # 5) Recalculate the Payload-Oxum in bag-info.txt
-            update_payload_oxum(bag_path)
-
-            # 6) Update the tagmanifest checksums for bag-info.txt & manifest-md5.txt
-            update_tagmanifest(bag_path)
 
 if __name__ == "__main__":
     main()
