@@ -263,46 +263,87 @@ class FileProcessor:
     
     @staticmethod
     def _read_from_csv(file_path: str) -> List[str]:
-        """Read SPEC AMI IDs from CSV file."""
-        ids = []
-        
-        with open(file_path, mode='r', encoding='utf-8') as file:
-            reader = csv.reader(file)
-            first_row = next(reader, None)
-            
-            if not first_row:
-                return ids
-            
-            # Determine column index
-            if any(not item.isdigit() for item in first_row):
-                column_index = first_row.index('SPEC_AMI_ID') if 'SPEC_AMI_ID' in first_row else 0
+        """Read SPEC AMI IDs from a CSV file, robust to header variations and blank cells."""
+        ids: List[str] = []
+
+        def _normalize_header(h: str) -> str:
+            s = (h or "").lower().strip()
+            # replace any non-alphanumeric with underscore
+            s = re.sub(r'[^a-z0-9]+', '_', s)
+            s = s.strip('_')
+            # map plurals 'ids' → 'id'
+            if s.endswith('ids'):
+                s = s[:-1]
+            return s
+
+        with open(file_path, mode='r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            # grab first row (could be header or data)
+            try:
+                first_row = next(reader)
+            except StopIteration:
+                return ids  # empty file
+
+            # if any cell in first_row isn't purely digits, treat it as a header
+            header_exists = any(not cell.strip().isdigit() for cell in first_row)
+
+            if header_exists:
+                # normalize header names and look for 'spec_ami_id'
+                norm = [_normalize_header(cell) for cell in first_row]
+                try:
+                    col_idx = norm.index('spec_ami_id')
+                except ValueError:
+                    col_idx = 0
             else:
-                column_index = 0
-                if re.match(r"^\d{6}$", first_row[0]):
-                    ids.append(first_row[0])
-            
-            # Read remaining rows
+                # no header: first row is data
+                col_idx = 0
+                val = first_row[0].strip()
+                if re.fullmatch(r'\d{6}', val):
+                    ids.append(val)
+
+            # process the rest of the rows
             for row in reader:
-                if len(row) > column_index and re.match(r"^\d{6}$", row[column_index]):
-                    ids.append(row[column_index])
-                    
+                if len(row) <= col_idx:
+                    continue
+                val = row[col_idx].strip()
+                if re.fullmatch(r'\d{6}', val):
+                    ids.append(val)
+
         return ids
     
     @staticmethod
     def _read_from_excel(file_path: str) -> List[str]:
-        """Read SPEC AMI IDs from Excel file."""
-        ids = []
-        
-        df_dict = pd.read_excel(file_path, sheet_name=None)
-        
-        for sheet_name, sheet_df in df_dict.items():
-            if 'SPEC_AMI_IDs' in sheet_name or re.search(r"spec_ami_ids", sheet_name, re.IGNORECASE):
-                if 'SPEC_AMI_ID' in sheet_df.columns:
-                    valid_ids = sheet_df['SPEC_AMI_ID'].dropna().astype(str).tolist()
-                    ids.extend([id_val for id_val in valid_ids if re.match(r"^\d{6}$", id_val)])
-                    
-        return ids
+        """Read SPEC AMI IDs from Excel file, robust to sheet/name and header variations."""
+        ids: List[str] = []
 
+        def _normalize_header(h: str) -> str:
+            s = (h or "").lower().strip()
+            # collapse any non-alphanumeric into underscore
+            s = re.sub(r'[^a-z0-9]+', '_', s)
+            s = s.strip('_')
+            # map plurals 'ids' → 'id'
+            if s.endswith('ids'):
+                s = s[:-1]
+            return s
+
+        # Read all sheets
+        all_sheets = pd.read_excel(file_path, sheet_name=None)
+        for sheet_name, df in all_sheets.items():
+            # Build a map: normalized_header → actual column name
+            norm_map = {
+                _normalize_header(col): col
+                for col in df.columns
+            }
+            # If a 'spec_ami_id' column exists, pull from it
+            if 'spec_ami_id' in norm_map:
+                col = norm_map['spec_ami_id']
+                # iterate, dropna, convert to str, strip, and match exactly six digits
+                for raw in df[col].dropna():
+                    val = str(raw).strip()
+                    if re.fullmatch(r'\d{6}', val):
+                        ids.append(val)
+
+        return ids
 
 class RecordProcessor:
     """Handles processing of FileMaker records and API calls."""
