@@ -217,17 +217,18 @@ class FileMakerClient(APIClient):
             self.logger.error(f"Failed to connect to Filemaker server: {e}")
             return False
     
-    def find_records(self, query: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find records in FileMaker database."""
-        if not self.fms:
-            return []
-        
-        try:
-            found_records = self.fms.find([query])
-            return [record.to_dict() for record in found_records]
-        except Exception as e:
-            self.logger.error(f"Error finding records: {e}")
-            return []
+    def find_records(self,
+                     query: Dict[str, Any],
+                     offset: int = 1,
+                     limit:  int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Runs a find with pagination. FileMaker Data API
+        returns at most `limit` records per call starting at `offset`.
+        """
+        found = self.fms.find([query], offset=offset, limit=limit)
+        return [rec.to_dict() for rec in found]
+
     
     def disconnect(self) -> None:
         """Disconnect from FileMaker database."""
@@ -311,6 +312,24 @@ class RecordProcessor:
         self.platform_client = platform_client
         self.scsb_client = scsb_client
         self.logger = logging.getLogger(self.__class__.__name__)
+
+    def _fetch_all_box_records(self, box_barcode: str) -> List[Dict[str,Any]]:
+        all_records = []
+        page_size  = 100
+        offset     = 1
+
+        while True:
+            page = self.fm_client.find_records(
+                {"OBJECTS_parent_from_OBJECTS::id_barcode": box_barcode},
+                offset=offset,
+                limit=page_size
+            )
+            all_records.extend(page)
+            if len(page) < page_size:
+                # we hit the last page
+                break
+            offset += page_size
+        return all_records
     
     def process_records(self, spec_ami_ids: List[str]) -> Tuple[List[Dict[str, Any]], Dict[str, BoxSummary]]:
         """Process all records and return details and box summary."""
@@ -375,8 +394,8 @@ class RecordProcessor:
         """Handle items with a box barcode."""
         # Get all items in the box (only once per box)
         if box_summary[box_name].total_box_items == 0:
-            box_records = self.fm_client.find_records({"OBJECTS_parent_from_OBJECTS::id_barcode": box_barcode})
-            
+            box_records = self._fetch_all_box_records(box_barcode)
+
             self.logger.info(f"Found {len(box_records)} items in box {box_name} with barcode {box_barcode}")
             
             # Update box summary with total items and migration statuses
@@ -472,59 +491,64 @@ class ExcelExporter:
     
     @staticmethod
     def _prepare_summary_dataframes(box_summary: Dict[str, BoxSummary]) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Prepare summary DataFrames from box summary data."""
+        """Prepare summary DataFrames from box summary data, including a combined total column."""
         overview = []
         formats = []
         
         for box_name, details in box_summary.items():
-            # For the overview, we want to match the original format but with migration status details
+            # For the overview, build requested and remaining displays
             total_requested = details.total_requested_items
             total_remaining = details.total_remaining_items
             
-            # Format the requested-items display
+            # Requested items display
             if total_requested > 0:
                 requested_display = f"{total_requested}"
-                status_count = len(details.requested_migration_statuses.counts)
-
-                if status_count == 1:
-                    # exactly one migration status → show just the status name
-                    status_name = next(iter(details.requested_migration_statuses.counts))
+                req_statuses = details.requested_migration_statuses.counts
+                if len(req_statuses) == 1:
+                    status_name = next(iter(req_statuses))
                     requested_display += f" ({status_name})"
-                elif status_count > 1:
-                    status_parts = [
-                        f"{count} {status}"
-                        for status, count in sorted(details.requested_migration_statuses.counts.items())
-                    ]
+                else:
+                    status_parts = [f"{cnt} {st}" for st, cnt in sorted(req_statuses.items())]
                     requested_display += f" ({', '.join(status_parts)})"
             else:
                 requested_display = "0"
 
-            # Do the same for remaining_display
+            # Remaining items display
             if total_remaining > 0:
                 remaining_display = f"{total_remaining}"
-                status_count = len(details.remaining_migration_statuses.counts)
-
-                if status_count == 1:
-                    status_name = next(iter(details.remaining_migration_statuses.counts))
+                rem_statuses = details.remaining_migration_statuses.counts
+                if len(rem_statuses) == 1:
+                    status_name = next(iter(rem_statuses))
                     remaining_display += f" ({status_name})"
-                elif status_count > 1:
-                    status_parts = [
-                        f"{count} {status}"
-                        for status, count in sorted(details.remaining_migration_statuses.counts.items())
-                    ]
+                else:
+                    status_parts = [f"{cnt} {st}" for st, cnt in sorted(rem_statuses.items())]
                     remaining_display += f" ({', '.join(status_parts)})"
             else:
                 remaining_display = "0"
+
+            # Combined total (requested + remaining)
+            all_statuses = defaultdict(int, req_statuses)
+            for st, cnt in rem_statuses.items():
+                all_statuses[st] += cnt
+
+            if all_statuses:
+                total_count = sum(all_statuses.values())
+                combined_parts = [f"{cnt} {st}" for st, cnt in sorted(all_statuses.items())]
+                combined_display = f"{total_count} ({', '.join(combined_parts)})"
+            else:
+                combined_display = "0"
             
             overview.append({
                 'Box Name': box_name,
                 'Box Barcode': details.box_barcode,
                 'SPEC Box Location': details.spec_box_location,
-                'Total Requested Items': requested_display,
+                'Requested Items': requested_display,
                 'Remaining Items in Box': remaining_display,
+                'All Items in Box': combined_display,
                 'SCSB Availability': ', '.join(details.scsb_availabilities)
             })
             
+            # Build format counts
             for format_name, count in details.formats.items():
                 formats.append({
                     'Box Name': box_name,
@@ -536,17 +560,10 @@ class ExcelExporter:
         formats_df = pd.DataFrame(formats)
         
         if not formats_df.empty:
-            # Group and sort formats
             formats_df = formats_df.groupby(['Box Name', 'Format']).sum().reset_index()
             formats_df = formats_df.sort_values(by=['Box Name', 'Format'])
-            
-            # Add total row
             total_items = formats_df['Count'].sum()
-            total_row = pd.DataFrame([{
-                'Box Name': 'Total',
-                'Format': '',
-                'Count': total_items
-            }])
+            total_row = pd.DataFrame([{ 'Box Name': 'Total', 'Format': '', 'Count': total_items }])
             formats_df = pd.concat([formats_df, total_row], ignore_index=True)
         
         return overview_df, formats_df
@@ -615,7 +632,7 @@ def parse_arguments() -> argparse.Namespace:
 def setup_logging() -> None:
     """Set up logging configuration."""
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
