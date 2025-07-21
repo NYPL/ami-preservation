@@ -34,7 +34,7 @@ def convert_audio(file_path, output_format):
 def process_directory(directory, output_format):
     for root, _, files in os.walk(directory):
         for file in sorted(files):
-            if file.endswith((".wav", ".flac", ".WMA")):
+            if file.endswith((".wav", ".WAV", ".flac", ".WMA")):
                 file_path = os.path.join(root, file)
                 convert_audio(file_path, output_format)
 
