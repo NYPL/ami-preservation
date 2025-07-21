@@ -45,6 +45,7 @@ def fetch_data_from_jdbc():
                 CAST("cmsCollectionTitle" AS VARCHAR(255)) AS cmsCollectionTitle,
                 CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode,
                 CAST("source.object.format" AS VARCHAR(255)) AS format,
+                CAST("source.object.type"   AS VARCHAR(255)) AS objectType,
                 'Programmatic Digitization' AS projectType
             FROM tbl_vendor_mediainfo
             UNION ALL
@@ -55,6 +56,7 @@ def fetch_data_from_jdbc():
                 CAST("cmsCollectionTitle" AS VARCHAR(255)) AS cmsCollectionTitle,
                 CAST("bibliographic.vernacularDivisionCode" AS VARCHAR(255)) AS vernacularDivisionCode,
                 CAST("source.object.format" AS VARCHAR(255)) AS format,
+                CAST("source.object.type"   AS VARCHAR(255)) AS objectType,
                 CAST("projectType" AS VARCHAR(255)) AS projectType
             FROM tbl_metadata
         '''
@@ -78,7 +80,6 @@ def fetch_data_from_jdbc():
 
     return df
 
-
 def combine_division_codes(df):
     """
     Combine the vernacular division codes into broader categories, in-place.
@@ -100,6 +101,29 @@ def combine_division_codes(df):
     for new_label, old_labels in combine_dict.items():
         df.loc[df['combinedDivisionCode'].isin(old_labels), 'combinedDivisionCode'] = new_label
 
+    return df
+
+def classify_media_types(df):
+    """
+    Adds a 'media_type' column by mapping objectType:
+      - video      for typical video containers
+      - film       for film
+      - data       for data optical discs
+      - audio      everything else
+    """
+    df = df.copy()
+    mapping = {
+        'video': [
+            'video cassette analog', 'video cassette digital',
+            'video optical disc', 'video reel'
+        ],
+        'film':     ['film'],
+        'data':     ['data optical disc']
+    }
+    # default to audio
+    df['media_type'] = 'audio'
+    for mtype, values in mapping.items():
+        df.loc[df['objectType'].isin(values), 'media_type'] = mtype
     return df
 
 
@@ -427,6 +451,12 @@ def main():
         type=str,
         default=None
     )
+    parser.add_argument(
+        '--media_type',
+        help='Filter report to a single media type: audio, video, film or data',
+        choices=['audio','video','film','data'],
+        default=None
+    )
     args = parser.parse_args()
 
     # If an input CSV is provided, load data from that file.
@@ -443,6 +473,12 @@ def main():
     if df.empty:
         print("No data returned. Exiting.")
         return
+        
+    if args.media_type:
+        # classify and filter
+        df = classify_media_types(df)
+        df = df[df['media_type'] == args.media_type]
+        print(f"Filtered to media_type = {args.media_type}; records now: {len(df)}")
 
     # If --all flag is used, generate a separate report for each division.
     if args.all:
