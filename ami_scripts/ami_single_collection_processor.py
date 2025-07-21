@@ -178,7 +178,7 @@ class FileMakerClient:
             try:
                 page = self.fms.find([query], offset=offset, limit=page_size)
                 records = [record.to_dict() for record in page]
-                
+                logging.info(f"Fetched {len(records)} records (offset {offset})")
                 logging.debug(f"Fetched {len(records)} records (offset {offset})")
                 all_records.extend(records)
                 
