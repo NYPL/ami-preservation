@@ -44,7 +44,17 @@ EXCLUDED_FORMATS = frozenset([
     'digital file',
     'digital directory',
     'box - card file',
-    'box - flat'
+    'box - flat',
+    'film canister',
+    'manuscript',
+    'poster',
+    'painting',
+    'folder',
+    '3-D object',
+    'box - transfile',
+    'tube',
+    'painting'
+    
 ])
 
 # Color scheme for professional reports
@@ -681,7 +691,7 @@ Examples:
     parser.add_argument('-c', '--collection-id', required=True,
                        help='Collection ID to query')
     parser.add_argument('-o', '--output',
-                       help='Excel output file (default: collection_<id>.xlsx)')
+                       help='Excel output file (default: ~/Desktop/<collection-id>_Migration_Status.xlsx)')
     parser.add_argument('--pdf', action='store_true',
                        help='Generate PDF report alongside Excel file')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -712,10 +722,10 @@ def main() -> int:
     try:
         args = parse_arguments()
         setup_logging(args.verbose)
-        
+
         logging.info("Starting AMI Collection Processor")
         logging.info(f"Collection ID: {args.collection_id}")
-        
+
         # Initialize configuration
         try:
             config = Config()
@@ -723,75 +733,81 @@ def main() -> int:
         except ConfigurationError as e:
             logging.error(f"Configuration error: {e}")
             return 1
-        
-        # Set up output paths
-        excel_output = args.output or f"collection_{args.collection_id}.xlsx"
-        excel_path = validate_output_path(excel_output)
-        
+
+        # Determine default save directory (Desktop)
+        desktop_dir = Path.home() / "Desktop"
+
+        # Excel output: user override or ~/Desktop/<ID>_Migration_Status.xlsx
+        if args.output:
+            excel_file = Path(args.output)
+        else:
+            excel_file = desktop_dir / f"{args.collection_id}_Migration_Status.xlsx"
+        excel_path = validate_output_path(str(excel_file))
+
+        # PDF output: only if requested, saved as ~/Desktop/<ID>_Migration_Status.pdf
         pdf_path = None
         if args.pdf:
-            pdf_output = f"collection_{args.collection_id}.pdf"
-            pdf_path = validate_output_path(pdf_output)
-        
+            pdf_file = desktop_dir / f"{args.collection_id}_Migration_Status.pdf"
+            pdf_path = validate_output_path(str(pdf_file))
+
         # Initialize FileMaker client
         fm_client = FileMakerClient(config)
-        
+
         try:
             # Connect to FileMaker
             fm_client.connect(args.username, args.password)
-            
-            # Process collection data
+
+            # Fetch and process items
             processor = CollectionProcessor(fm_client)
             df = processor.fetch_items(args.collection_id)
-            
+
             if df.empty:
                 logging.warning("No data found for the specified collection ID")
                 return 0
-            
-            # Apply business logic filters
+
+            # Apply filters, separate carriers, sort
             df = processor.apply_filters(df)
-            
-            # Separate digital carriers
             df_main, df_digital = processor.separate_digital_carriers(df)
-            
-            # Sort main dataset
             df_main = processor.sort_by_ami_id(df_main)
-            
+
             # Generate reports
             report_generator = ReportGenerator(args.collection_id)
-            
+
             # Excel report
             report_generator.generate_excel(df_main, df_digital, str(excel_path))
             logging.info(f"Excel report completed: {excel_path}")
-            
+
             # PDF report (if requested)
             if args.pdf and pdf_path:
                 report_generator.generate_pdf_report(df_main, df_digital, str(pdf_path))
                 logging.info(f"PDF report completed: {pdf_path}")
-            
-            # Summary statistics
+
+            # Final summary
             total_items = len(df_main) + len(df_digital)
             logging.info(f"Processing complete: {total_items} total items processed")
             logging.info(f"Main records: {len(df_main)}, Digital carriers: {len(df_digital)}")
-            
+
         except FileMakerConnectionError as e:
             logging.error(f"FileMaker error: {e}")
             return 1
-        
+
         finally:
             fm_client.disconnect()
-    
+
     except KeyboardInterrupt:
         logging.info("Process interrupted by user")
         return 130
-    
+
     except Exception as e:
         logging.error(f"Unexpected error: {e}", exc_info=True)
         return 1
-    
+
     logging.info("AMI Collection Processor completed successfully")
     return 0
 
 
 if __name__ == '__main__':
+    import sys
+    from pathlib import Path
+
     sys.exit(main())
