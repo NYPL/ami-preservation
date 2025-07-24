@@ -483,270 +483,349 @@ class ReportGenerator:
         plt.close(fig)
 
     def _create_summary_page(self, df_main: pd.DataFrame, df_digital: pd.DataFrame, 
-                                pdf: PdfPages) -> None:
-            """Create summary statistics page with improved layout."""
-            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(11, 8.5))
-            fig.suptitle('Collection Summary Statistics', fontsize=16, fontweight='bold')
+                            pdf: PdfPages) -> None:
+        """Create summary statistics page with improved layout and centering."""
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(11, 8.5))
+        fig.suptitle('Collection Summary Statistics', fontsize=18, fontweight='bold', y=0.96)
+        
+        # IMPROVED OVERVIEW BOX - Better sizing and centering
+        total_items = len(df_main) + len(df_digital)
+        ax1.axis('off')
+        
+        summary_text = f"""Total Items: {total_items:,}
+    AMI Items: {len(df_main):,}
+    Digital Carriers: {len(df_digital):,}
+
+    Unique Formats: {df_main['Format 1'].nunique() if not df_main.empty else 0}
+    Unique Boxes: {df_main['Box Name'].nunique() if not df_main.empty else 0}"""
+        
+        # Create a larger, better-positioned box
+        bbox_props = dict(
+            boxstyle="round,pad=0.6", 
+            facecolor=COLORS['background'],
+            edgecolor=COLORS['primary'],
+            linewidth=2,
+            alpha=0.95
+        )
+        
+        ax1.text(0.5, 0.45, summary_text, 
+                fontsize=12, 
+                ha='center', va='center',  # Properly centered
+                bbox=bbox_props,
+                transform=ax1.transAxes,  # Use axes coordinates for better control
+                linespacing=1.6)
+        ax1.set_title('Overview', fontweight='bold', fontsize=14, pad=20, y=0.95)
+        
+        # ENHANCED MIGRATION STATUS PIE CHART with better colors
+        if not df_main.empty and 'Migration Status' in df_main.columns:
+            status_counts = df_main['Migration Status'].fillna('Unknown').value_counts()
             
-            # Summary metrics (unchanged)
-            total_items = len(df_main) + len(df_digital)
-            ax1.axis('off')
+            # Group small percentages together
+            total_count = status_counts.sum()
+            threshold = 0.03
+            small_segments = status_counts[status_counts / total_count < threshold]
+            large_segments = status_counts[status_counts / total_count >= threshold]
             
-            summary_text = f"""
-            Total Items: {total_items:,}
-            AMI Items: {len(df_main):,}
-            Digital Carriers: {len(df_digital):,}
-            
-            Unique Formats: {df_main['Format 1'].nunique() if not df_main.empty else 0}
-            Unique Boxes: {df_main['Box Name'].nunique() if not df_main.empty else 0}
-            """
-            
-            ax1.text(0.1, 0.7, summary_text, fontsize=12, va='top',
-                    bbox=dict(boxstyle="round,pad=0.3", facecolor=COLORS['background']))
-            ax1.set_title('Overview', fontweight='bold')
-            
-            # Improved migration status pie chart with better handling of small segments
-            if not df_main.empty and 'Migration Status' in df_main.columns:
-                status_counts = df_main['Migration Status'].fillna('Unknown').value_counts()
-                
-                # Group small percentages together
-                total_count = status_counts.sum()
-                threshold = 0.03  # 3% threshold
-                small_segments = status_counts[status_counts / total_count < threshold]
-                large_segments = status_counts[status_counts / total_count >= threshold]
-                
-                # Combine small segments if they exist
-                if len(small_segments) > 0:
-                    combined_counts = large_segments.copy()
-                    if len(small_segments) > 1:
-                        combined_counts['Other'] = small_segments.sum()
-                    else:
-                        # If only one small segment, keep it separate
-                        combined_counts = pd.concat([large_segments, small_segments])
+            if len(small_segments) > 0:
+                combined_counts = large_segments.copy()
+                if len(small_segments) > 1:
+                    combined_counts['Other'] = small_segments.sum()
                 else:
-                    combined_counts = status_counts
-                
-                colors = sns.color_palette("Set2", len(combined_counts))
-                
-                # Create pie chart with better text handling
-                wedges, texts, autotexts = ax2.pie(combined_counts.values, 
-                                                labels=combined_counts.index,
-                                                autopct=lambda pct: f'{pct:.1f}%' if pct > 5 else '',
-                                                colors=colors, 
-                                                startangle=90,
-                                                textprops={'fontsize': 9})
-                
-                # Enhance text visibility
-                for autotext in autotexts:
-                    autotext.set_color('white')
-                    autotext.set_fontweight('bold')
-                
-                # Handle overlapping labels by repositioning
-                for text in texts:
-                    text.set_fontsize(9)
-                
-                ax2.set_title('Migration Status Distribution', fontweight='bold')
+                    combined_counts = pd.concat([large_segments, small_segments])
             else:
-                ax2.text(0.5, 0.5, 'No Migration Status Data', ha='center', va='center')
-                ax2.set_title('Migration Status', fontweight='bold')
+                combined_counts = status_counts
             
-            # Top formats (unchanged but improved spacing)
-            if not df_main.empty:
-                top_formats = df_main['Format 1'].value_counts().head(6)  # Reduced from 5 to 6
-                bars = ax3.barh(range(len(top_formats)), top_formats.values, 
-                            color=sns.color_palette("viridis", len(top_formats)))
-                ax3.set_yticks(range(len(top_formats)))
-                ax3.set_yticklabels([f[:25] + '...' if len(f) > 25 else f 
-                                for f in top_formats.index], fontsize=9)
-                ax3.set_xlabel('Count')
-                ax3.set_title('Top Media Types', fontweight='bold')
-                
-                # Add value labels on bars
-                for i, v in enumerate(top_formats.values):
-                    ax3.text(v + max(top_formats.values) * 0.01, i, str(v), va='center', fontsize=9)
-            else:
-                ax3.text(0.5, 0.5, 'No Format Data', ha='center', va='center')
-                ax3.set_title('Top Formats', fontweight='bold')
+            # Use a more sophisticated color palette
+            colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#7F7F7F', '#4CAF50', '#FF9800'][:len(combined_counts)]
             
-            # Replace "Items per Box" with Migration Status Summary Table
-            ax4.axis('off')
-            if not df_main.empty and 'Migration Status' in df_main.columns:
-                status_counts = df_main['Migration Status'].fillna('Unknown').value_counts()
-                
-                # Create a simple table showing counts and percentages
-                table_data = []
-                total = status_counts.sum()
-                for status, count in status_counts.items():
-                    percentage = (count / total) * 100
-                    table_data.append([status[:20], f'{count:,}', f'{percentage:.1f}%'])
-                
-                # Add table
-                table = ax4.table(cellText=table_data,
-                                colLabels=['Migration Status', 'Count', 'Percentage'],
-                                cellLoc='left',
-                                loc='center',
-                                bbox=[0.1, 0.2, 0.8, 0.6])
-                
-                table.auto_set_font_size(False)
-                table.set_fontsize(9)
-                table.scale(1, 2)
-                
-                # Style the table
-                for i in range(len(table_data) + 1):
-                    for j in range(3):
-                        cell = table[(i, j)]
-                        if i == 0:  # Header
-                            cell.set_facecolor(COLORS['primary'])
-                            cell.set_text_props(weight='bold', color='white')
-                        else:
-                            cell.set_facecolor('#f8f9fa' if i % 2 == 0 else 'white')
-                
-                ax4.set_title('Migration Status Summary', fontweight='bold')
-            else:
-                ax4.text(0.5, 0.5, 'No Migration Status Data', ha='center', va='center')
-                ax4.set_title('Migration Status Summary', fontweight='bold')
+            # Create pie chart with modern styling
+            wedges, texts, autotexts = ax2.pie(
+                combined_counts.values, 
+                labels=combined_counts.index,
+                autopct=lambda pct: f'{pct:.1f}%' if pct > 4 else '',
+                colors=colors, 
+                startangle=90,
+                textprops={'fontsize': 10, 'fontweight': 'bold'},
+                wedgeprops={'edgecolor': 'white', 'linewidth': 1.5}
+            )
             
-            plt.tight_layout()
-            pdf.savefig(fig, bbox_inches='tight')
-            plt.close(fig)
+            # Enhance text visibility
+            for autotext in autotexts:
+                autotext.set_color('white')
+                autotext.set_fontweight('bold')
+                autotext.set_fontsize(9)
+            
+            ax2.set_title('Migration Status Distribution', fontweight='bold', fontsize=14, pad=20, y=0.95)
+        else:
+            ax2.text(0.5, 0.5, 'No Migration Status Data', ha='center', va='center', fontsize=12)
+            ax2.set_title('Migration Status Distribution', fontweight='bold', fontsize=14, pad=20, y=0.95)
+        
+        # ENHANCED TOP FORMATS with gradient colors
+        if not df_main.empty:
+            top_formats = df_main['Format 1'].value_counts().head(6)
+            
+            # Create gradient colors from primary to accent
+            colors_gradient = plt.cm.viridis(np.linspace(0.2, 0.8, len(top_formats)))
+            
+            bars = ax3.barh(range(len(top_formats)), top_formats.values, 
+                        color=colors_gradient, 
+                        edgecolor='white', linewidth=1)
+            
+            ax3.set_yticks(range(len(top_formats)))
+            ax3.set_yticklabels([f[:25] + '…' if len(f) > 25 else f 
+                                for f in top_formats.index], fontsize=10)
+            ax3.set_xlabel('Count', fontweight='bold')
+            ax3.set_title('Top Media Types', fontweight='bold', fontsize=14, pad=20, y=0.95)
+            
+            # Add value labels with better positioning
+            for i, v in enumerate(top_formats.values):
+                ax3.text(v + max(top_formats.values) * 0.02, i, f'{v:,}', 
+                        va='center', ha='left', fontsize=10, fontweight='bold')
+            
+            # Add subtle grid
+            ax3.grid(axis='x', alpha=0.3, linestyle='--')
+            ax3.set_axisbelow(True)
+        else:
+            ax3.text(0.5, 0.5, 'No Format Data', ha='center', va='center', fontsize=12)
+            ax3.set_title('Top Media Types', fontweight='bold', fontsize=14, pad=20, y=0.95)
+        
+        # ENHANCED MIGRATION STATUS TABLE with better styling
+        ax4.axis('off')
+        if not df_main.empty and 'Migration Status' in df_main.columns:
+            status_counts = df_main['Migration Status'].fillna('Unknown').value_counts()
+            
+            table_data = []
+            total = status_counts.sum()
+            for status, count in status_counts.items():
+                percentage = (count / total) * 100
+                # Truncate long status names for better table fit
+                status_display = status[:18] + '…' if len(status) > 18 else status
+                table_data.append([status_display, f'{count:,}', f'{percentage:.1f}%'])
+            
+            # Create table with better positioning and sizing
+            table = ax4.table(
+                cellText=table_data,
+                colLabels=['Migration Status', 'Count', '%'],
+                cellLoc='left',
+                loc='center',
+                bbox=[0.05, 0.15, 0.9, 0.7]  # Better positioning
+            )
+            
+            table.auto_set_font_size(False)
+            table.set_fontsize(10)
+            table.scale(1, 2.2)  # Increased row height
+            
+            # Enhanced table styling with alternating colors
+            header_color = COLORS['primary']
+            alt_color1 = '#f8f9fa'
+            alt_color2 = '#ffffff'
+            
+            for i in range(len(table_data) + 1):
+                for j in range(3):
+                    cell = table[(i, j)]
+                    if i == 0:  # Header
+                        cell.set_facecolor(header_color)
+                        cell.set_text_props(weight='bold', color='white', size=11)
+                        cell.set_height(0.08)
+                    else:
+                        cell.set_facecolor(alt_color1 if i % 2 == 0 else alt_color2)
+                        cell.set_text_props(size=10)
+                        if j == 1 or j == 2:  # Count and percentage columns
+                            cell.set_text_props(weight='bold')
+            
+            ax4.set_title('Migration Status Summary', fontweight='bold', fontsize=14, pad=20, y=0.95)
+        else:
+            ax4.text(0.5, 0.5, 'No Migration Status Data', ha='center', va='center', fontsize=12)
+            ax4.set_title('Migration Status Summary', fontweight='bold', fontsize=14, pad=20, y=0.95)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.90, hspace=0.4, wspace=0.35)
+        pdf.savefig(fig, bbox_inches='tight', facecolor='white', edgecolor='none')
+        plt.close(fig)
 
     def _create_migration_status_chart(self, df: pd.DataFrame, pdf: PdfPages) -> None:
-        """Create full-page migration status bar chart analysis."""
+        """Create migration status bar chart with improved colors and centering."""
         if df.empty or 'Migration Status' not in df.columns:
             return
 
         fig, ax = plt.subplots(figsize=(11, 8.5))
-        fig.suptitle('Migration Status Analysis', fontsize=20, fontweight='bold', y=0.95)
+        
+        # PROPERLY CENTERED TITLE with more space
+        fig.suptitle('Migration Status Analysis', fontsize=22, fontweight='bold', 
+                    y=0.95, x=0.6)  # Explicitly center the title
         
         status_counts = df['Migration Status'].fillna('Unknown').value_counts()
         
-        # Create horizontal bar chart for better label readability
-        colors = sns.color_palette("Set3", len(status_counts))
-        bars = ax.barh(range(len(status_counts)), status_counts.values, color=colors)
+        # IMPROVED COLOR SCHEME - Modern, professional palette
+        # Using a curated color palette instead of Set3
+        status_colors = {
+            'Migrated': '#2E7D32',      # Professional green
+            'Unmigrated': '#D32F2F',    # Professional red  
+            'In Progress': '#F57F17',   # Professional amber
+            'Queued': '#1976D2',        # Professional blue
+            'On Hold': '#7B1FA2',       # Professional purple
+            'Unknown': '#616161',       # Professional gray
+            'Reviewed': '#00796B',      # Teal
+            'Ready': '#388E3C',         # Light green
+            'Will not migrate': '#FF5722'  # Deep orange
+        }
         
-        # Customize the chart
+        # Assign colors based on status names, with fallback colors
+        colors = []
+        fallback_colors = ['#424242', '#795548', '#607D8B', '#455A64', '#37474F']
+        for i, status in enumerate(status_counts.index):
+            if status in status_colors:
+                colors.append(status_colors[status])
+            else:
+                colors.append(fallback_colors[i % len(fallback_colors)])
+        
+        # Create horizontal bar chart with improved styling
+        bars = ax.barh(range(len(status_counts)), status_counts.values, 
+                    color=colors, edgecolor='white', linewidth=1.5, alpha=0.9)
+        
+        # Enhanced customization
         ax.set_yticks(range(len(status_counts)))
-        ax.set_yticklabels(status_counts.index, fontsize=12)
-        ax.set_xlabel('Number of Items', fontsize=14, fontweight='bold')
-        ax.set_title('Items by Migration Status', fontsize=16, fontweight='bold', pad=20)
+        ax.set_yticklabels(status_counts.index, fontsize=13, fontweight='500')
+        ax.set_xlabel('Number of Items', fontsize=15, fontweight='bold', labelpad=15)
+        ax.set_title('Items by Migration Status', fontsize=18, fontweight='bold', pad=30)
         
-        # Add value labels on bars
+        # Enhanced value labels with better formatting
+        max_value = max(status_counts.values)
         for i, (bar, count) in enumerate(zip(bars, status_counts.values)):
             width = bar.get_width()
             percentage = (count / status_counts.sum()) * 100
-            ax.text(width + max(status_counts.values) * 0.01, bar.get_y() + bar.get_height()/2,
+            
+            # Position label based on bar width for better readability
+            label_x = width + max_value * 0.015
+            if width < max_value * 0.1:  # For very small bars, put label at end
+                label_x = width + max_value * 0.02
+                
+            ax.text(label_x, bar.get_y() + bar.get_height()/2,
                     f'{count:,} ({percentage:.1f}%)', 
-                    ha='left', va='center', fontweight='bold', fontsize=11)
+                    ha='left', va='center', fontweight='bold', fontsize=12)
         
-        # Add grid for better readability
-        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        # Enhanced grid and styling
+        ax.grid(axis='x', alpha=0.4, linestyle='--', linewidth=0.8)
         ax.set_axisbelow(True)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_linewidth(0.8)
+        ax.spines['bottom'].set_linewidth(0.8)
         
-        # Add total at bottom
+        # Enhanced total display
         total_text = f'Total Items: {status_counts.sum():,}'
-        ax.text(0.02, 0.02, total_text, transform=ax.transAxes, 
-                fontsize=12, fontweight='bold',
-                bbox=dict(boxstyle="round,pad=0.3", facecolor=COLORS['background']))
+        ax.text(0.98, 0.02, total_text, transform=ax.transAxes, 
+                fontsize=14, fontweight='bold', ha='right',
+                bbox=dict(boxstyle="round,pad=0.4", facecolor=COLORS['accent'], 
+                        edgecolor='none', alpha=0.9))
         
-        # Adjust margins
-        plt.subplots_adjust(left=0.25, right=0.95, top=0.85, bottom=0.1)
+        # Better margins and spacing
+        plt.subplots_adjust(left=0.28, right=0.96, top=0.85, bottom=0.12)
         
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig, bbox_inches='tight', facecolor='white', edgecolor='none')
         plt.close(fig)
 
-
     def _create_format_analysis_streamlined(self, df: pd.DataFrame, pdf: PdfPages) -> None:
-        """Create streamlined format analysis with improved layout and colors."""
+        """Create streamlined format analysis with improved layout and positioning."""
         if df.empty:
             return
 
-        # 1) Larger figure 
         fig = plt.figure(figsize=(11, 10))
-        # 2) More space for top row
-        gs = GridSpec(2, 2, figure=fig, height_ratios=[1.5, 2.5], wspace=0.3)
+        # Adjusted grid for better proportions
+        gs = GridSpec(2, 3, figure=fig, height_ratios=[1.4, 2.6], 
+                    width_ratios=[1.2, 1.5, 0.1], wspace=0.35, hspace=0.4)
 
-        # --- Top‐left: Primary Format Types ---
+        # ENHANCED Primary Format Types (left)
         ax1 = fig.add_subplot(gs[0, 0])
         fmt1 = df['Format 1'].value_counts().head(8)
-        bars1 = ax1.bar(
-            range(len(fmt1)),
-            fmt1.values,
-            color=COLORS['primary'],
-            edgecolor='white'
-        )
+        
+        # Gradient colors for primary formats
+        colors1 = plt.cm.Blues(np.linspace(0.4, 0.9, len(fmt1)))
+        
+        bars1 = ax1.bar(range(len(fmt1)), fmt1.values, 
+                        color=colors1, edgecolor='white', linewidth=1.2, alpha=0.9)
+        
         ax1.set_xticks(range(len(fmt1)))
-        ax1.set_xticklabels(
-            [f[:15] + '…' if len(f) > 15 else f for f in fmt1.index],
-            rotation=45, ha='right'
-        )
-        ax1.set_ylabel('Count')
-        ax1.set_title('Primary Format Types', fontweight='bold')
+        ax1.set_xticklabels([f[:15] + '…' if len(f) > 15 else f for f in fmt1.index],
+                            rotation=45, ha='right', fontsize=10)
+        ax1.set_ylabel('Count', fontweight='bold', fontsize=11)
+        ax1.set_title('Primary Format Types', fontweight='bold', fontsize=13, pad=15)
+        
+        # Enhanced value labels
         for bar in bars1:
             h = bar.get_height()
-            ax1.text(
-                bar.get_x() + bar.get_width()/2,
-                h + max(fmt1.values) * 0.01,
-                f'{int(h)}',
-                ha='center', va='bottom', fontsize=8
-            )
+            ax1.text(bar.get_x() + bar.get_width()/2, h + max(fmt1.values) * 0.02,
+                    f'{int(h):,}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+        
+        ax1.grid(axis='y', alpha=0.3, linestyle='--')
+        ax1.set_axisbelow(True)
 
-        # --- Top‐right: Specific Format Types (Top 10) ---
-        ax2 = fig.add_subplot(gs[0, 1])
+        # ENHANCED Specific Format Types (right, repositioned)
+        ax2 = fig.add_subplot(gs[0, 1])  # Uses the middle column now for more space
         fmt3 = df['Format 3'].fillna('Unknown').value_counts().head(10)
-        bars2 = ax2.barh(
-            range(len(fmt3)),
-            fmt3.values,
-            color=COLORS['secondary'],
-            edgecolor='white'
-        )
+        
+        # Professional color scheme for specific formats
+        colors2 = plt.cm.Oranges(np.linspace(0.4, 0.9, len(fmt3)))
+        
+        bars2 = ax2.barh(range(len(fmt3)), fmt3.values, 
+                        color=colors2, edgecolor='white', linewidth=1.2, alpha=0.9)
+        
         ax2.set_yticks(range(len(fmt3)))
-        ax2.set_yticklabels(
-            [f[:20] + '…' if len(f) > 20 else f for f in fmt3.index],
-            fontsize=9
-        )
-        ax2.set_xlabel('Count')
-        ax2.set_title('Specific Format Types (Top 10)', fontweight='bold')
+        ax2.set_yticklabels([f[:22] + '…' if len(f) > 22 else f for f in fmt3.index],
+                            fontsize=10)
+        ax2.set_xlabel('Count', fontweight='bold', fontsize=11)
+        ax2.set_title('Specific Format Types (Top 10)', fontweight='bold', fontsize=13, pad=15)
+        
+        # Enhanced value labels
         for i, v in enumerate(fmt3.values):
-            ax2.text(
-                v + max(fmt3.values) * 0.01,
-                i,
-                str(v),
-                va='center', fontsize=8
-            )
+            ax2.text(v + max(fmt3.values) * 0.02, i, f'{v:,}', 
+                    va='center', ha='left', fontsize=9, fontweight='bold')
+        
+        ax2.grid(axis='x', alpha=0.3, linestyle='--')
+        ax2.set_axisbelow(True)
 
-        # --- Bottom (spans both columns): Migration Status by Format ---
-        ax3 = fig.add_subplot(gs[1, :])
+        # ENHANCED Migration Status by Format (spans full width)
+        ax3 = fig.add_subplot(gs[1, :2])  # Spans both columns
         top_formats = df['Format 1'].value_counts().head(12)
         filtered = df[df['Format 1'].isin(top_formats.index)]
-        status_format = pd.crosstab(
-            filtered['Format 1'],
-            filtered['Migration Status'].fillna('Unknown')
-        )
+        status_format = pd.crosstab(filtered['Format 1'], 
+                                filtered['Migration Status'].fillna('Unknown'))
 
-        status_format.plot(
-            kind='bar',
-            stacked=True,
-            ax=ax3,
-            colormap='Set3'
-        )
-        ax3.set_title('Migration Status by Format Type', fontweight='bold', fontsize=14)
-        ax3.set_xlabel('Format Type', fontweight='bold')
-        ax3.set_ylabel('Number of Items', fontweight='bold')
-        ax3.legend(
-            title='Migration Status', bbox_to_anchor=(1.05, 1), loc='upper left'
-        )
-        plt.setp(
-            ax3.xaxis.get_majorticklabels(),
-            rotation=45, ha='right', fontsize=10
-        )
+        # Use the same professional colors from migration status chart
+        status_colors_list = ['#2E7D32', '#D32F2F', '#F57F17', '#1976D2', 
+                            '#7B1FA2', '#616161', '#00796B', '#388E3C']
+        
+        status_format.plot(kind='bar', stacked=True, ax=ax3, 
+                        color=status_colors_list[:len(status_format.columns)],
+                        edgecolor='white', linewidth=0.8, alpha=0.9)
+        
+        ax3.set_title('Migration Status by Format Type', fontweight='bold', fontsize=16, pad=20)
+        ax3.set_xlabel('Format Type', fontweight='bold', fontsize=12, labelpad=10)
+        ax3.set_ylabel('Number of Items', fontweight='bold', fontsize=12, labelpad=10)
+        
+        # Enhanced legend
+        ax3.legend(title='Migration Status', bbox_to_anchor=(1.02, 1), loc='upper left',
+                title_fontsize=11, fontsize=10, frameon=True, fancybox=True, shadow=True)
+        
+        plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=10)
+        
+        # Enhanced bar labels with better contrast
         for container in ax3.containers:
-            ax3.bar_label(container, label_type='center', fontsize=8, fontweight='bold')
+            labels = [f'{v.get_height():.0f}' if v.get_height() > 5 else '' 
+                    for v in container]
+            ax3.bar_label(container, labels=labels, label_type='center', 
+                        fontsize=8, fontweight='bold', color='white')
+        
+        ax3.grid(axis='y', alpha=0.3, linestyle='--')
+        ax3.set_axisbelow(True)
 
-        # --- Suptitle & Spacing Fix ---
-        fig.suptitle('Format Analysis', fontsize=16, fontweight='bold')
-        fig.subplots_adjust(top=0.90, hspace=0.5)
+        # ENHANCED Main Title
+        fig.suptitle('Format Analysis', fontsize=20, fontweight='bold', y=0.95)
+        
+        # Final layout adjustment
+        plt.subplots_adjust(top=0.90, bottom=0.15, left=0.08, right=0.85)
 
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig, bbox_inches='tight', facecolor='white', edgecolor='none')
         plt.close(fig)
 
 
