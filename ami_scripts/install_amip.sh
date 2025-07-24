@@ -296,7 +296,7 @@ maintain_homebrew
 # ----------------------------------
 install_cli_packages() {
     local packages=(
-        coreutils grep jq xmlstarlet tree wget trash
+        git coreutils grep jq xmlstarlet tree wget trash
         p7zip rsync rclone gnu-tar awscli ntfs-3g clamav
         graphicsmagick ffmpeg mediainfo mpc flac sox exiftool mkvtoolnix mediaconch qcli
         bagit rbenv jenv pyenv openjdk@11
