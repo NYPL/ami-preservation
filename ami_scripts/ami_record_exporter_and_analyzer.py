@@ -537,6 +537,10 @@ class ExcelExporter:
         formats = []
         
         for box_name, details in box_summary.items():
+            # Always have these counts available
+            req_statuses = details.requested_migration_statuses.counts
+            rem_statuses = details.remaining_migration_statuses.counts
+
             # For the overview, build requested and remaining displays
             total_requested = details.total_requested_items
             total_remaining = details.total_remaining_items
@@ -544,7 +548,6 @@ class ExcelExporter:
             # Requested items display
             if total_requested > 0:
                 requested_display = f"{total_requested}"
-                req_statuses = details.requested_migration_statuses.counts
                 if len(req_statuses) == 1:
                     status_name = next(iter(req_statuses))
                     requested_display += f" ({status_name})"
@@ -557,7 +560,6 @@ class ExcelExporter:
             # Remaining items display
             if total_remaining > 0:
                 remaining_display = f"{total_remaining}"
-                rem_statuses = details.remaining_migration_statuses.counts
                 if len(rem_statuses) == 1:
                     status_name = next(iter(rem_statuses))
                     remaining_display += f" ({status_name})"
