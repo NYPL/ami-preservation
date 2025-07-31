@@ -171,7 +171,7 @@ def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120,
     ffmpeg_proc.wait()
 
     # Use regex to extract all timecode matches of the form HH:MM:SS:FF
-    matches = re.findall(r'\d{2}:\d{2}:\d{2}:\d{2}', ltcdump_out)
+    matches = re.findall(r'\d{2}:\d{2}:\d{2}[.:]\d{2}', ltcdump_out)
     print("ltcdump output:", ltcdump_out)
     print("Found LTC matches:", matches)
 
