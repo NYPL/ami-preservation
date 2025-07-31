@@ -731,11 +731,11 @@ class ReportGenerator:
             return
 
         fig = plt.figure(figsize=(11, 10))
-        # Adjusted grid for better proportions
-        gs = GridSpec(2, 3, figure=fig, height_ratios=[1.4, 2.6], 
-                    width_ratios=[1.2, 1.5, 0.1], wspace=0.35, hspace=0.4)
+        # FIXED GRID: Better balanced layout to prevent overlapping
+        gs = GridSpec(2, 2, figure=fig, height_ratios=[1.4, 2.6], 
+                    width_ratios=[1.0, 1.4], wspace=0.5, hspace=0.5)
 
-        # ENHANCED Primary Format Types (left)
+        # ENHANCED Primary Format Types (left) - slightly smaller
         ax1 = fig.add_subplot(gs[0, 0])
         fmt1 = df['Format 1'].value_counts().head(8)
         
@@ -746,8 +746,8 @@ class ReportGenerator:
                         color=colors1, edgecolor='white', linewidth=1.2, alpha=0.9)
         
         ax1.set_xticks(range(len(fmt1)))
-        ax1.set_xticklabels([f[:15] + '…' if len(f) > 15 else f for f in fmt1.index],
-                            rotation=45, ha='right', fontsize=10)
+        ax1.set_xticklabels([f[:12] + '…' if len(f) > 12 else f for f in fmt1.index],
+                            rotation=45, ha='right', fontsize=9)
         ax1.set_ylabel('Count', fontweight='bold', fontsize=11)
         ax1.set_title('Primary Format Types', fontweight='bold', fontsize=13, pad=15)
         
@@ -760,8 +760,8 @@ class ReportGenerator:
         ax1.grid(axis='y', alpha=0.3, linestyle='--')
         ax1.set_axisbelow(True)
 
-        # ENHANCED Specific Format Types (right, repositioned)
-        ax2 = fig.add_subplot(gs[0, 1])  # Uses the middle column now for more space
+        # FIXED Specific Format Types - now properly positioned in right column
+        ax2 = fig.add_subplot(gs[0, 1])  # Right column of top row
         fmt3 = df['Format 3'].fillna('Unknown').value_counts().head(10)
         
         # Professional color scheme for specific formats
@@ -771,21 +771,28 @@ class ReportGenerator:
                         color=colors2, edgecolor='white', linewidth=1.2, alpha=0.9)
         
         ax2.set_yticks(range(len(fmt3)))
-        ax2.set_yticklabels([f[:22] + '…' if len(f) > 22 else f for f in fmt3.index],
+        # Increased character limit since we have more space now
+        ax2.set_yticklabels([f[:28] + '…' if len(f) > 28 else f for f in fmt3.index],
                             fontsize=10)
         ax2.set_xlabel('Count', fontweight='bold', fontsize=11)
         ax2.set_title('Specific Format Types (Top 10)', fontweight='bold', fontsize=13, pad=15)
         
-        # Enhanced value labels
+        # Enhanced value labels with better spacing
+        max_val = max(fmt3.values)
         for i, v in enumerate(fmt3.values):
-            ax2.text(v + max(fmt3.values) * 0.02, i, f'{v:,}', 
+            # Improved label positioning for better readability
+            label_x = v + max_val * 0.015
+            ax2.text(label_x, i, f'{v:,}', 
                     va='center', ha='left', fontsize=9, fontweight='bold')
         
         ax2.grid(axis='x', alpha=0.3, linestyle='--')
         ax2.set_axisbelow(True)
+        
+        # Add some padding to the right side of the chart for labels
+        ax2.set_xlim(0, max_val * 1.15)
 
         # ENHANCED Migration Status by Format (spans full width)
-        ax3 = fig.add_subplot(gs[1, :2])  # Spans both columns
+        ax3 = fig.add_subplot(gs[1, :])  # Spans both columns of bottom row
         top_formats = df['Format 1'].value_counts().head(12)
         filtered = df[df['Format 1'].isin(top_formats.index)]
         status_format = pd.crosstab(filtered['Format 1'], 
@@ -803,8 +810,8 @@ class ReportGenerator:
         ax3.set_xlabel('Format Type', fontweight='bold', fontsize=12, labelpad=10)
         ax3.set_ylabel('Number of Items', fontweight='bold', fontsize=12, labelpad=10)
         
-        # Enhanced legend
-        ax3.legend(title='Migration Status', bbox_to_anchor=(1.02, 1), loc='upper left',
+        # Enhanced legend - positioned better with more space
+        ax3.legend(title='Migration Status', bbox_to_anchor=(1.01, 1), loc='upper left',
                 title_fontsize=11, fontsize=10, frameon=True, fancybox=True, shadow=True)
         
         plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=10)
@@ -822,11 +829,11 @@ class ReportGenerator:
         # ENHANCED Main Title
         fig.suptitle('Format Analysis', fontsize=20, fontweight='bold', y=0.95)
         
-        # Final layout adjustment
-        plt.subplots_adjust(top=0.90, bottom=0.15, left=0.08, right=0.85)
+        # IMPROVED Final layout adjustment - better spacing to prevent overlap
+        plt.subplots_adjust(top=0.88, bottom=0.15, left=0.08, right=0.85)
 
         pdf.savefig(fig, bbox_inches='tight', facecolor='white', edgecolor='none')
-        plt.close(fig)
+        plt.close(fig)    
 
 
 def setup_logging(verbose: bool = False) -> None:
