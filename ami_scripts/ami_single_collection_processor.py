@@ -163,7 +163,8 @@ class FileMakerClient:
             logging.error(f"Failed to connect to FileMaker: {e}")
             raise FileMakerConnectionError(f"Connection failed: {e}") from e
 
-    def find_all(self, query: Dict[str, Any], page_size: int = DEFAULT_PAGE_SIZE) -> List[Dict[str, Any]]:
+    def find_all(self, query: Dict[str, Any], page_size: int = DEFAULT_PAGE_SIZE,
+                 portals: Optional[Dict[str, Dict[str, int]]] = None) -> List[Dict[str, Any]]:        
         """
         Fetch all records matching query with pagination.
         
@@ -182,23 +183,36 @@ class FileMakerClient:
 
         offset = 1
         all_records: List[Dict[str, Any]] = []
-        
+
         logging.info(f"Starting paginated fetch for query: {query}")
-        
         while True:
             try:
-                page = self.fms.find([query], offset=offset, limit=page_size)
-                records = [record.to_dict() for record in page]
+                page = self.fms.find(
+                    [query],
+                    offset=offset,
+                    limit=page_size,
+                    portals=portals  # <-- NEW
+                )
+
+                # Convert each record to dict and eagerly expand any portals
+                records: List[Dict[str, Any]] = []
+                for rec in page:
+                    d = rec.to_dict()
+                    # turn each portal Foundset into a list of row dicts
+                    for key in list(d.keys()):
+                        if key.startswith('portal_'):
+                            fs = getattr(rec, key, None)
+                            if fs is not None:
+                                d[key] = [row.to_dict() for row in fs]
+                    records.append(d)
+
                 logging.info(f"Fetched {len(records)} records (offset {offset})")
-                logging.debug(f"Fetched {len(records)} records (offset {offset})")
                 all_records.extend(records)
-                
-                # Break if we got fewer records than requested (last page)
+
                 if len(records) < page_size:
                     break
-                    
                 offset += page_size
-                
+
             except Exception as e:
                 logging.error(f"Error fetching records at offset {offset}: {e}")
                 raise FileMakerConnectionError(f"Query failed: {e}") from e
