@@ -153,80 +153,29 @@ class PreservicaClient:
         return results
 
     def get_content_object_uuids(self, io_uuid: str, specifier: str) -> List[str]:
-        """ Given an information object UUID and representation specifier, return list of ContentObject UUIDs. """
+        """
+        Given an information object UUID and representation specifier,
+        return list of ContentObject UUIDs.
+        """
         headers = {"Content-Type": "application/xml"}
         path = f"/api/entity/information-objects/{io_uuid}/representations/{specifier}"
         resp = self.get(path, headers=headers)
-        
         # fallback if preservation_2 not found
         if resp.status_code == 404 and specifier == "preservation_2":
             logging.info("Specifier preservation_2 not found, trying preservation_1")
             specifier = "preservation_1"
             path = f"/api/entity/information-objects/{io_uuid}/representations/{specifier}"
             resp = self.get(path, headers=headers)
-        
-        if resp.status_code == 404:
-            raise ContentError(f"No representation for {io_uuid}")
-        
+            if resp.status_code == 404:
+                raise ContentError(f"No representation for {io_uuid}")
+
         tree = lxml.etree.fromstring(resp.content)
-        
-        # Try multiple namespace approaches
-        # First, try with the expected namespace
-        ns = {'XIP': 'http://preservica.com/XIP/v8.0'}
+        ns = {'XIP': 'http://preservica.com/XIP/v8.1'}
         uuids = tree.xpath("//XIP:Representation/XIP:ContentObjects/XIP:ContentObject/text()", namespaces=ns)
-        
-        if not uuids:
-            # Try with different XIP versions
-            for version in ['v7.0', 'v6.0', 'v5.0']:
-                ns_alt = {'XIP': f'http://preservica.com/XIP/{version}'}
-                uuids = tree.xpath("//XIP:Representation/XIP:ContentObjects/XIP:ContentObject/text()", namespaces=ns_alt)
-                if uuids:
-                    logging.info("Found UUIDs using XIP namespace version %s", version)
-                    break
-        
-        if not uuids:
-            # Try without namespace prefix (in case there's no namespace)
-            uuids = tree.xpath("//Representation/ContentObjects/ContentObject/text()")
-        
-        if not uuids:
-            # Try a more general approach - find any ContentObject elements
-            uuids = tree.xpath("//*[local-name()='ContentObject']/text()")
-            if uuids:
-                logging.info("Found UUIDs using local-name approach")
-        
         if not uuids:
             raise ContentError(f"No ContentObject UUIDs for IO {io_uuid}")
-        
-        # Extract UUIDs from URLs if needed
-        extracted_uuids = []
-        for uuid_or_url in uuids:
-            if isinstance(uuid_or_url, str):
-                # If it's a full URL, extract the UUID from the end
-                if uuid_or_url.startswith('http'):
-                    # Extract UUID from URL like: https://nypl.preservica.com/api/entity/content-objects/cd80dbb0-65f6-4719-85e3-e2f910429e64
-                    uuid_match = re.search(r'/content-objects/([a-f0-9-]{36})(?:/|$)', uuid_or_url)
-                    if uuid_match:
-                        extracted_uuids.append(uuid_match.group(1))
-                    else:
-                        logging.warning("Could not extract UUID from URL: %s", uuid_or_url)
-                else:
-                    # Assume it's already a UUID
-                    extracted_uuids.append(uuid_or_url)
-            else:
-                extracted_uuids.append(str(uuid_or_url))
-        
-        # Remove duplicates while preserving order
-        unique_uuids = []
-        seen = set()
-        for uuid in extracted_uuids:
-            if uuid not in seen:
-                unique_uuids.append(uuid)
-                seen.add(uuid)
-        
-        logging.info("Found %d content object(s) for IO %s (removed %d duplicates)", 
-                    len(unique_uuids), io_uuid, len(extracted_uuids) - len(unique_uuids))
-        
-        return unique_uuids
+        logging.info("Found %d content object(s) for IO %s", len(uuids), io_uuid)
+        return uuids
 
     def download_bitstream(self, co_uuid: str, output_dir: str):
         """
