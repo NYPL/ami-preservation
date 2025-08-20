@@ -157,21 +157,50 @@ class PreservicaClient:
         Given an information object UUID and representation specifier,
         return list of ContentObject UUIDs.
         """
-        headers = {"Content-Type": "application/xml"}
-        path = f"/api/entity/information-objects/{io_uuid}/representations/{specifier}"
-        resp = self.get(path, headers=headers)
-        # fallback if preservation_2 not found
-        if resp.status_code == 404 and specifier == "preservation_2":
-            logging.info("Specifier preservation_2 not found, trying preservation_1")
-            specifier = "preservation_1"
-            path = f"/api/entity/information-objects/{io_uuid}/representations/{specifier}"
-            resp = self.get(path, headers=headers)
-            if resp.status_code == 404:
-                raise ContentError(f"No representation for {io_uuid}")
+        headers = {"Accept": "application/xml"}  # Prefer Accept over Content-Type for GETs
+
+        def fetch(spec: str):
+            path = f"/api/entity/information-objects/{io_uuid}/representations/{spec}"
+            try:
+                return self.get(path, headers=headers)
+            except requests.HTTPError as e:
+                if e.response is not None and e.response.status_code == 404:
+                    return None
+                raise  # re-raise non-404s
+
+        # try requested spec, then preservation_1 if needed
+        resp = fetch(specifier)
+        if resp is None and specifier == "preservation_2":
+            logging.info("Representation preservation_2 not found; trying preservation_1")
+            resp = fetch("preservation_1")
+
+        if resp is None:
+            raise ContentError(f"No representation for {io_uuid}")
 
         tree = lxml.etree.fromstring(resp.content)
-        ns = {'XIP': 'http://preservica.com/XIP/v8.1'}
-        uuids = tree.xpath("//XIP:Representation/XIP:ContentObjects/XIP:ContentObject/text()", namespaces=ns)
+
+        # Version-agnostic XPath (works for v8.1, future versions, etc.)
+        texts = tree.xpath(
+            "/*[local-name()='Representation']"
+            "/*[local-name()='ContentObjects']"
+            "/*[local-name()='ContentObject']/text()"
+        )
+        if not texts:
+            texts = tree.xpath(
+                "//*[local-name()='ContentObjects']/*[local-name()='ContentObject']/text()"
+            )
+
+        # Normalize to bare UUIDs (handles raw UUIDs or full URLs)
+        uuid_re = re.compile(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
+        seen, uuids = set(), []
+        for s in texts:
+            m = uuid_re.search((s or "").strip())
+            if m:
+                u = m.group(0).lower()
+                if u not in seen:
+                    seen.add(u)
+                    uuids.append(u)
+
         if not uuids:
             raise ContentError(f"No ContentObject UUIDs for IO {io_uuid}")
         logging.info("Found %d content object(s) for IO %s", len(uuids), io_uuid)
