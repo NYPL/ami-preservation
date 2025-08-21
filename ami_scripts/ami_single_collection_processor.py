@@ -54,7 +54,8 @@ EXCLUDED_FORMATS = frozenset([
     '3-D object',
     'box - transfile',
     'tube',
-    'painting'
+    'painting',
+    'custom enclosure - NYPL'
     
 ])
 
@@ -260,6 +261,19 @@ class CollectionProcessor:
         # Process records into structured data
         processed_rows = []
         for record in records:
+            # If your fmrest wrapper didn’t expand portals to lists, handle both cases:
+            portal_obj = record.get('portal_OBJ_ISSUES', [])
+            if portal_obj and not isinstance(portal_obj, list):
+                # fmrest Foundset → list of dicts
+                try:
+                    portal_rows = [row.to_dict() for row in portal_obj]
+                except Exception:
+                    portal_rows = []
+            else:
+                portal_rows = portal_obj or []
+
+            issues_info = self._extract_issue_fields(portal_rows, join_all=False)  # set True if you raise the limit
+
             processed_rows.append({
                 'AMI ID': self._clean_ami_id(record.get('ref_ami_id')),
                 'Classmark': self._clean_string(record.get('OBJ_AMI_ITEMS_from_OBJECTS::id.classmark')),
@@ -271,7 +285,11 @@ class CollectionProcessor:
                 'Format 3': self._clean_string(record.get('format_3')),
                 'Box Name': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::name_d_calc')),
                 'Box Barcode': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::id_barcode')),
-                'Location': self._clean_string(record.get('ux_loc_active_d'))
+                'Location': self._clean_string(record.get('ux_loc_active_d')),
+                'Issues (count)': issues_info['Issues (count)'],
+                'Issue Type': issues_info['Issue Type'],
+                'Issue': issues_info['Issue'],
+                'Issue Notes': issues_info['Issue Notes'],
             })
         
         df = pd.DataFrame(processed_rows)
@@ -367,7 +385,45 @@ class CollectionProcessor:
         
         logging.info("Sorted DataFrame by AMI ID")
         return df
+    
+    def _extract_issue_fields(self, portal_rows: list, join_all: bool = False) -> Dict[str, str]:
+        """
+        Extract Issue Type, Issue, and Issue Notes from portal rows.
+        If join_all=True and multiple rows are present, join each field with ' | '.
+        Otherwise, return the first row (assumed newest).
+        """
+        if not portal_rows:
+            return {
+                'Issues (count)': 0,
+                'Issue Type': '',
+                'Issue': '',
+                'Issue Notes': ''
+            }
 
+        # Normalize keys once
+        def row_to_triplet(r: dict) -> tuple[str, str, str]:
+            itype = self._clean_string(r.get('OBJ_ISSUES::type'))
+            issue = self._clean_string(r.get('OBJ_ISSUES::issue'))
+            notes = self._clean_string(r.get('OBJ_ISSUES::notes'))
+            return (itype, issue, notes)
+
+        if join_all and len(portal_rows) > 1:
+            types, issues, notes = zip(*(row_to_triplet(r) for r in portal_rows))
+            return {
+                'Issues (count)': len(portal_rows),
+                'Issue Type': ' | '.join(t for t in types if t),
+                'Issue': ' | '.join(i for i in issues if i),
+                'Issue Notes': ' | '.join(n for n in notes if n),
+            }
+        else:
+            # Take the first (newest) row; make sure your portal is sorted newest→oldest in the layout
+            itype, issue, notes = row_to_triplet(portal_rows[0])
+            return {
+                'Issues (count)': len(portal_rows),
+                'Issue Type': itype,
+                'Issue': issue,
+                'Issue Notes': notes
+            }
 
 class ReportGenerator:
     """Enhanced report generator with professional visualizations."""
