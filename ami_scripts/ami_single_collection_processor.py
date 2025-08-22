@@ -37,9 +37,9 @@ sns.set_palette("husl")
 DEFAULT_PAGE_SIZE = 100
 MAX_COLUMN_WIDTH = 50
 MIN_COLUMN_WIDTH = 8
-EXCLUDED_FORMATS = frozenset([
+EXCLUDED_FORMATS_RAW = [
     'box - record carton',
-    'box (unspecified type)', 
+    'box (unspecified type)',
     'box - vhs video',
     'box - document',
     'digital file',
@@ -55,9 +55,11 @@ EXCLUDED_FORMATS = frozenset([
     'box - transfile',
     'tube',
     'painting',
-    'custom enclosure - NYPL'
-    
-])
+    'custom enclosure - NYPL',
+]
+
+# Normalize to a case-insensitive set
+EXCLUDED_FORMATS = frozenset(s.strip().casefold() for s in EXCLUDED_FORMATS_RAW)
 
 # Color scheme for professional reports
 COLORS = {
@@ -261,6 +263,7 @@ class CollectionProcessor:
         # Process records into structured data
         processed_rows = []
         for record in records:
+            print(record)
             # If your fmrest wrapper didn’t expand portals to lists, handle both cases:
             portal_obj = record.get('portal_OBJ_ISSUES', [])
             if portal_obj and not isinstance(portal_obj, list):
