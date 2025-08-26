@@ -138,52 +138,154 @@ def transcribe_directory(input_directory, model, output_format):
             output_writer(transcription_response, file.stem)
 
 
-def detect_ltc_in_channel(input_file, stream_index, channel, probe_duration=120, match_threshold=5):
+def detect_ltc_in_channel(input_file, stream_index, channel,
+                          probe_duration=120,
+                          match_threshold=6,           # min valid codes needed
+                          min_unique=4,                # min unique codes
+                          min_monotonic_ratio=0.6,     # >=60% adjacent pairs move in one direction
+                          fps_candidates=(24, 25, 30)):
     """
-    Detect LTC in a specific channel. Now, in addition to detecting a timecode pattern,
-    we require at least `match_threshold` matches to consider the channel as containing LTC.
+    Robust LTC detection:
+      - Parse ltcdump output
+      - Filter impossible timecodes (MM/SS >= 60, frames >= fps)
+      - For fps in {24,25,30}, score monotonic forward/reverse progression
+      - Accept if enough valid, unique codes and monotonicity is high
     """
-    # channel_map: c0=c0 for left channel only, c0=c1 for right channel only
-    if channel == 'left':
-        pan_filter = 'pan=mono|c0=c0'
-    else:
-        pan_filter = 'pan=mono|c0=c1'
+    # c0=c0 for L, c0=c1 for R
+    pan_filter = 'pan=mono|c0=c0' if channel == 'left' else 'pan=mono|c0=c1'
 
-    # Use a WAV container so ltcdump can correctly interpret the header
     ffmpeg_command = [
-        "ffmpeg",
+        "ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error",
         "-t", str(probe_duration),
         "-i", str(input_file),
         "-map", f"0:{stream_index}",
         "-af", pan_filter,
-        "-ar", "48000",  # sample rate
-        "-ac", "1",      # mono
-        "-f", "wav",     # WAV output
-        "pipe:1"
+        "-ar", "48000", "-ac", "1",
+        "-f", "wav", "pipe:1"
     ]
-
-    ltcdump_command = ["ltcdump", "-"]
+    ltcdump_command = ["ltcdump", "-"]  # reads WAV from stdin
 
     ffmpeg_proc = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    ltcdump_proc = subprocess.Popen(ltcdump_command, stdin=ffmpeg_proc.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    ffmpeg_proc.stdout.close()  # allow ffmpeg_proc to receive SIGPIPE
+    ltcdump_proc = subprocess.Popen(ltcdump_command, stdin=ffmpeg_proc.stdout,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ffmpeg_proc.stdout.close()
     ltcdump_out, ltcdump_err = ltcdump_proc.communicate()
     ffmpeg_proc.wait()
 
-    # Use regex to extract all timecode matches of the form HH:MM:SS:FF
-    matches = re.findall(r'\d{2}:\d{2}:\d{2}[.:]\d{2}', ltcdump_out)
     print("ltcdump output:", ltcdump_out)
-    print("Found LTC matches:", matches)
 
-    # Only consider LTC valid if we see enough matches (e.g., at least 5)
-    if len(matches) >= match_threshold:
+    # Extract raw HH:MM:SS:FF or HH:MM:SS.FF tokens (ltcdump sometimes uses '.' before frames)
+    tc_pat = re.compile(r'(?P<h>\d{2}):(?P<m>\d{2}):(?P<s>\d{2})[.:;](?P<f>\d{2})')
+    raw = [(int(m.group('h')), int(m.group('m')), int(m.group('s')), int(m.group('f')))
+           for m in tc_pat.finditer(ltcdump_out)]
+
+    # No tokens at all → not LTC
+    if not raw:
+        print("Found LTC matches: []")
+        return False
+
+    # Helper to turn a TC into absolute frames (for a given fps)
+    def to_frames(h, m, s, f, fps):
+        return (((h * 60) + m) * 60 + s) * fps + f
+
+    # De-duplicate while preserving order (helps if ltcdump spams the same code)
+    seen = set()
+    ordered_unique = []
+    for tc in raw:
+        if tc not in seen:
+            seen.add(tc)
+            ordered_unique.append(tc)
+
+    # Try each fps and compute a monotonicity score
+    best_ratio = 0.0
+    best_fps = None
+    best_valid_seq = []
+
+    for fps in fps_candidates:
+        # Filter impossible values for this fps
+        valid = [(h, m, s, f) for (h, m, s, f) in ordered_unique
+                 if m < 60 and s < 60 and f < fps]
+
+        if len(valid) < match_threshold or len(set(valid)) < min_unique:
+            continue
+
+        # Convert to frame numbers
+        frames = [to_frames(h, m, s, f, fps) for (h, m, s, f) in valid]
+        if len(frames) < 2:
+            continue
+
+        # Adjacent deltas (allow gaps up to ~2 seconds; tolerate discontinuities)
+        deltas = [frames[i+1] - frames[i] for i in range(len(frames) - 1)]
+        max_jump = 2 * fps
+
+        good_fwd = sum(1 for d in deltas if 0 < d <= max_jump)
+        good_rev = sum(1 for d in deltas if -max_jump <= d < 0)
+        ratio = max(good_fwd, good_rev) / len(deltas)
+
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_fps = fps
+            best_valid_seq = valid
+
+    print("Found LTC matches:", [f"{h:02d}:{m:02d}:{s:02d}.{f:02d}" for (h, m, s, f) in best_valid_seq])
+    print(f"LTC score → fps={best_fps} monotonic_ratio={best_ratio:.2f} "
+          f"valid={len(best_valid_seq)} unique={len(set(best_valid_seq))}")
+
+    # Decide
+    if best_fps is not None and best_ratio >= min_monotonic_ratio and len(best_valid_seq) >= match_threshold:
         return True
-
     return False
 
 
+def analyze_channel_activity(input_file, stream_index, channel,
+                             probe_duration=120, headroom_db=8.0,
+                             min_active_ratio=0.01):
+    chan_idx = 0 if channel == 'left' else 1
+    af = (
+        f"pan=mono|c0=c{chan_idx},"
+        "highpass=f=20,lowpass=f=18000,"
+        "astats=metadata=1:reset=1,"
+        "ametadata=print:key=lavfi.astats.0.RMS_level:mode=print"
+    )
+    cmd = [
+        "ffmpeg","-hide_banner","-nostats",
+        "-t", str(probe_duration),
+        "-i", str(input_file),
+        "-map", f"0:{stream_index}",
+        "-af", af, "-f", "null", "-"
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+
+    # NOTE: ametadata prints to stdout
+    levels = [float(x) for x in re.findall(
+        r"lavfi\.astats\.0\.RMS_level\s*[:=]\s*(-?\d+(?:\.\d+)?)",
+        proc.stdout
+    )]
+
+    if not levels:
+        # fall back to scanning stderr with broader patterns
+        levels = [float(x) for x in re.findall(
+            r"(?:lavfi\.astats\.\d+\.RMS_level|RMS[_\s]?level(?:\s*dB)?)\s*[:=]\s*(-?\d+(?:\.\d+)?)",
+            proc.stderr
+        )]
+
+    if not levels:
+        return {"noise_floor": -65.0, "threshold": -57.0, "active_ratio": 0.0, "is_silent": True}
+
+    levels.sort()
+    noise_floor = levels[int(0.20 * (len(levels) - 1))]
+    threshold = min(noise_floor + headroom_db, -35.0)
+
+    active = sum(lvl > threshold for lvl in levels)
+    active_ratio = active / len(levels)
+    return {
+        "noise_floor": noise_floor,
+        "threshold": threshold,
+        "active_ratio": active_ratio,
+        "is_silent": (active_ratio < min_active_ratio)
+    }
+
 def detect_audio_pan(input_file, audio_pan, probe_duration=120):
-    # Use ffprobe to get the number of audio streams
     ffprobe_command = [
         "ffprobe", "-i", str(input_file),
         "-show_entries", "stream=index:stream=codec_type",
@@ -195,79 +297,59 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=120):
     print(f"Detected {len(audio_streams)} audio streams: {audio_streams} in {input_file}")
 
     pan_filters = []
-    pan_filter_idx = 0  # separate counter for pan filters
-    silence_threshold = -60.0  # dB
+    pan_filter_idx = 0
 
     for stream_index in audio_streams:
         print(f"Analyzing audio stream: {stream_index}")
 
-        # Analyze left channel volume
-        left_analysis_command = [
-            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
-            "-map", f"0:{stream_index}",
-            "-af", "pan=mono|c0=c0,volumedetect", "-f", "null", "-"
-        ]
-        left_result = subprocess.run(left_analysis_command, capture_output=True, text=True)
-        left_output = left_result.stderr
+        # Adaptive channel activity stats
+        left_stats  = analyze_channel_activity(input_file, stream_index, 'left',  probe_duration=probe_duration)
+        right_stats = analyze_channel_activity(input_file, stream_index, 'right', probe_duration=probe_duration)
 
-        # Analyze right channel volume
-        right_analysis_command = [
-            "ffmpeg", "-t", str(probe_duration), "-i", str(input_file),
-            "-map", f"0:{stream_index}",
-            "-af", "pan=mono|c0=c1,volumedetect", "-f", "null", "-"
-        ]
-        right_result = subprocess.run(right_analysis_command, capture_output=True, text=True)
-        right_output = right_result.stderr
+        print(
+            f"Stream {stream_index} – "
+            f"L: nf={left_stats['noise_floor']:.1f}dB thr={left_stats['threshold']:.1f}dB act={left_stats['active_ratio']*100:.2f}% | "
+            f"R: nf={right_stats['noise_floor']:.1f}dB thr={right_stats['threshold']:.1f}dB act={right_stats['active_ratio']*100:.2f}%"
+        )
 
-        def get_mean_volume(output):
-            match = re.search(r"mean_volume:\s*(-?\d+(\.\d+)?)", output)
-            return float(match.group(1)) if match else None
+        left_is_silent  = left_stats['is_silent']
+        right_is_silent = right_stats['is_silent']
 
-        left_mean_volume = get_mean_volume(left_output)
-        right_mean_volume = get_mean_volume(right_output)
-
-        print(f"Stream {stream_index} - Left channel mean volume: {left_mean_volume}")
-        print(f"Stream {stream_index} - Right channel mean volume: {right_mean_volume}")
-
-        if left_mean_volume is None or right_mean_volume is None:
-            print(f"Stream {stream_index}: Unable to analyze audio. Skipping this stream.")
-            continue
-
-        # Initialize LTC detection flags
-        left_has_ltc = False
-        right_has_ltc = False
-
+        # LTC detection (unchanged call, but decisions use adaptive silence)
+        left_has_ltc = right_has_ltc = False
         if audio_pan == "auto":
-            left_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'left', probe_duration=probe_duration)
+            left_has_ltc  = detect_ltc_in_channel(input_file, stream_index, 'left',  probe_duration=probe_duration)
             right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration=probe_duration)
 
-        # If one channel has LTC but the other channel is silent,
-        # assume this stream is timecode only and skip mapping it.
+        # If one channel is LTC and the other has no meaningful activity, drop the stream
         if left_has_ltc and not right_has_ltc:
-            if right_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Left channel LTC with silent right channel detected. Dropping stream.")
-                continue  # Skip mapping this stream
+            if right_is_silent:
+                print(f"Stream {stream_index}: Left LTC + right silent → dropping stream.")
+                continue
             else:
-                print(f"Stream {stream_index}: Left channel LTC detected. Using right channel as mono source.")
+                print(f"Stream {stream_index}: Left LTC → using RIGHT as mono source.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
+
         elif right_has_ltc and not left_has_ltc:
-            if left_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Right channel LTC with silent left channel detected. Dropping stream.")
-                continue  # Skip mapping this stream
+            if left_is_silent:
+                print(f"Stream {stream_index}: Right LTC + left silent → dropping stream.")
+                continue
             else:
-                print(f"Stream {stream_index}: Right channel LTC detected. Using left channel as mono source.")
+                print(f"Stream {stream_index}: Right LTC → using LEFT as mono source.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
+
         else:
-            # No (or ambiguous) LTC: apply channel-specific panning or identity for balanced audio
-            if right_mean_volume > silence_threshold and left_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Detected right-channel-only audio. Applying right-to-center panning.")
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
-            elif left_mean_volume > silence_threshold and right_mean_volume <= silence_threshold:
-                print(f"Stream {stream_index}: Detected left-channel-only audio. Applying left-to-center panning.")
+            # No (or ambiguous) LTC: choose pan based on activity, not fixed dB
+            if not left_is_silent and right_is_silent:
+                print(f"Stream {stream_index}: Right silent → LEFT-to-center.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
+            elif not right_is_silent and left_is_silent:
+                print(f"Stream {stream_index}: Left silent → RIGHT-to-center.")
+                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
             else:
-                print(f"Stream {stream_index}: Audio is balanced or both channels have sound. No panning applied.")
+                print(f"Stream {stream_index}: Both active or both quiet → keep stereo.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c1[outa{pan_filter_idx}]")
+
         pan_filter_idx += 1
 
     return pan_filters
@@ -360,9 +442,14 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
             command += ["-map", f"[outa{i}]"]
     else:
         for idx in audio_streams:
-            command += ["-map", f"0:{idx}", "-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
+            command += ["-map", f"0:{idx}"]
+
+    # Apply audio encoding once (applies to all mapped audio streams)
+    if pan_filters or audio_streams:
+        command += ["-c:a", "aac", "-b:a", "320k", "-ar", "48000"]
 
     command.append(str(output_file))
+
 
     print(f"FFmpeg command: {' '.join(command)}")
     subprocess.check_call(command)
