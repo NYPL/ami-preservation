@@ -236,56 +236,100 @@ def detect_ltc_in_channel(input_file, stream_index, channel,
         return True
     return False
 
-
 def analyze_channel_activity(input_file, stream_index, channel,
                              probe_duration=120, headroom_db=8.0,
                              min_active_ratio=0.01):
+    """
+    Returns richer metrics:
+      - noise_floor (p20), median (p50), high (p95) RMS
+      - mean_volume / max_volume from volumedetect
+      - active_ratio based on adaptive threshold (no hard -35 dB cap)
+    """
     chan_idx = 0 if channel == 'left' else 1
-    af = (
+
+    # Pass 1: per-frame RMS using astats
+    af_astats = (
         f"pan=mono|c0=c{chan_idx},"
         "highpass=f=20,lowpass=f=18000,"
         "astats=metadata=1:reset=1,"
         "ametadata=print:key=lavfi.astats.0.RMS_level:mode=print"
     )
-    cmd = [
+    cmd1 = [
         "ffmpeg","-hide_banner","-nostats",
         "-t", str(probe_duration),
         "-i", str(input_file),
         "-map", f"0:{stream_index}",
-        "-af", af, "-f", "null", "-"
+        "-af", af_astats, "-f", "null", "-"
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc1 = subprocess.run(cmd1, capture_output=True, text=True)
 
-    # NOTE: ametadata prints to stdout
     levels = [float(x) for x in re.findall(
         r"lavfi\.astats\.0\.RMS_level\s*[:=]\s*(-?\d+(?:\.\d+)?)",
-        proc.stdout
+        proc1.stdout
     )]
-
     if not levels:
-        # fall back to scanning stderr with broader patterns
+        # fallback: try stderr
         levels = [float(x) for x in re.findall(
             r"(?:lavfi\.astats\.\d+\.RMS_level|RMS[_\s]?level(?:\s*dB)?)\s*[:=]\s*(-?\d+(?:\.\d+)?)",
-            proc.stderr
+            proc1.stderr
         )]
 
-    if not levels:
-        return {"noise_floor": -65.0, "threshold": -57.0, "active_ratio": 0.0, "is_silent": True}
+    # Build robust percentiles
+    def percentile(vals, p):
+        if not vals:
+            return None
+        vals = sorted(vals)
+        if p <= 0:
+            return vals[0]
+        if p >= 100:
+            return vals[-1]
+        idx = int(round((p/100.0) * (len(vals)-1)))
+        return vals[idx]
 
-    levels.sort()
-    noise_floor = levels[int(0.20 * (len(levels) - 1))]
-    threshold = min(noise_floor + headroom_db, -35.0)
+    p20 = percentile(levels, 20) if levels else -90.0
+    p50 = percentile(levels, 50) if levels else -90.0
+    p95 = percentile(levels, 95) if levels else -90.0
 
-    active = sum(lvl > threshold for lvl in levels)
-    active_ratio = active / len(levels)
+    # Adaptive threshold relative to *this* channel's noise
+    # (no hard cap; if you want one, use: min(p20 + headroom_db, -40.0))
+    threshold = (p20 + headroom_db) if levels else -60.0
+
+    active = sum(lvl > threshold for lvl in levels) if levels else 0
+    active_ratio = (active / len(levels)) if levels else 0.0
+
+    # Pass 2: integrated mean/max via volumedetect (fast & robust)
+    af_vol = f"pan=mono|c0=c{chan_idx},volumedetect"
+    cmd2 = [
+        "ffmpeg","-hide_banner","-nostats",
+        "-t", str(probe_duration),
+        "-i", str(input_file),
+        "-map", f"0:{stream_index}",
+        "-af", af_vol, "-f", "null", "-"
+    ]
+    proc2 = subprocess.run(cmd2, capture_output=True, text=True)
+    mean_m = re.search(r"mean_volume:\s*(-?\d+(?:\.\d+)?)\s*dB", proc2.stderr)
+    max_m  = re.search(r"max_volume:\s*(-?\d+(?:\.\d+)?)\s*dB",  proc2.stderr)
+    mean_vol = float(mean_m.group(1)) if mean_m else None
+    max_vol  = float(max_m.group(1))  if max_m  else None
+
     return {
-        "noise_floor": noise_floor,
+        "noise_floor": p20,
+        "median": p50,
+        "p95": p95,
         "threshold": threshold,
         "active_ratio": active_ratio,
-        "is_silent": (active_ratio < min_active_ratio)
+        #Consider the channel "silent" by absolute gate if there’s almost no activity
+        "is_silent": (active_ratio < min_active_ratio),
+        "mean_vol": mean_vol,
+        "max_vol": max_vol
     }
 
-def detect_audio_pan(input_file, audio_pan, probe_duration=120):
+def detect_audio_pan(input_file, audio_pan, probe_duration=120,
+                     relative_db_gate=8.0):
+    """
+    relative_db_gate: if both channels seem quiet by absolute gate,
+    but one is ≥ this many dB louder (by p95/mean/max), prefer that side.
+    """
     ffprobe_command = [
         "ffprobe", "-i", str(input_file),
         "-show_entries", "stream=index:stream=codec_type",
@@ -302,26 +346,28 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=120):
     for stream_index in audio_streams:
         print(f"Analyzing audio stream: {stream_index}")
 
-        # Adaptive channel activity stats
-        left_stats  = analyze_channel_activity(input_file, stream_index, 'left',  probe_duration=probe_duration)
-        right_stats = analyze_channel_activity(input_file, stream_index, 'right', probe_duration=probe_duration)
+        L = analyze_channel_activity(input_file, stream_index, 'left',  probe_duration=probe_duration)
+        R = analyze_channel_activity(input_file, stream_index, 'right', probe_duration=probe_duration)
 
-        print(
-            f"Stream {stream_index} – "
-            f"L: nf={left_stats['noise_floor']:.1f}dB thr={left_stats['threshold']:.1f}dB act={left_stats['active_ratio']*100:.2f}% | "
-            f"R: nf={right_stats['noise_floor']:.1f}dB thr={right_stats['threshold']:.1f}dB act={right_stats['active_ratio']*100:.2f}%"
-        )
+        def fmt(stats):
+            return (f"nf={stats['noise_floor']:.1f}dB p50={stats['median']:.1f}dB "
+                    f"p95={stats['p95']:.1f}dB thr={stats['threshold']:.1f}dB "
+                    f"act={stats['active_ratio']*100:.2f}% "
+                    f"mean={stats['mean_vol'] if stats['mean_vol'] is not None else 'NA'} "
+                    f"max={stats['max_vol'] if stats['max_vol'] is not None else 'NA'}")
 
-        left_is_silent  = left_stats['is_silent']
-        right_is_silent = right_stats['is_silent']
+        print(f"Stream {stream_index} – L: {fmt(L)} | R: {fmt(R)}")
 
-        # LTC detection (unchanged call, but decisions use adaptive silence)
+        left_is_silent  = L['is_silent']
+        right_is_silent = R['is_silent']
+
+        # LTC detection
         left_has_ltc = right_has_ltc = False
         if audio_pan == "auto":
             left_has_ltc  = detect_ltc_in_channel(input_file, stream_index, 'left',  probe_duration=probe_duration)
             right_has_ltc = detect_ltc_in_channel(input_file, stream_index, 'right', probe_duration=probe_duration)
 
-        # If one channel is LTC and the other has no meaningful activity, drop the stream
+        # LTC decisions (unchanged)
         if left_has_ltc and not right_has_ltc:
             if right_is_silent:
                 print(f"Stream {stream_index}: Left LTC + right silent → dropping stream.")
@@ -339,16 +385,37 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=120):
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
 
         else:
-            # No (or ambiguous) LTC: choose pan based on activity, not fixed dB
+            # Absolute gate first
             if not left_is_silent and right_is_silent:
-                print(f"Stream {stream_index}: Right silent → LEFT-to-center.")
+                print(f"Stream {stream_index}: Right silent (abs) → LEFT-to-center.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
             elif not right_is_silent and left_is_silent:
-                print(f"Stream {stream_index}: Left silent → RIGHT-to-center.")
+                print(f"Stream {stream_index}: Left silent (abs) → RIGHT-to-center.")
                 pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
             else:
-                print(f"Stream {stream_index}: Both active or both quiet → keep stereo.")
-                pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c1[outa{pan_filter_idx}]")
+                # Relative fallback: choose the louder side by robust stats
+                def loudness_hint(stats):
+                    # pick the "least negative" (closest to 0) among p95, mean, max
+                    candidates = [stats['p95']]
+                    if stats['mean_vol'] is not None:
+                        candidates.append(stats['mean_vol'])
+                    if stats['max_vol'] is not None:
+                        candidates.append(stats['max_vol'])
+                    return max(candidates)  # higher dB = louder
+
+                l_hint = loudness_hint(L)
+                r_hint = loudness_hint(R)
+                diff = l_hint - r_hint  # positive => left louder
+
+                if diff >= relative_db_gate:
+                    print(f"Stream {stream_index}: Both quiet by abs gate, but LEFT louder by {diff:.1f} dB → LEFT-to-center.")
+                    pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c0[outa{pan_filter_idx}]")
+                elif diff <= -relative_db_gate:
+                    print(f"Stream {stream_index}: Both quiet by abs gate, but RIGHT louder by {-diff:.1f} dB → RIGHT-to-center.")
+                    pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c1|c1=c1[outa{pan_filter_idx}]")
+                else:
+                    print(f"Stream {stream_index}: Both active or both similarly quiet → keep stereo.")
+                    pan_filters.append(f"[0:{stream_index}]pan=stereo|c0=c0|c1=c1[outa{pan_filter_idx}]")
 
         pan_filter_idx += 1
 
