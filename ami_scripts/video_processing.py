@@ -32,18 +32,18 @@ def rename_files(input_directory, extensions):
         shutil.move(file, new_file)
 
 
-def convert_mkv_dv_to_mp4(input_directory, audio_pan):
+def convert_mkv_dv_to_mp4(input_directory, audio_pan, force_16x9=False):
     # Sort the files so they are processed in alphabetical order
     mkv_files = sorted(input_directory.glob("*.mkv"))
     dv_files  = sorted(input_directory.glob("*.dv"))
     
     for file in itertools.chain(mkv_files, dv_files):
-        convert_to_mp4(file, input_directory, audio_pan)
+        convert_to_mp4(file, input_directory, audio_pan, force_16x9)
 
 
-def process_mov_files(input_directory, audio_pan):
+def process_mov_files(input_directory, audio_pan, force_16x9=False):
     for mov_file in input_directory.glob("*.mov"):
-        convert_mov_file(mov_file, input_directory, audio_pan)
+        convert_mov_file(mov_file, input_directory, audio_pan, force_16x9)
 
 
 def process_dv_files(input_directory):
@@ -422,7 +422,7 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=120,
     return pan_filters
 
 
-def convert_to_mp4(input_file, input_directory, audio_pan):
+def convert_to_mp4(input_file, input_directory, audio_pan, force_16x9=False):
     def get_video_resolution(input_file):
         ffprobe_command = [
             "ffprobe", "-v", "error", "-select_streams", "v:0",
@@ -486,9 +486,18 @@ def convert_to_mp4(input_file, input_directory, audio_pan):
         return None
 
     if (width, height) == (720, 486):         # NTSC
-        video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=4/3"
+        # default 4:3 DAR; override to 16:9 if requested
+        if force_16x9:
+            video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=16/9"
+        else:
+            video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=4/3"
     elif (width, height) == (720, 576):       # PAL
-        video_filter = "idet,bwdif=1"
+        # default has no DAR change; add 16:9 if requested
+        if force_16x9:
+            video_filter = "idet,bwdif=1,setdar=16/9"
+        else:
+            video_filter = "idet,bwdif=1"
+
     elif (width, height) == (1440, 1080):     # HDV 1080-line
         video_filter = "idet,bwdif=1"  # no crop, just deinterlace
     else:
@@ -748,6 +757,11 @@ def main():
         choices=["left", "right", "none", "center", "auto"],
         default="none",
         help="Pan audio to center from left, right, or auto-detect mono audio.")
+    parser.add_argument(
+    "--force-16x9",
+    action="store_true",
+    help="For SD sources (720x486/576), force MP4 display aspect ratio to 16:9 (anamorphic)."
+    )
 
     args = parser.parse_args()
 
@@ -771,10 +785,10 @@ def main():
     create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
 
     print("Converting MKV and DV to MP4...")
-    convert_mkv_dv_to_mp4(input_dir, args.audio_pan)
+    convert_mkv_dv_to_mp4(input_dir, args.audio_pan, args.force_16x9)
 
     print("Processing MOV files...")
-    process_mov_files(input_dir, args.audio_pan)
+    process_mov_files(input_dir, args.audio_pan, args.force_16x9)
 
     print("Generating framemd5 files...")
     generate_framemd5_files(input_dir)
