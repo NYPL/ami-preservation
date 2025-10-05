@@ -242,63 +242,58 @@ class CollectionProcessor:
         self.fm = fm_client
 
     def fetch_items(self, collection_id: str) -> pd.DataFrame:
-        """
-        Fetch and process items for a given collection.
-        
-        Args:
-            collection_id: Collection identifier
+            """
+            Fetch and process items for a given collection.
             
-        Returns:
-            DataFrame with processed collection items
-        """
-        logging.info(f"Fetching items for collection ID: {collection_id}")
-        
-        query = {'ref_collection_id': collection_id}
-        records = self.fm.find_all(query)
-        
-        if not records:
-            logging.warning(f"No records found for collection ID: {collection_id}")
-            return pd.DataFrame()
+            Args:
+                collection_id: Collection identifier
+                
+            Returns:
+                DataFrame with processed collection items
+            """
+            logging.info(f"Fetching items for collection ID: {collection_id}")
+            
+            query = {'ref_collection_id': collection_id}
+            records = self.fm.find_all(query)
+            
+            if not records:
+                logging.warning(f"No records found for collection ID: {collection_id}")
+                return pd.DataFrame()
 
-        # Process records into structured data
-        processed_rows = []
-        for record in records:
-            print(record)
-            # If your fmrest wrapper didn’t expand portals to lists, handle both cases:
-            portal_obj = record.get('portal_OBJ_ISSUES', [])
-            if portal_obj and not isinstance(portal_obj, list):
-                # fmrest Foundset → list of dicts
-                try:
-                    portal_rows = [row.to_dict() for row in portal_obj]
-                except Exception:
-                    portal_rows = []
-            else:
-                portal_rows = portal_obj or []
+            # Process records into structured data
+            processed_rows = []
+            for record in records:
+                portal_obj = record.get('portal_OBJ_ISSUES', [])
+                portal_rows = [row.to_dict() for row in portal_obj] if portal_obj and not isinstance(portal_obj, list) else (portal_obj or [])
 
-            issues_info = self._extract_issue_fields(portal_rows, join_all=False)  # set True if you raise the limit
-
-            processed_rows.append({
-                'AMI ID': self._clean_ami_id(record.get('ref_ami_id')),
-                'Classmark': self._clean_string(record.get('OBJ_AMI_ITEMS_from_OBJECTS::id.classmark')),
-                'Barcode': self._clean_string(record.get('id_barcode')),
-                'Title': self._clean_string(record.get('id_label_text')),
-                'Migration Status': self._clean_string(record.get('OBJECTS_MIGRATION_STATUS_active::migration_status')),
-                'Format 1': self._clean_string(record.get('format_1')),
-                'Format 2': self._clean_string(record.get('format_2')),
-                'Format 3': self._clean_string(record.get('format_3')),
-                'Box Name': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::name_d_calc')),
-                'Box Barcode': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::id_barcode')),
-                'Location': self._clean_string(record.get('ux_loc_active_d')),
-                'Issues (count)': issues_info['Issues (count)'],
-                'Issue Type': issues_info['Issue Type'],
-                'Issue': issues_info['Issue'],
-                'Issue Notes': issues_info['Issue Notes'],
-            })
-        
-        df = pd.DataFrame(processed_rows)
-        logging.info(f"Built DataFrame with {len(df)} rows and {len(df.columns)} columns")
-        
-        return df
+                # --- Main Change Here ---
+                # 1. Create the base dictionary for the main item fields.
+                row_data = {
+                    'AMI ID': self._clean_ami_id(record.get('ref_ami_id')),
+                    'Classmark': self._clean_string(record.get('OBJ_AMI_ITEMS_from_OBJECTS::id.classmark')),
+                    'Barcode': self._clean_string(record.get('id_barcode')),
+                    'Title': self._clean_string(record.get('id_label_text')),
+                    'Migration Status': self._clean_string(record.get('OBJECTS_MIGRATION_STATUS_active::migration_status')),
+                    'Format 1': self._clean_string(record.get('format_1')),
+                    'Format 2': self._clean_string(record.get('format_2')),
+                    'Format 3': self._clean_string(record.get('format_3')),
+                    'Box Name': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::name_d_calc')),
+                    'Box Barcode': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::id_barcode')),
+                    'Location': self._clean_string(record.get('ux_loc_active_d')),
+                }
+                
+                # 2. Get the dynamically generated issue columns.
+                issues_data = self._extract_issues_as_columns(portal_rows)
+                
+                # 3. Merge the issue columns into the main record dictionary.
+                row_data.update(issues_data)
+                
+                processed_rows.append(row_data)
+            
+            df = pd.DataFrame(processed_rows)
+            logging.info(f"Built DataFrame with {len(df)} rows and {len(df.columns)} columns")
+            
+            return df
 
     @staticmethod
     def _clean_string(value: Any) -> str:
@@ -389,44 +384,28 @@ class CollectionProcessor:
         logging.info("Sorted DataFrame by AMI ID")
         return df
     
-    def _extract_issue_fields(self, portal_rows: list, join_all: bool = False) -> Dict[str, str]:
-        """
-        Extract Issue Type, Issue, and Issue Notes from portal rows.
-        If join_all=True and multiple rows are present, join each field with ' | '.
-        Otherwise, return the first row (assumed newest).
-        """
-        if not portal_rows:
-            return {
-                'Issues (count)': 0,
-                'Issue Type': '',
-                'Issue': '',
-                'Issue Notes': ''
-            }
+    def _extract_issues_as_columns(self, portal_rows: list) -> Dict[str, Any]:
+            """
+            Extracts all issues from portal rows and formats them into
+            dynamically numbered columns for a wide format DataFrame.
+            """
+            if not portal_rows:
+                return {'Issues (count)': 0}
 
-        # Normalize keys once
-        def row_to_triplet(r: dict) -> tuple[str, str, str]:
-            itype = self._clean_string(r.get('OBJ_ISSUES::type'))
-            issue = self._clean_string(r.get('OBJ_ISSUES::issue'))
-            notes = self._clean_string(r.get('OBJ_ISSUES::notes'))
-            return (itype, issue, notes)
-
-        if join_all and len(portal_rows) > 1:
-            types, issues, notes = zip(*(row_to_triplet(r) for r in portal_rows))
-            return {
-                'Issues (count)': len(portal_rows),
-                'Issue Type': ' | '.join(t for t in types if t),
-                'Issue': ' | '.join(i for i in issues if i),
-                'Issue Notes': ' | '.join(n for n in notes if n),
-            }
-        else:
-            # Take the first (newest) row; make sure your portal is sorted newest→oldest in the layout
-            itype, issue, notes = row_to_triplet(portal_rows[0])
-            return {
-                'Issues (count)': len(portal_rows),
-                'Issue Type': itype,
-                'Issue': issue,
-                'Issue Notes': notes
-            }
+            issues_data = {'Issues (count)': len(portal_rows)}
+            
+            # Sort portal rows to ensure some level of consistency, if needed.
+            # This example assumes the default order from FileMaker is acceptable.
+            for i, row in enumerate(portal_rows, 1):
+                itype = self._clean_string(row.get('OBJ_ISSUES::type'))
+                issue = self._clean_string(row.get('OBJ_ISSUES::issue'))
+                notes = self._clean_string(row.get('OBJ_ISSUES::notes'))
+                
+                issues_data[f'Issue {i} Type'] = itype
+                issues_data[f'Issue {i}'] = issue
+                issues_data[f'Issue {i} Notes'] = notes
+                
+            return issues_data
 
 class ReportGenerator:
     """Enhanced report generator with professional visualizations."""
