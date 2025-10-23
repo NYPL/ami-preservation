@@ -387,7 +387,9 @@ class MediaAnalyzer:
                 # Extract audio codec
                 audio_codec = None
                 if track.audio_format_list:
-                    audio_codec = track.audio_format_list.split()[0]
+                    # Split by ' / ' to handle formats like "FLAC / FLAC"
+                    # and "MPEG Audio" correctly
+                    audio_codec = track.audio_format_list.split(' / ')[0]
 
                 # Format human duration
                 human_duration = None
