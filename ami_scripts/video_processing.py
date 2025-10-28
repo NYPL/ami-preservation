@@ -534,7 +534,7 @@ def convert_to_mp4(input_file, input_directory, audio_pan, force_16x9=False):
     return output_file
 
 
-def convert_mov_file(input_file, input_directory, audio_pan):
+def convert_mov_file(input_file, input_directory, audio_pan, force_16x9=False):
     """
     Convert a MOV file to an FFV1 MKV (Preservation Master), then call
     convert_to_mp4 to generate a Service Copy. This approach ensures
