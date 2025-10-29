@@ -385,8 +385,9 @@ NYPL will provide the vendor with a filename “root” for each collection obje
 | Volume: v## | A Volume is one video or audio object in a set of objects, when that set has been assigned a single primary identifier (i.e. NYPL Primary ID) | Audio and video |
 | Face: f## | A Face is a stream or track, or a group of streams or tracks which play synchronously, within an audio object. Every audio object has at least one Face. Some optical video formats are double-sided (rare) | Audio and video |
 | Region: r## | A Region is a subdivision of a Face. Regions are most often defined by a required change in playback characteristics of an object's Face (speed, EQ, track configuration, color encoding system etc.). | Audio and video |
+| Take: t## | A Take is a subdivision of a Face or Region, used rarely to preserve multiple distinct attempts at digitizing an object (e.g., using different capture methods) when normally only the best attempt would be saved. | Audio and video |
 | Stream: s## | The Stream element is used to describe multi-track and multi-channel audio objects only. Streams are one-channel or interleaved two-channel audio streams which comprise a multi-channel or multi-track audio object. | Audio only |
-| Part: p## | The part element is used when digitization of a single face of an audio or video object requires interruption because the size of the resulting file would exceed technical limits if captured all at once. The part element may also be used when a single tape contains sections of content that are each given different unique identifiers (rare; each section would be a distinct Part). | Audio and video |
+| Part: p## | (DEPRECATED) The part element was used for audio objects when digitization of a single face required interruption because the size of the resulting file would exceed technical limits (e.g., the 4GB limit of Broadcast WAV). This is no longer used as current capture formats (e.g., FLAC) do not have this limitation. | Audio only |
 
 <a name="file-role"></a>
 ### File role
