@@ -130,17 +130,19 @@ class FilenameParser:
     @staticmethod
     def parse_filename(filename: str) -> Optional[Dict[str, Any]]:
         """
-        Parse filename to extract base identifier, version, face, region/stream, role, and extension.
+        Parse filename to extract base identifier, version, face, region/stream, take, role, and extension.
         
         Examples:
         - myd_123456_v01_pm, myd_123456_v01f01_pm, myd_123456_v01f01r02_sc
         - scb_999999_v01f01s01_pm (multitrack audio with stream)
+        - myh_666666_v01f01t01_pm (with take)
+        - myh_666666_v01f01r01t01_pm (with region and take)
         """
         stem = Path(filename).stem
         ext = Path(filename).suffix.lower()
         
-        # Primary pattern: identifier_version[face][region/stream]_role
-        pattern = r'^(.+_v\d+)(f\d+)?([rs]\d+)?_([a-z]+)$'
+        # Primary pattern: identifier_version[face][region/stream][take]_role
+        pattern = r'^(.+_v\d+)(f\d+)?([rs]\d+)?(t\d+)?_([a-z]+)$'
         match = re.match(pattern, stem)
         
         if match:
@@ -155,7 +157,8 @@ class FilenameParser:
         base_id = match.group(1)
         face = match.group(2)
         region_or_stream = match.group(3)
-        role = match.group(4)
+        take = match.group(4)   
+        role = match.group(5)    
         
         # Determine if this is a region or stream
         region = None
@@ -171,6 +174,7 @@ class FilenameParser:
             'face': face,
             'region': region,
             'stream': stream,
+            'take': take,  # <-- NEW
             'role': role,
             'extension': ext,
             'full_stem': stem,
@@ -185,7 +189,8 @@ class FilenameParser:
             'extension': ext,
             'full_stem': stem,
             'filename': filename,
-            'is_multitrack': False
+            'is_multitrack': False,
+            'take': None  # 
         }
         
         # DVD ISO preservation master
