@@ -16,8 +16,13 @@ def get_args():
 
 
 def get_files(source_directory):
-    return [path.relative_to(source_directory) for path in source_directory.glob('**/*') if path.is_file()]
-
+    file_paths = []
+    for path in source_directory.glob('**/*'):
+        # Check if it's a file AND not a hidden/metadata file
+        if path.is_file():
+            if not path.name.startswith('._') and path.name != '.DS_Store':
+                file_paths.append(path.relative_to(source_directory))
+    return file_paths
 
 def make_object_dirs(source_directory, file_list):
     cms_ids = set()
