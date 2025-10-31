@@ -8,6 +8,7 @@ import re
 import json
 import warnings
 
+
 def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
 
@@ -34,6 +35,14 @@ def get_args():
               'check if there is any filename or metadata mismatch; '
               'and upload ONLY the valid ones not in the AWS bucket')
     )
+    
+    # CHANGED: Added --profile argument for SSO
+    parser.add_argument(
+        '-p', '--profile',
+        help='The AWS profile name to use (for SSO login)',
+        default=None
+    )
+    
     args = parser.parse_args()
     return args
 
@@ -178,28 +187,38 @@ def valid_json_barcode(json_file_list):
                 return file
     return True
 
-def check_bucket(filenames_list):
+# CHANGED: Added profile_name parameter
+def check_bucket(filenames_list, profile_name=None):
     """
     Checks if the given filenames exist in the bucket by calling `aws s3api head-object`.
     If an audio file is not found, we also check if its SC version is there, etc.
     Returns a list of files that need to be uploaded.
     """
     to_upload = []
+    
+    # CHANGED: Build command base first
     cmd = ['aws', 's3api', 'head-object',
-           '--bucket', 'ami-carnegie-servicecopies',
-           '--key', '']
+           '--bucket', 'ami-carnegie-servicecopies']
+    
+    # CHANGED: Add profile if provided
+    if profile_name:
+        cmd.extend(['--profile', profile_name])
+        
+    # CHANGED: Add key placeholder
+    cmd.extend(['--key', ''])
+    
     for file in filenames_list:
         if 'flac' in file or 'wav' in file:
-            cmd[-1] = file
+            cmd[-1] = file # Set the key
             output_original_media = subprocess.run(cmd, capture_output=True).stdout
             if not output_original_media:
                 mp4_key = file.replace('flac', 'mp4').replace('wav', 'mp4')
-                cmd[-1] = mp4_key
+                cmd[-1] = mp4_key # Set the new key
                 output_mp4 = subprocess.run(cmd, capture_output=True).stdout
                 if not output_mp4:
                     to_upload.append(file)
         else:
-            cmd[-1] = file
+            cmd[-1] = file # Set the key
             output_json_mp4 = subprocess.run(cmd, capture_output=True).stdout
             if not output_json_mp4:
                 to_upload.append(file)
@@ -219,7 +238,8 @@ def file_type_counts(all_file_list):
     json_ct = len(json_files)
     return mp4_ct, wav_ct, flac_ct, json_ct
 
-def cp_files(file_list):
+# CHANGED: Added profile_name parameter
+def cp_files(file_list, profile_name=None):
     """
     Uploads the given files to S3 via `aws s3 cp`.
     """
@@ -229,6 +249,11 @@ def cp_files(file_list):
             filename,
             's3://ami-carnegie-servicecopies'
         ]
+        
+        # CHANGED: Add profile if provided
+        if profile_name:
+            cp_command.extend(['--profile', profile_name])
+            
         print(cp_command)
         subprocess.call(cp_command)
 
@@ -278,14 +303,20 @@ def process_single_directory(directory, arguments):
                 # If we're only checking or checking+uploading:
                 if arguments.check_only or arguments.check_and_upload:
                     print(f'Now checking if {bag} is in the bucket:\n')
-                    to_upload = check_bucket(all_files)
+                    
+                    # CHANGED: Pass profile to check_bucket
+                    to_upload = check_bucket(all_files, arguments.profile)
+                    
                     if to_upload:
                         summary['incomplete_in_bucket'].append(bag)
                         print(f'\nNo, {bag} not in the bucket.')
                         if arguments.check_and_upload:
                             print(f'Now uploading: {bag}\n')
                             mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
-                            cp_files(all_file_paths)
+                            
+                            # CHANGED: Pass profile to cp_files
+                            cp_files(all_file_paths, arguments.profile)
+                            
                             summary['uploaded_counts']['mp4'] += mp4_ct
                             summary['uploaded_counts']['wav'] += wav_ct
                             summary['uploaded_counts']['flac'] += flac_ct
@@ -296,7 +327,10 @@ def process_single_directory(directory, arguments):
                     # No checks, just upload
                     print(f'Now uploading: {bag}\n')
                     mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
-                    cp_files(all_file_paths)
+                    
+                    # CHANGED: Pass profile to cp_files
+                    cp_files(all_file_paths, arguments.profile)
+                    
                     summary['uploaded_counts']['mp4'] += mp4_ct
                     summary['uploaded_counts']['wav'] += wav_ct
                     summary['uploaded_counts']['flac'] += flac_ct
