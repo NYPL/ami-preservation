@@ -19,7 +19,33 @@ classifiers = [
 ]
 
 # ---------------------------------------------------------------
+# PYTHON PACKAGES
+# (This block MUST be part of the [project] section above)
+# ---------------------------------------------------------------
+dependencies = [
+    "pandas",
+    "openpyxl",
+    "boto3",
+    "requests",
+    "py-trello",
+    "bagit",
+    "lxml",
+    "jaydebeapi",
+    "tqdm",
+    "seaborn",
+    "xlrd",
+    "pymediainfo",
+    "matplotlib",
+    "python-fmrest",
+    "PyPDF2",
+    "colorama",
+    "numpy",
+    "chardet"
+]
+
+# ---------------------------------------------------------------
 # COMMAND-LINE SCRIPTS
+# (This is a SUB-TABLE of [project], so it comes after)
 # ---------------------------------------------------------------
 [project.scripts]
 ami-collections-digitization-reporter = "ami_scripts.ami_collections_digitization_reporter:main"
@@ -91,30 +117,9 @@ video-processing = "ami_scripts.video_processing:main"
 video-to-dvd-iso = "ami_scripts.video_to_dvd_iso:main"
 
 # ---------------------------------------------------------------
-# PYTHON PACKAGES
+# SETPTOOLS CONFIGURATION
+# (This is a separate tool, so it's [tool.setuptools...])
 # ---------------------------------------------------------------
-dependencies = [
-    "pandas",
-    "openpyxl",
-    "boto3",
-    "requests",
-    "py-trello",
-    "bagit",
-    "lxml",
-    "jaydebeapi",
-    "tqdm",
-    "seaborn",
-    "xlrd",
-    "pymediainfo",
-    "matplotlib",
-    "python-fmrest",
-    "PyPDF2",
-    "colorama",
-    "numpy",
-    "chardet"
-]
-
-# This section tells the build tool where to find your package
 [tool.setuptools.packages.find]
 where = ["."]  # Look for packages in the root directory
 include = ["ami_scripts*"]  # Include the ami_scripts package
