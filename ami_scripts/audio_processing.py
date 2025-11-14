@@ -1,484 +1,407 @@
 #!/usr/bin/env python3
-"""
-This script processes audio files for digital preservation with a simplified workflow.
-It transcodes audio files and organizes them into PreservationMasters and EditMasters
-directories without metadata processing or bagging.
-
-Includes verification of matching EM and PM FLAC files, copying of data disc .iso files,
-and a data disc migration test.
-"""
 
 import argparse
 import subprocess
 import shutil
+import json
 import os
-import sys
-import logging  # Still needed for logging.INFO, etc.
-import importlib
+import logging
+import bagit
 from pathlib import Path
-from typing import List, Tuple
-from dataclasses import dataclass
-from enum import Enum
-from subprocess import CalledProcessError
+import pathlib
 from tqdm import tqdm
+import re
+import importlib
 
-try:
-    from ami_scripts.ami_helpers.logging import setup_logging
-    from ami_scripts.ami_helpers import media_utils  
-except ImportError:
-    # Fallback for running script directly from its directory
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from ami_helpers.logging import setup_logging
-    import ami_helpers.media_utils as media_utils  
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-# Centralized glob patterns
-PATTERNS = {
-    'pm_aea': "**/*_pm.aea",
-    'pm_wav': "**/*_pm.wav",
-    'em_wav': "**/*_em.wav",
-    'wav': "**/*.wav",
-    'cue': "**/*.cue",
-    'csv': "**/*.csv",
-    'iso': "**/*.iso",
-}
+def get_args():
+    parser = argparse.ArgumentParser(description='Transcode a directory of audio files')
+    parser.add_argument('-s', '--source',
+                        help='path to the source directory of audio files',
+                        type=is_directory,
+                        metavar='SOURCE_DIR',
+                        required=True)
+    parser.add_argument('-d', '--destination',
+                        help='path to the output directory',
+                        type=is_directory,
+                        metavar='DEST_DIR',
+                        required=True)
+    parser.add_argument("-m", "--model", default='medium', choices=['tiny', 'base', 'small', 'medium', 'large'], help='The Whisper model to use')
+    parser.add_argument("-f", "--format", default='vtt', choices=['vtt', 'srt', 'txt', 'json'], help='The subtitle output format to use')
+    parser.add_argument("-t", "--transcribe", action="store_true", help="Transcribe the audio of the MKV files to VTT format using the Whisper tool.")
+    return parser.parse_args()
 
 
-# This creates a log file (e.g., 'audio_processing.log') in the same directory
-script_name = os.path.splitext(os.path.basename(__file__))[0]
-log_file = f"{script_name}.log"
-logger = setup_logging(__name__, log_file, level=logging.INFO)
+def is_directory(path):
+    if not os.path.isdir(path):
+        raise argparse.ArgumentTypeError(f"{path} is not a valid directory.")
+    return Path(path)
 
 
-class WorkflowType(Enum):
-    """Enum for different workflow types."""
-    MINIDISC = "minidisc"
-    STANDARD = "standard"  # applies to CDs and other analog formats
+def verify_directory(source_directory, destination_directory):
+    if not source_directory.exists():
+        raise FileNotFoundError(f"{source_directory} doesn't exist")
+    if not source_directory.is_dir():
+        raise NotADirectoryError(f"{source_directory} is not a directory")
+    destination_directory.mkdir(parents=True, exist_ok=True)
 
 
-@dataclass
-class ProcessingConfig:
-    """Configuration class for processing parameters."""
-    source_dir: Path
-    dest_dir: Path
-    model: str = 'medium'
-    output_format: str = 'vtt'
-    transcribe: bool = False
-
-    @property
-    def new_dest_dir(self) -> Path:
-        """Get the new destination directory path."""
-        return self.dest_dir / self.source_dir.name
+def get_mediainfo(file_path, inform):
+    result = subprocess.check_output(
+        [
+            'mediainfo',
+            '--Language=raw',
+            '--Full',
+            f"--Inform={inform}",
+            str(file_path),
+        ]
+    ).rstrip()
+    return result.decode('UTF-8')
 
 
-class SimplifiedAudioProcessor:
-    """Simplified audio processor for transcoding and basic file organization."""
+def is_32bit_float(file):
+    """
+    Determines if an audio file is a 32-bit float broadcast WAV.
+    It checks:
+      - Audio;%BitDepth% equals "32"
+      - And that either Audio;%Format_Profile% or Audio;%Format% contains "float".
+    Additionally, it logs the mediainfo output for diagnosis.
+    """
+    try:
+        bit_depth = get_mediainfo(file, "Audio;%BitDepth%").strip()
+        format_profile = get_mediainfo(file, "Audio;%Format_Profile%").strip().lower()
+        audio_format = get_mediainfo(file, "Audio;%Format%").strip().lower()
+        logging.info(f"For file {file.name}: BitDepth={bit_depth}, Format_Profile='{format_profile}', Format='{audio_format}'")
 
-    # Class constants
-    SUPPORTED_MODELS = ['tiny', 'base', 'small', 'medium', 'large']
-    SUPPORTED_FORMATS = ['vtt', 'srt', 'txt', 'json']
-    MEDIA_EXTENSIONS = {'.flac'}
-    FLAC_COMMAND_BASE = ['flac', '--best', '--preserve-modtime', '--verify']
-    FFMPEG_FALLBACK_PARAMS = [
-        '-c:a', 'flac',
-        '-compression_level', '12',
-        '-af', 'aformat=sample_fmts=s32',
-        '-sample_fmt', 's32',
-        '-bits_per_raw_sample', '24'
-    ]
-
-    def __init__(self, config: ProcessingConfig):
-        """Initialize the SimplifiedAudioProcessor with configuration."""
-        self.config = config
-        self.fallback_files: List[Path] = []
-
-    def process(self) -> None:
-        """Main processing method that orchestrates the entire workflow."""
-        try:
-            self._verify_directories()
-            self._initial_summary()
-            workflow_type = self._detect_workflow()
-
-            if workflow_type == WorkflowType.MINIDISC:
-                self._process_minidisc_workflow()
-            else:
-                self._process_standard_workflow()
-
-            # Verify matching EM and PM FLAC files
-            self._verify_matching_flacs()
-
-            # Log final FLAC counts
-            self._final_summary()
-
-
-        except Exception as e:
-            logger.exception(f"Processing failed: {e}")
-            raise
-
-    def _verify_directories(self) -> None:
-        """Verify source directory exists and create base destination directory."""
-        if not self.config.source_dir.exists():
-            raise FileNotFoundError(f"{self.config.source_dir} doesn't exist")
-        if not self.config.source_dir.is_dir():
-            raise NotADirectoryError(f"{self.config.source_dir} is not a directory")
-
-        self.config.new_dest_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Created base destination: {self.config.new_dest_dir}")
-
-    def _initial_summary(self) -> None:
-        """Log counts of EM/PM WAV, PM AEA, and ISO files before processing."""
-        counts = {
-            'PM AEA': len(list(self.config.source_dir.rglob(PATTERNS['pm_aea']))),
-            'PM WAV': len(list(self.config.source_dir.rglob(PATTERNS['pm_wav']))),
-            'EM WAV': len(list(self.config.source_dir.rglob(PATTERNS['em_wav']))),
-            'ISO': len(list(self.config.source_dir.rglob(PATTERNS['iso']))),
-        }
-        logger.info("Initial file summary: " + ", ".join(f"{k}: {v}" for k, v in counts.items()))
-
-    def _detect_workflow(self) -> WorkflowType:
-        """Detect which workflow to use based on file types present."""
-        if list(self.config.source_dir.rglob(PATTERNS['pm_aea'])):
-            logger.info("Minidisc package detected: using Minidisc workflow")
-            return WorkflowType.MINIDISC
-        return WorkflowType.STANDARD
-
-    def _make_work_dirs(self) -> Tuple[Path, Path]:
-        """Create and return PreservationMasters and EditMasters directories."""
-        base = self.config.new_dest_dir
-        pm_dir = base / "PreservationMasters"
-        em_dir = base / "EditMasters"
-        pm_dir.mkdir(parents=True, exist_ok=True)
-        em_dir.mkdir(parents=True, exist_ok=True)
-        return pm_dir, em_dir
-
-    def _process_minidisc_workflow(self) -> None:
-        """Process files using the Minidisc Workflow."""
-        logger.info("Starting Minidisc Workflow")
-        pm_dir, em_dir = self._make_work_dirs()
-
-        self._copy_preservation_masters_minidisc(pm_dir)
-        self._process_edit_masters_minidisc(em_dir)
-
-        if self.config.transcribe:
-            self._transcribe_directory()
-
-        logger.info("Minidisc workflow completed")
-
-    def _process_standard_workflow(self) -> None:
-        """Process files using the Standard Workflow."""
-        logger.info("Starting Standard Workflow")
-        pm_dir, em_dir = self._make_work_dirs()
-
-        # Copy data-disc ISO files
-        self._copy_iso_files(pm_dir)
-
-        # Gather all WAVs once
-        wav_files = self._get_clean_files(self.config.source_dir.rglob(PATTERNS['wav']))
-        wav_files = sorted(wav_files, key=lambda p: p.name)  # sort by filename
-
-        # Transcode with a tqdm bar that names each file
-        pbar = tqdm(wav_files, unit="file")
-        for wav in pbar:
-            pbar.set_description(f"Transcoding {wav.name}")
-            output_file = self.config.new_dest_dir / f"{wav.stem}.flac"
-            if not self._transcode_single_file(wav, output_file):
-                self._handle_transcode_failure(wav, output_file)
-
-        # After bar completes, report any fallbacks
-        self._report_fallback_files()
-
-        # Organize into PM/EM dirs
-        self._organize_files(pm_dir, em_dir)
-
-        if self.config.transcribe:
-            self._transcribe_directory()
-
-        logger.info("Standard workflow completed")
-
-    def _copy_iso_files(self, pm_dir: Path) -> None:
-        """Copy .iso files from source to PreservationMasters."""
-        for iso in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['iso'])):
-            shutil.copy2(iso, pm_dir)
-            logger.info(f"Copied ISO file: {iso.name}")
-
-    def _copy_preservation_masters_minidisc(self, pm_dir: Path) -> None:
-        """Copy preservation master files for Minidisc workflow."""
-        for aea_file in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['pm_aea'])):
-            shutil.copy2(aea_file, pm_dir)
-            logger.info(f"Copied PM AEA: {aea_file.name}")
-        for csv_file in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['csv'])):
-            shutil.copy2(csv_file, pm_dir)
-            logger.info(f"Copied CSV: {csv_file.name}")
-
-    def _process_edit_masters_minidisc(self, em_dir: Path) -> None:
-        """Process edit master files for Minidisc workflow."""
-        for wav in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['em_wav'])):
-            logger.info(f"Transcoding {wav.name} to FLAC")
-            output_flac = em_dir / f"{wav.stem}.flac"
-            if self._transcode_single_file(wav, output_flac):
-                logger.info(f"Successfully transcoded: {output_flac.name}")
-            else:
-                logger.error(f"Failed to transcode: {wav.name}")
-
-    def _verify_matching_flacs(self) -> None:
-        """Ensure matching EM and PM FLAC files (names and counts)."""
-        pm_dir = self.config.new_dest_dir / "PreservationMasters"
-        em_dir = self.config.new_dest_dir / "EditMasters"
-        pm_files = {f.stem.replace('_pm', '') for f in pm_dir.glob("*.flac")}
-        em_files = {f.stem.replace('_em', '') for f in em_dir.glob("*.flac")}
-
-        missing_pm = em_files - pm_files
-        missing_em = pm_files - em_files
-
-        if missing_pm or missing_em:
-            logger.error("Mismatch between EM and PM FLAC files:")
-            if missing_pm:
-                logger.error(f" EM files without PM: {missing_pm}")
-            if missing_em:
-                logger.error(f" PM files without EM: {missing_em}")
-            sys.exit(1)
-        else:
-            logger.info("All EM and PM FLAC files match.")
-
-    def _final_summary(self) -> None:
-        """Log counts of PM and EM FLAC files after processing."""
-        pm_count = len(list((self.config.new_dest_dir / "PreservationMasters").glob("*.flac")))
-        em_count = len(list((self.config.new_dest_dir / "EditMasters").glob("*.flac")))
-        logger.info(f"Final file summary: PM FLAC: {pm_count}, EM FLAC: {em_count}")
-
-    def _transcode_single_file(self, input_file: Path, output_file: Path) -> bool:
-        """Transcode a single file using the shared run_command helper."""
-        flac_command = self.FLAC_COMMAND_BASE + [str(input_file), '-o', str(output_file)]
-        try:
-            # Use the new helper function
-            media_utils.run_command(flac_command, logger, check=True)
+        # Check if bit depth is 32 and either the format_profile or format indicates a float type.
+        if bit_depth == "32" and ("float" in format_profile or "float" in audio_format):
             return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # run_command already logged the error, so we just return False
-            return False
+    except Exception as e:
+        logging.error(f"Error determining bit depth for {file}: {e}")
+    return False
 
-    def _handle_transcode_failure(self, input_file: Path, output_file: Path) -> None:
-        """Handle transcoding failure with FFmpeg fallback for 32-bit float files."""
-        if self._is_32bit_float(input_file):
-            logger.info(f"Detected 32-bit float WAV for {input_file}. Attempting FFmpeg fallback.")
-            ffmpeg_command = ['ffmpeg', '-i', str(input_file)] + self.FFMPEG_FALLBACK_PARAMS + [str(output_file)]
-            try:
-                # Use the new helper function
-                media_utils.run_command(ffmpeg_command, logger, check=True)
-                logger.info(f"Successfully transcoded {input_file.name} using FFmpeg fallback.")
-                self.fallback_files.append(input_file)
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                # run_command already logged the error
-                logger.error(f"FFmpeg fallback failed for {input_file.name}.")
+
+def transcode_files(source_directory, destination_directory):
+    files = skip_hidden_files(list(source_directory.glob("**/*.wav")))
+    fallback_files = []
+    for file in tqdm(files, desc="Transcoding files", unit="file"):
+        output_file = destination_directory / f"{file.stem}.flac"
+        flac_command = [
+            'flac', str(file),
+            '--best',
+            '--preserve-modtime',
+            '--verify',
+            '-o', str(output_file)
+        ]
+        return_code = subprocess.call(flac_command)
+        if return_code != 0:
+            logging.error(f"Error while transcoding {file} with flac. Return code: {return_code}")
+            if is_32bit_float(file):
+                logging.info(f"Detected 32-bit float broadcast WAV for {file}. Attempting FFmpeg fallback to transcode to 24-bit FLAC.")
+                ffmpeg_command = [
+                    'ffmpeg',
+                    '-i', str(file),
+                    '-c:a', 'flac',
+                    '-compression_level', '12',
+                    # The following options attempt to force a conversion to 24-bit output.
+                    '-af', 'aformat=sample_fmts=s32',
+                    '-sample_fmt', 's32',
+                    '-bits_per_raw_sample', '24',
+                    str(output_file)
+                ]
+                ffmpeg_return_code = subprocess.call(ffmpeg_command)
+                if ffmpeg_return_code != 0:
+                    logging.error(f"FFmpeg fallback failed for {file} with return code: {ffmpeg_return_code}")
+                else:
+                    logging.info(f"Successfully transcoded {file} to {output_file} using FFmpeg fallback.")
+                    fallback_files.append(file)
+            else:
+                logging.error(f"Transcoding failed for {file} and it is not recognized as a 32-bit float broadcast WAV. Skipping fallback.")
         else:
-            logger.error(f"Transcoding failed for {input_file.name} and it's not a 32-bit float WAV. Skipping fallback.")
+            logging.info(f"Successfully transcoded {file} to {output_file} using FLAC command.")
 
-    def _report_fallback_files(self) -> None:
-        """Report files that required FFmpeg fallback."""
-        if self.fallback_files:
-            logger.warning("FFmpeg fallback occurred for the following files:")
-            for f in self.fallback_files:
-                logger.warning(f"  {f}")
+    if fallback_files:
+        print("\nFFmpeg fallback occurred for the following 32-bit float broadcast WAV files:")
+        for fallback_file in fallback_files:
+            print(f"  {fallback_file}")
+        print("Please check your DAW settings to avoid generating 32-bit float broadcast WAV files.\n")
 
-    def _is_32bit_float(self, file: Path) -> bool:
-        """Check if a WAV file is 32-bit float using get_mediainfo."""
-        
-        mi_data = media_utils.get_mediainfo(file, logger)
-        
-        if not mi_data:
-            # get_mediainfo already logged the warning/error
-            logger.debug(f"get_mediainfo returned None for {file.name}, assuming standard format.")
-            return False
+
+def module_exists(module_name):
+    return importlib.util.find_spec(module_name) is not None
+
+
+def transcribe_directory(input_directory, model, output_format):
+    media_extensions = {'.flac'}
+
+    input_dir_path = pathlib.Path(input_directory)
+
+    if module_exists("whisper"):
+        import whisper
+    else:
+        print("Error: The module 'whisper' is not installed. Please install it with 'pip3 install -U openai-whisper'")
+        return
+
+    model = whisper.load_model(model)
+
+    for file in input_dir_path.rglob('*'):
+        if file.suffix in media_extensions and 'em' in file.stem:
+            print(f"Processing {file}")
+            transcription_response = model.transcribe(str(file), verbose=True)
+                
+            output_filename = file.with_suffix("." + output_format)
+            output_writer = whisper.utils.get_writer(output_format, str(file.parent))
+            output_writer(transcription_response, file.stem)
+
+
+def organize_files(source_directory, destination_directory):
+    for file in skip_hidden_files(destination_directory.glob("*pm.flac")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        preservation_masters_dir = id_folder / "PreservationMasters"
+        preservation_masters_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(file, preservation_masters_dir)
+
+    for file in skip_hidden_files(destination_directory.glob("*em.flac")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        edit_masters_dir = id_folder / "EditMasters"
+        edit_masters_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(file, edit_masters_dir)
+
+    for file in skip_hidden_files(source_directory.glob("**/*.json")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        if "em.json" in file.name:
+            edit_masters_dir = id_folder / "EditMasters"
+            edit_masters_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, edit_masters_dir)
+        elif "pm.json" in file.name:
+            preservation_masters_dir = id_folder / "PreservationMasters"
+            preservation_masters_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, preservation_masters_dir)
+
+    for file in skip_hidden_files(source_directory.glob("**/*.cue")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        if "pm.cue" in file.name:
+            preservation_masters_dir = id_folder / "PreservationMasters"
+            preservation_masters_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, preservation_masters_dir)
+
+    for file in skip_hidden_files(source_directory.glob("**/*.iso")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        preservation_masters_dir = id_folder / "PreservationMasters"
+        preservation_masters_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file, preservation_masters_dir)
+    
+    for file in skip_hidden_files(destination_directory.glob("**/*.vtt")):
+        id_folder = destination_directory / file.stem.split("_")[1]
+        edit_masters_dir = id_folder / "EditMasters"
+        edit_masters_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(file, edit_masters_dir)
+
+
+def update_flac_info(destination_directory):
+    for flac_file in destination_directory.glob("**/*.flac"):
+        json_file = next(flac_file.parent.glob(f"{flac_file.stem}.json"), None)
+
+        if json_file is not None:
+            with open(json_file, encoding='utf-8-sig') as f:
+                data = json.load(f)
+
+            date_output = get_mediainfo(flac_file, "General;%File_Modified_Date%")
+            date_regex = r"\d{4}-\d{2}-\d{2}"
+            date_match = re.search(date_regex, date_output)
+            if date_match:
+                date = date_match.group()
             
-        try:
-            # Safely access the track data
-            track = mi_data.get('media', {}).get('track', [])
-            
-            # Find the first audio track
-            audio_track = next(t for t in track if t.get('@type') == 'Audio')
-            
-            bit_depth = audio_track.get('BitDepth')
-            
-            # Check for float. 'Format_Settings_Mode' is common for BWF.
-            # 'Format' is a fallback.
-            format_settings = audio_track.get('Format_Settings_Mode')
-            audio_format = audio_track.get('Format', '').lower()
+            duration = get_mediainfo(flac_file, "General;%Duration%")
+            human_duration = get_mediainfo(flac_file, "General;%Duration/String5%")
+            flac_format = get_mediainfo(flac_file, "General;%Format%")
+            codec = get_mediainfo(flac_file, "General;%Audio_Codec_List%")
+            size = get_mediainfo(flac_file, "General;%FileSize%")
 
-            if bit_depth == '32':
-                if format_settings and 'Floating point' in format_settings:
-                    return True
-                if 'float' in audio_format:
-                    return True
-                    
-        except (KeyError, StopIteration, TypeError, AttributeError) as e:
-            # Safely handle cases where JSON structure is unexpected
-            logger.debug(f"Could not parse Mediainfo for 32-bit float check on {file.name}: {e}")
-            
-        return False
+            data['asset']['referenceFilename'] = flac_file.name
+            data['technical']['filename'] = flac_file.stem
+            data['technical']['extension'] = flac_file.suffix[1:]  # Remove the leading period
+            data['technical']['dateCreated'] = date
+            data['technical']['durationMilli']['measure'] = int(duration)
+            data['technical']['durationHuman'] = human_duration
+            data['technical']['fileFormat'] = flac_format
+            data['technical']['audioCodec'] = codec
+            data['technical']['fileSize']['measure'] = int(size)
 
-    def _organize_files(self, pm_dir: Path, em_dir: Path) -> None:
-        """Organize files into PreservationMasters and EditMasters directories."""
-        # Move PM FLACs in sorted order
-        pm_files = sorted(
-            self._get_clean_files(self.config.new_dest_dir.glob("*pm.flac")),
-            key=lambda p: p.name
-        )
-        for file in pm_files:
-            shutil.move(str(file), pm_dir / file.name)
-            logger.info(f"Moved PM file: {file.name}")
-
-        # Move EM FLACs in sorted order
-        em_files = sorted(
-            self._get_clean_files(self.config.new_dest_dir.glob("*em.flac")),
-            key=lambda p: p.name
-        )
-        for file in em_files:
-            shutil.move(str(file), em_dir / file.name)
-            logger.info(f"Moved EM file: {file.name}")
-
-        # Copy CUE and CSV
-        self._batch_copy('cue', pm_dir, "Copied CUE file")
-        self._batch_copy('csv', pm_dir, "Copied CSV file")
-        # Move transcription outputs
-        self._move_transcription_files(em_dir)
-
-    def _batch_copy(self, pattern_key: str, target: Path, log_msg: str) -> None:
-        """Generic copy for cue, csv, etc., using centralized patterns."""
-        for f in self._get_clean_files(self.config.source_dir.rglob(PATTERNS[pattern_key])):
-            shutil.copy2(f, target)
-            logger.info(f"{log_msg}: {f.name}")
-
-    def _move_transcription_files(self, em_dir: Path) -> None:
-        """Move transcription files to EditMasters directory."""
-        for file in self._get_clean_files(self.config.new_dest_dir.rglob(f"*.{self.config.output_format}")):
-            shutil.move(str(file), em_dir / file.name)
-            logger.info(f"Moved transcription file: {file.name}")
-
-    def _transcribe_directory(self) -> None:
-        """Transcribe audio files using Whisper."""
-        import whisper  # now safe because we early-exit in main
-        model = whisper.load_model(self.config.model)
-
-        em_dir = self.config.new_dest_dir / "EditMasters"
-        targets = list(em_dir.glob("*.flac")) if em_dir.exists() else []
-        if not targets:
-            targets = [f for f in self.config.new_dest_dir.rglob("*.flac") if 'em' in f.stem]
-
-        for file in targets:
-            logger.info(f"Processing transcription for {file.name}")
-            try:
-                resp = model.transcribe(str(file), verbose=True)
-                writer = whisper.utils.get_writer(self.config.output_format, str(file.parent))
-                writer(resp, file.stem)
-                logger.info(f"Transcription completed for {file.name}")
-            except Exception as e:
-                logger.error(f"Transcription failed for {file.name}: {e}")
-
-    @staticmethod
-    def _module_exists(module_name: str) -> bool:
-        """Check if a Python module exists."""
-        return importlib.util.find_spec(module_name) is not None
-
-    @staticmethod
-    def _get_clean_files(file_iterator) -> List[Path]:
-        """Filter out hidden files (starting with '._')."""
-        return [file for file in file_iterator if not file.name.startswith("._")]
+            with open(json_file, "w") as f:
+                json.dump(data, f, indent=4)
 
 
-def check_data_disc_migrations(destination_directory: Path) -> List[Path]:
-    """Identify directories with .iso files but no EditMasters folder."""
-    migrations = []
+def create_bag(destination_directory):
+    bag_count = 0
     for id_folder in destination_directory.glob("*"):
         if id_folder.is_dir():
-            iso_files = list(id_folder.rglob(PATTERNS['iso']))
-            em_dirs = list(id_folder.rglob("**/EditMasters"))
-            if iso_files and not em_dirs:
-                migrations.append(id_folder)
-    return migrations
+            bag = bagit.make_bag(str(id_folder), checksums=['md5'])
+            print(f"Created BagIt bag for {id_folder}")
+            bag_count += 1
+    print(f"\nTotal bags created: {bag_count}")
 
 
-def create_argument_parser() -> argparse.ArgumentParser:
-    """Create and configure the argument parser."""
-    parser = argparse.ArgumentParser(
-        description='Simplified audio file transcoding and organization tool',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        '-s', '--source',
-        help='path to the source directory of audio files',
-        type=validate_directory,
-        metavar='SOURCE_DIR',
-        required=True
-    )
-    parser.add_argument(
-        '-d', '--destination',
-        help='path to the output directory',
-        type=validate_directory,
-        metavar='DEST_DIR',
-        required=True
-    )
-    parser.add_argument(
-        '-m', '--model',
-        default='medium',
-        choices=SimplifiedAudioProcessor.SUPPORTED_MODELS,
-        help='The Whisper model to use for transcription'
-    )
-    parser.add_argument(
-        '-f', '--format',
-        default='vtt',
-        choices=SimplifiedAudioProcessor.SUPPORTED_FORMATS,
-        help='The subtitle output format'
-    )
-    parser.add_argument(
-        '-t', '--transcribe',
-        action='store_true',
-        help='Transcribe the audio files using Whisper'
-    )
-    return parser
+def check_json_exists(destination_directory):
+    missing_json_files = []
+    for flac_file in destination_directory.glob("**/*.flac"):
+        json_file = next(flac_file.parent.glob(f"{flac_file.stem}.json"), None)
+        if json_file is None:
+            missing_json_files.append(flac_file)
+    
+    if missing_json_files:
+        print("Warning: The following FLAC files do not have corresponding JSON files:")
+        for missing in missing_json_files:
+            print(f"  {missing}")
+        print()
+    else:
+        print("All FLAC files have corresponding JSON files.\n")
 
 
-def validate_directory(path: str) -> Path:
-    """Validate that the provided path is a directory."""
-    path_obj = Path(path)
-    if not path_obj.is_dir():
-        raise argparse.ArgumentTypeError(f"{path} is not a valid directory.")
-    return path_obj
+def check_pm_em_pairs(destination_directory):
+    pm_files = sorted(destination_directory.glob("**/*pm.flac"))
+    em_files = sorted(destination_directory.glob("**/*em.flac"))
+
+    pm_stems = [pm.stem for pm in pm_files]
+    em_stems = [em.stem for em in em_files]
+
+    missing_pm_files = [em for em in em_stems if em.replace("_em", "_pm") not in pm_stems]
+    missing_em_files = [pm for pm in pm_stems if pm.replace("_pm", "_em") not in em_stems]
+
+    if missing_pm_files or missing_em_files:
+        print("Warning: Some PM or EM flac files are missing:")
+        if missing_pm_files:
+            print("Missing PM files:")
+            for missing_pm in missing_pm_files:
+                print(f"  PM: {missing_pm.replace('_em', '_pm')}.flac")
+        if missing_em_files:
+            print("Missing EM files:")
+            for missing_em in missing_em_files:
+                print(f"  EM: {missing_em.replace('_pm', '_em')}.flac")
+        print()
+    else:
+        print("All PM and EM flac file pairs match.\n")
 
 
-def main() -> None:
-    """Main entry point for the script."""
-    parser = create_argument_parser()
-    args = parser.parse_args()
+def check_iso_migrations(destination_directory):
+    iso_migrations = []
+    
+    for id_folder in destination_directory.glob("*"):
+        if id_folder.is_dir():
+            iso_files = list(id_folder.glob("**/*.iso"))
+            json_files = list(id_folder.glob("**/*pm.json"))
+            em_dirs = list(id_folder.glob("**/EditMasters"))
 
-    # Early-exit on missing Whisper dependency
-    if args.transcribe and importlib.util.find_spec('whisper') is None:
-        parser.error("Whisper is not installed. Please install with 'pip3 install -U openai-whisper'.")
+            if iso_files and json_files and not em_dirs:
+                iso_migrations.append(id_folder)
+    
+    return iso_migrations
 
-    config = ProcessingConfig(
-        source_dir=args.source,
-        dest_dir=args.destination,
-        model=args.model,
-        output_format=args.format,
-        transcribe=args.transcribe
-    )
-    try:
-        processor = SimplifiedAudioProcessor(config)
-        processor.process()
 
-        # Data disc migration test
-        migrations = check_data_disc_migrations(config.new_dest_dir)
-        if migrations:
-            print("The following directories appear to be data-disc migrations without Edit Master folders:")
-            for m in migrations:
-                print(f"  {m}")
-            print()
+def skip_hidden_files(files):
+    return [file for file in files if not file.name.startswith("._")]
 
-        logger.info("Processing completed successfully!")
-    except KeyboardInterrupt:
-        logger.info("Processing interrupted by user")
-    except Exception as e:
-        logger.exception(f"Processing failed: {e}")
-        sys.exit(1)
+
+def main():
+    args = get_args()
+    source_directory = args.source
+    destination_directory = args.destination
+    model = args.model
+    output_format = args.format
+    transcribe = args.transcribe
+
+    # Create a new directory inside the destination_directory
+    new_destination_directory = destination_directory / source_directory.name
+    verify_directory(source_directory, new_destination_directory)
+
+    # ── Special Minidisc workflow ────────────────────────────────────────
+    aea_list = list(source_directory.rglob("*.aea"))
+    if aea_list:
+        logging.info("Minidisc package detected: routing PM & EM files differently")
+
+        # 1. Move Preservation Masters (AEA, PM JSON, CSV) untouched
+        for pm_a in skip_hidden_files(source_directory.rglob("*_pm.aea")):
+            id_code = pm_a.stem.split("_")[1]
+            pm_dir = new_destination_directory / id_code / "PreservationMasters"
+            pm_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pm_a, pm_dir)
+        for pm_j in skip_hidden_files(source_directory.rglob("*_pm.json")):
+            id_code = pm_j.stem.split("_")[1]
+            pm_dir = new_destination_directory / id_code / "PreservationMasters"
+            pm_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pm_j, pm_dir)
+        for csv_f in skip_hidden_files(source_directory.rglob("*.csv")):
+            id_code = csv_f.stem.split("_")[1]
+            pm_dir = new_destination_directory / id_code / "PreservationMasters"
+            pm_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(csv_f, pm_dir)
+
+        # 2. Transcode only the Edit-Master WAVs to FLAC
+        em_wavs = [p for p in source_directory.rglob("*_em.wav") if not p.name.startswith("._")]
+        for wav in tqdm(em_wavs, desc="Transcoding EM WAV → FLAC", unit="file"):
+            id_code = wav.stem.split("_")[1]
+            em_dir = new_destination_directory / id_code / "EditMasters"
+            em_dir.mkdir(parents=True, exist_ok=True)
+            output_flac = em_dir / f"{wav.stem}.flac"
+
+            rc = subprocess.call([
+                'flac', str(wav),
+                '--best', '--preserve-modtime', '--verify',
+                '-o', str(output_flac)
+            ])
+            if rc:
+                logging.error(f"FLAC transcoding failed on {wav}")
+            else:
+                logging.info(f"→ {output_flac.name}")
+
+        # 3. Copy Edit-Master JSON sidecars
+        for em_j in skip_hidden_files(source_directory.rglob("*_em.json")):
+            id_code = em_j.stem.split("_")[1]
+            em_dir = new_destination_directory / id_code / "EditMasters"
+            em_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(em_j, em_dir)
+
+        # 4. Update technical metadata in the new FLAC JSONs
+        update_flac_info(new_destination_directory)
+
+        # 5. Bag & run post-checks
+        create_bag(new_destination_directory)
+        check_json_exists(new_destination_directory)
+
+        # 6. Verify that each bag contains PM .aea in data/PreservationMasters
+        missing_pm_aea = []
+        for id_folder in new_destination_directory.iterdir():
+            pm_dir = id_folder / "data" / "PreservationMasters"
+            pm_files = list(pm_dir.glob("*_pm.aea")) if pm_dir.exists() else []
+            if not pm_files:
+                missing_pm_aea.append(id_folder.name)
+
+        if missing_pm_aea:
+            print("Warning: No PM .aea found in data/PreservationMasters for IDs:", missing_pm_aea)
+        else:
+            print("✅ All PreservationMasters contain PM .aea files.")
+
+        return
+
+    # ── Fallback CD-style workflow ───────────────────────────────────────
+    transcode_files(source_directory, new_destination_directory)
+    organize_files(source_directory, new_destination_directory)
+    if transcribe:
+        transcribe_directory(new_destination_directory, model, output_format)
+    update_flac_info(new_destination_directory)
+
+    create_bag(new_destination_directory)
+    check_json_exists(new_destination_directory)
+    check_pm_em_pairs(new_destination_directory)
+
+    iso_migrations = check_iso_migrations(new_destination_directory)
+    if iso_migrations:
+        print("The following directories appear to be ISO migrations without Edit Master folders:")
+        for iso_migration in iso_migrations:
+            print(f"  {iso_migration}")
+        print()
 
 
 if __name__ == '__main__':
