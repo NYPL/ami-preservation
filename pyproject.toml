@@ -10,19 +10,89 @@ authors = [
 ]
 description = "NYPL AMI Preservation scripts and tools."
 readme = "README.md"
-requires-python = ">=3.10"  # Based on your __pycache__ file
-license = { text = "MIT" } 
+requires-python = ">=3.10"
+license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License", 
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
-#
+# ---------------------------------------------------------------
+# COMMAND-LINE SCRIPTS
+# ---------------------------------------------------------------
+[project.scripts]
+ami-collections-digitization-reporter = "ami_scripts.ami_collections_digitization_reporter:main"
+ami-file-sync = "ami_scripts.ami_file_sync:main"
+ami-record-exporter-and-analyzer = "ami_scripts.ami_record_exporter_and_analyzer:main"
+ami-single-collection-processor = "ami_scripts.ami_single_collection_processor:main"
+append-eoy-report-intro = "ami_scripts.append_eoy_report_intro:main"
+audio-concat-and-bag = "ami_scripts.audio_concat_and_bag:main"
+audio-duration-diff = "ami_scripts.audio_duration_diff:main"
+audio-processing = "ami_scripts.audio_processing:main"
+audio-to-mp4-converter = "ami_scripts.audio_to_mp4_converter:main"
+cd-processing = "ami_scripts.cd_processing:main"
+check-fm-media-records = "ami_scripts.check_fm_media_records:main"
+clean-spec-csv-to-excel = "ami_scripts.clean_spec_csv_to_excel:main"
+compare-aws-eavie = "ami_scripts.compare_aws_eavie:main"
+copy-from-s3 = "ami_scripts.copy_from_s3:main"
+copy-to-s3 = "ami_scripts.copy_to_s3:main"
+cover-video-lines = "ami_scripts.cover_video_lines:main"
+create-media-json = "ami_scripts.create_media_json:main"
+create-object-bags = "ami_scripts.create_object_bags:main"
+digitization-performance-tracker = "ami_scripts.digitization_performance_tracker:main"
+duplicate-filemaker-records = "ami_scripts.duplicate_filemaker_records:main"
+dvd-iso-rip = "ami_scripts.dvd_iso_rip:main"
+export-s3-to-csv = "ami_scripts.export_s3_to_csv:main"
+fetch-and-export-fm-data = "ami_scripts.fetch_and_export_fm_data:main"
+fetch-spec-data = "ami_scripts.fetch_spec_data:main"
+filemaker-to-json-validator = "ami_scripts.filemaker_to_json_validator:main"
+film-processing = "ami_scripts.film_processing:main"
+generate-test-media = "ami_scripts.generate_test_media:main"
+hflip-film-packages = "ami_scripts.hflip_film_packages:main"
+iso-checker = "ami_scripts.iso_checker:main"
+iso-transcoder-cat-mkvmerge = "ami_scripts.iso_transcoder_cat_mkvmerge:main"
+iso-transcoder-makemkv = "ami_scripts.iso_transcoder_makemkv:main"
+json-to-csv = "ami_scripts.json_to_csv:main"
+json-updater = "ami_scripts.json_updater:main"
+json-validator = "ami_scripts.json_validator:main"
+make-anamorphic-scs = "ami_scripts.make_anamorphic_scs:main"
+markdown-linter = "ami_scripts.markdown_linter:main"
+media-metrics-aggregator = "ami_scripts.media_metrics_aggregator:main"
+mediaconch-checker = "ami_scripts.mediaconch_checker:main"
+mediaconch-policy-comparison = "ami_scripts.mediaconch_policy_comparison:main"
+mediaconch-policy-rule-updater = "ami_scripts.mediaconch_policy_rule_updater:main"
+mediainfo-extractor = "ami_scripts.mediainfo_extractor:main"
+migrated-media-file-checker = "ami_scripts.migrated_media_file_checker:main"
+migration-status-reporter = "ami_scripts.migration_status_reporter:main"
+mkv-concatenator = "ami_scripts.mkv_concatenator:main"
+mkv-conformance-checker = "ami_scripts.mkv_conformance_checker:main"
+prepend-title-cards = "ami_scripts.prepend_title_cards:main"
+prsv-download = "ami_scripts.prsv_download:main"
+prsv-list-ids = "ami_scripts.prsv_list_ids:main"
+qc-scope-visualizer = "ami_scripts.qc_scope_visualizer:main"
+rawcooked-check-mkv = "ami_scripts.rawcooked_check_mkv:main"
+remake-servicecopy-bags = "ami_scripts.remake_servicecopy_bags:main"
+rsync-and-organize-json = "ami_scripts.rsync_and_organize_json:main"
+rsync-validator = "ami_scripts.rsync_validator:main"
+scsb-batch-availability = "ami_scripts.scsb_batch_availability:main"
+sox-trim-loudnorm = "ami_scripts.sox_trim_loudnorm:main"
+spec-csv-summary-to-excel = "ami_scripts.spec_csv_summary_to_excel:main"
+transcode-prores = "ami_scripts.transcode_prores:main"
+trello-card-creator = "ami_scripts.trello_card_creator:main"
+trello-engineer-notifier = "ami_scripts.trello_engineer_notifier:main"
+trello-list-ids = "ami_scripts.trello_list_ids:main"
+trello-qcqueue-mover = "ami_scripts.trello_qcqueue_mover:main"
+trim-and-transcode = "ami_scripts.trim_and_transcode:main"
+unbag-objects = "ami_scripts.unbag_objects:main"
+update-vendor-collection-titles = "ami_scripts.update_vendor_collection_titles:main"
+validate-ami-bags = "ami_scripts.validate_ami_bags:main"
+video-processing = "ami_scripts.video_processing:main"
+video-to-dvd-iso = "ami_scripts.video_to_dvd_iso:main"
+
 # ---------------------------------------------------------------
 # PYTHON PACKAGES
 # ---------------------------------------------------------------
-##
 dependencies = [
     "pandas",
     "openpyxl",
@@ -30,7 +100,7 @@ dependencies = [
     "requests",
     "py-trello",
     "bagit",
-    "lxml",       
+    "lxml",
     "jaydebeapi",
     "tqdm",
     "seaborn",
@@ -41,9 +111,7 @@ dependencies = [
     "PyPDF2",
     "colorama",
     "numpy",
-    "Fraction",
     "chardet"
-
 ]
 
 # This section tells the build tool where to find your package
