@@ -26,7 +26,25 @@ First, install the external command-line tools that the Python scripts rely on.
 
 #### macOS (using [Homebrew](https://brew.sh/))
 
-If you don’t have Homebrew, install it first. Then run the following command in your terminal:
+You have two options for installing system-level tools on macOS.
+
+##### Option 1: Automated Workstation Setup (Recommended)
+
+This repository includes a setup script, `install_amip.sh`, which will configure a new Mac with Homebrew, all required command-line tools, language runtimes (Python, Ruby, Java), and useful GUI applications.
+
+This script is located in the `ami_scripts` directory.
+
+```bash
+# Make sure you have cloned this repository first
+cd ami_scripts
+chmod +x install_amip.sh
+./install_amip.sh
+```
+
+##### Option 2: Manual Installation (Minimal)
+
+If you prefer to install only the minimum required tools, ensure you have [Homebrew](https://brew.sh/) installed, and then run the following command in your terminal:
+
 
 ```bash
 brew install ffmpeg sox mediaconch mkvtoolnix mediainfo
