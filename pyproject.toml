@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nypl-ami-preservation"
+version = "0.1.0"
+authors = [
+  { name="NYPL AMI Preservation", email="amipreservation@nypl.org" },
+]
+description = "NYPL AMI Preservation scripts and tools."
+readme = "README.md"
+requires-python = ">=3.10"  # Based on your __pycache__ file
+license = { text = "MIT" } 
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License", 
+    "Operating System :: OS Independent",
+]
+
+#
+# ---------------------------------------------------------------
+# PYTHON PACKAGES
+# ---------------------------------------------------------------
+##
+dependencies = [
+    "pandas",
+    "openpyxl",
+    "boto3",
+    "requests",
+    "py-trello",
+    "bagit",
+    "lxml",       
+    "jaydebeapi",
+    "tqdm",
+    "seaborn",
+    "xlrd",
+    "pymediainfo",
+    "matplotlib",
+    "python-fmrest",
+    "PyPDF2",
+    "colorama",
+    "numpy",
+    "Fraction",
+    "chardet"
+
+]
+
+# This section tells the build tool where to find your package
+[tool.setuptools.packages.find]
+where = ["."]  # Look for packages in the root directory
+include = ["ami_scripts*"]  # Include the ami_scripts package
+exclude = ["ami_scripts.old_scripts*"]  # Exclude the old_scripts sub-directory
