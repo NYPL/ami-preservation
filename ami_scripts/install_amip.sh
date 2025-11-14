@@ -225,7 +225,7 @@ install_homebrew() {
     fi
 
     # Install Homebrew
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
     
     # Add to profile
     {
@@ -297,7 +297,7 @@ maintain_homebrew
 install_cli_packages() {
     local packages=(
         git coreutils grep jq xmlstarlet tree wget trash
-        p7zip rsync rclone gnu-tar awscli ntfs-3g clamav
+        p7zip rsync rclone gnu-tar awscli clamav
         graphicsmagick ffmpeg mediainfo mpc flac sox exiftool mkvtoolnix mediaconch qcli
         bagit rbenv jenv pyenv openjdk@11
     )
@@ -320,7 +320,8 @@ install_cli_packages() {
             echo " [already installed]"
             ((installed++))
         else
-            if brew install "$pkg" &>>"$LOG_FILE"; then
+            # === CHANGED LINE ===
+            if brew install "$pkg" >>"$LOG_FILE" 2>&1; then
                 echo " [success]"
                 ((installed++))
             else
@@ -371,7 +372,8 @@ install_gui_apps() {
             echo " [already installed]"
             ((installed++))
         else
-            if brew install --cask "$app" &>>"$LOG_FILE"; then
+            # === CHANGED LINE ===
+            if brew install --cask "$app" >>"$LOG_FILE" 2>&1; then
                 echo " [success]"
                 ((installed++))
             else
@@ -563,7 +565,8 @@ install_vscode_extensions() {
         local ext="${extensions[$i]}"
         progress "$((i+1))" "${#extensions[@]}" "Installing $ext"
         
-        if code --install-extension "$ext" --force &>>"$LOG_FILE"; then
+        # === CHANGED LINE ===
+        if code --install-extension "$ext" --force >>"$LOG_FILE" 2>&1; then
             echo " [success]"
             ((installed++))
         else
