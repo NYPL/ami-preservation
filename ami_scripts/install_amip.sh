@@ -115,6 +115,19 @@ fi
 
 check_network
 
+# === NEW BLOCK ===
+# Prompt for sudo password at the beginning and keep the timestamp alive
+info "Checking for administrator (sudo) access..."
+if sudo -v; then
+    # Keep the sudo timestamp alive in the background
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+    success "Sudo access confirmed and timestamp will be kept alive."
+else
+    error "Sudo access failed. Please run this script as an Administrator."
+    exit 1
+fi
+# === END NEW BLOCK ===
+
 if [[ "$DRY_RUN" == true ]]; then
     info "DRY RUN MODE - No changes will be made"
 fi
@@ -225,7 +238,7 @@ install_homebrew() {
     fi
 
     # Install Homebrew
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
     
     # Add to profile
     {
@@ -297,7 +310,7 @@ maintain_homebrew
 install_cli_packages() {
     local packages=(
         git coreutils grep jq xmlstarlet tree wget trash
-        p7zip rsync rclone gnu-tar awscli clamav
+        p7zip rsync rclone gnu-tar awscli ntfs-3g clamav
         graphicsmagick ffmpeg mediainfo mpc flac sox exiftool mkvtoolnix mediaconch qcli
         bagit rbenv jenv pyenv openjdk@11
     )
@@ -320,7 +333,6 @@ install_cli_packages() {
             echo " [already installed]"
             ((installed++))
         else
-            # === CHANGED LINE ===
             if brew install "$pkg" >>"$LOG_FILE" 2>&1; then
                 echo " [success]"
                 ((installed++))
@@ -372,7 +384,6 @@ install_gui_apps() {
             echo " [already installed]"
             ((installed++))
         else
-            # === CHANGED LINE ===
             if brew install --cask "$app" >>"$LOG_FILE" 2>&1; then
                 echo " [success]"
                 ((installed++))
@@ -565,7 +576,6 @@ install_vscode_extensions() {
         local ext="${extensions[$i]}"
         progress "$((i+1))" "${#extensions[@]}" "Installing $ext"
         
-        # === CHANGED LINE ===
         if code --install-extension "$ext" --force >>"$LOG_FILE" 2>&1; then
             echo " [success]"
             ((installed++))
