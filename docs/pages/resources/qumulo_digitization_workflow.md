@@ -68,17 +68,25 @@ As part of the QC process, staff will:
 
 - **Copy service copy files** (e.g., MP4 access derivatives) to the AWS-hosted repository used by the Early Access Viewer (EAVie), enabling internal staff access prior to full preservation ingest.
 
+### 2.4 Post-QC Handoff
+
+Upon successful completion of QC and the EAVie transfer:
+
+- QC Staff will move the project folder from `READY/` to the **`_QCPass/`** directory.
+- This action signals to the Digital Preservation team that the content is approved for final ingest.
+
 ---
 
 ## 3. Preservica Ingest
 
-Once QC is complete, responsibility transfers to the **Digital Preservation team**, specifically the **Digital Repository Coordinator**, for ingest into NYPL’s preservation systems.
+The **Digital Repository Coordinator** will monitor the `_QCPass/` directory at regular intervals to perform preservation actions.
 
 Current responsibilities include:
 
-1. **Copying all packages** to **Amazon Deep Glacier** for short-term redundancy.
-2. **Ingesting all packages** into **Preservica**, NYPL’s digital preservation platform.
-3. **Moving successfully ingested packages** from the `READY/` or `QCPass/` folder into an `INGESTED/` folder within each staff member’s Qumulo directory.
+1.  **Copying all packages** from `_QCPass/` to **Amazon Deep Glacier** for short-term redundancy.
+2.  **Ingesting all packages** into **Preservica**, NYPL’s digital preservation platform.
+3.  **Moving successfully ingested packages** from the `_QCPass/` folder into the `_INGESTED/` folder within the staff member’s directory.
+4.  **Deleting projects** from the `_INGESTED/` directory once Deep Glacier and Preservica ingest are confirmed.
 
 > *Note: Process details and automation scripts for Deep Glacier and Preservica ingest will be documented separately by the Digital Preservation team.*
 
@@ -86,8 +94,8 @@ Current responsibilities include:
 
 ## Roles and Responsibilities
 
-| **Team**                  | **Responsibilities**                                                                 |
+| **Team** | **Responsibilities** |
 |---------------------------|--------------------------------------------------------------------------------------|
 | Media Preservation Engineers | Capture or transfer digitization packages to `READY/`; maintain directory hygiene  |
-| QC Staff                  | Perform QC; log results; copy access files to AWS for EAVie                          |
-| Digital Preservation Team | Copy to Deep Glacier; ingest to Preservica; relocate packages post-ingest           |
+| QC Staff                  | Perform QC; log results; copy access files to AWS; move approved projects to `_QCPass/` |
+| Digital Preservation Team | Monitor `_QCPass/`; copy to Deep Glacier; ingest to Preservica; move to `_INGESTED/` and delete post-verification |
