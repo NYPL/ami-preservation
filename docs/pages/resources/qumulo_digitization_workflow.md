@@ -85,7 +85,7 @@ Current responsibilities include:
 
 1.  **Copying all packages** from `_QCPass/` to **Amazon Deep Glacier** for short-term redundancy.
 2.  **Ingesting all packages** into **Preservica**, NYPL’s digital preservation platform.
-3.  **Moving successfully ingested packages** from the `_QCPass/` folder into the `_INGESTED/` folder within the staff member’s directory.
+3.  **Moving successfully ingested packages** from the `_QCPass/` folder into the `_INGESTED/` folder.
 4.  **Deleting projects** from the `_INGESTED/` directory once Deep Glacier and Preservica ingest are confirmed.
 
 > *Note: Process details and automation scripts for Deep Glacier and Preservica ingest will be documented separately by the Digital Preservation team.*
