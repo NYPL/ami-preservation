@@ -11,6 +11,7 @@ parent: Resources
 When requesting digital AMI assets, you will encounter several file types. The file you need depends entirely on what you plan to do with it.
 
 ### ⚡ The "Cheat Sheet"
+
 | If you need to... | Media Type | Request this file | Extension | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Preview / Stream** | Video & Film | **Service Copy** | `.mp4` | *Standard* |
