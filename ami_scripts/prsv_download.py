@@ -207,40 +207,72 @@ class PreservicaClient:
         return uuids
 
     def download_bitstream(self, co_uuid: str, output_dir: str):
-        """
-        Download the latest-active bitstream for the given ContentObject UUID,
-        printing a progress percentage, into the specified output directory.
-        """
-        os.makedirs(output_dir, exist_ok=True)
+            """
+            Download the latest-active bitstream.
+            If Content-Length is missing, fetch size from metadata XML (deep search).
+            """
+            os.makedirs(output_dir, exist_ok=True)
 
-        path = f"/api/entity/content-objects/{co_uuid}/generations/latest-active/bitstreams/1/content"
-        resp = self.get(path, stream=True)
+            base_path = f"/api/entity/content-objects/{co_uuid}/generations/latest-active/bitstreams/1"
+            content_path = f"{base_path}/content"
 
-        total_bytes = resp.headers.get('Content-Length')
-        total = int(total_bytes) if total_bytes and total_bytes.isdigit() else None
+            # Start the download stream
+            resp = self.get(content_path, stream=True)
 
-        disp = resp.headers.get('Content-Disposition', '')
-        filename = "output.bin"
-        if "filename=" in disp:
-            filename = unquote(disp.split("filename=")[1].strip('"\''))
-        filepath = os.path.join(output_dir, filename)
+            # 1. Try to get size from headers
+            total_bytes = resp.headers.get('Content-Length')
+            total = int(total_bytes) if total_bytes and total_bytes.isdigit() else None
 
-        logging.info("Saving bitstream to %s (%s bytes)", filepath, total or "unknown")
+            # 2. Fallback: Fetch metadata
+            if total is None:
+                logging.info("Content-Length header missing; fetching metadata to find size...")
+                try:
+                    meta_resp = self.get(base_path, headers={"Accept": "application/xml"})
+                    tree = lxml.etree.fromstring(meta_resp.content)
+                    
+                    # Search ANYWHERE in the XML for FileSize or Size
+                    size_nodes = tree.xpath("//*[local-name()='FileSize']/text() | //*[local-name()='Size']/text()")
+                    
+                    if size_nodes:
+                        total = int(size_nodes[0].strip())
+                        logging.info("Found size in metadata: %s bytes", total)
+                    else:
+                        # DEBUG: Print the first 500 chars of XML if we can't find the tag
+                        logging.warning("Could not find <FileSize> tag. XML Start: %s", meta_resp.text[:500])
+                except Exception as e:
+                    logging.warning("Failed to retrieve file size from metadata: %s", e)
 
-        downloaded = 0
-        with open(filepath, 'wb') as f:
-            for chunk in resp.iter_content(chunk_size=8192):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                downloaded += len(chunk)
-                if total:
-                    percent = downloaded / total * 100
-                    print(f"{percent:6.2f}% of {total} downloaded for {filename}", end='\r', flush=True)
-        if total:
-            print()  # newline after progress
+            # Determine filename
+            disp = resp.headers.get('Content-Disposition', '')
+            filename = "output.bin"
+            if "filename=" in disp:
+                filename = unquote(disp.split("filename=")[1].strip('"\''))
+            
+            filepath = os.path.join(output_dir, filename)
 
-        logging.info("Downloaded %s", filepath)
+            if total:
+                logging.info("Saving bitstream to %s (%s bytes)", filepath, total)
+            else:
+                logging.info("Saving bitstream to %s (unknown bytes)", filepath)
+
+            # Download loop
+            downloaded = 0
+            with open(filepath, 'wb') as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if not chunk:
+                        continue
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    
+                    if total:
+                        percent = downloaded / total * 100
+                        sys.stdout.write(f"\r{percent:6.2f}% of {total} downloaded for {filename}")
+                    else:
+                        sys.stdout.write(f"\r{downloaded} bytes downloaded for {filename}")
+                    sys.stdout.flush()
+
+            print() 
+            logging.info("Downloaded %s", filepath)
 
 
 # --- Helpers & CLI -----------------------------------------------------------
