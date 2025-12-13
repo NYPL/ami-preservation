@@ -14,65 +14,103 @@ nav_order: 2
 1. TOC
 {:toc}
 
+## Overview
+This documentation site is built with **Jekyll 4** and uses the **Just the Docs** theme. We use **GitHub Actions** for deployment, which means the site is built automatically in the cloud whenever code is pushed to the `main` branch.
+
+To contribute or preview changes locally, you will need to set up a Ruby environment.
+
 ## Setting up Ruby Environment with rbenv
-If you're working on a project that requires Ruby, using rbenv to manage Ruby versions can help avoid compatibility issues. Follow these steps to set up Ruby 3.1.0 for Jekyll projects:
+We use `rbenv` to manage Ruby versions to avoid conflicts with the system Ruby on macOS. This project currently uses **Ruby 3.2.2**.
 
-### Install rbenv
+### 1. Install rbenv
 
-```brew install rbenv```
+```bash
+brew install rbenv ruby-build
+```
 
-### Initialize rbenv in your Shell
+### 2. Initialize rbenv in your Shell
 
-Add rbenv to your shell to enable automatic Ruby version switching. Append the following lines to ~/.zshrc:
+Add rbenv to your shell to enable automatic Ruby version switching. Append the following lines to your config file (usually `~/.zshrc` on modern Macs):
 
-```eval "$(rbenv init -)"```
+```bash
+echo 'eval "$(rbenv init -)"' >> ~/.zshrc
+```
 
-After editing, restart your terminal or source your .zshrc file to apply the changes:
+After editing, restart your terminal or reload your config:
 
-```source ~/.zshrc```
+```bash
+source ~/.zshrc
+```
 
-### Install Ruby 3.1.0
+### 3. Install Ruby 3.2.2
 
-As of April 2024, Jekyll requires Ruby version 3.1.0 or higher, but not 3.3. Install Ruby 3.1.0 using rbenv:
+Install the required Ruby version:
 
-```rbenv install 3.1.0```
-```rbenv global 3.1.0```
+```bash
+rbenv install 3.2.2
+```
 
-Note: The global command sets the default Ruby version for all terminals. If you only want to set Ruby 3.1.0 for a specific project, use rbenv local 3.1.0 within the project directory.
+Navigate to the project directory. If the repo includes a `.ruby-version` file, rbenv should switch automatically. If not, set it manually:
 
-### Verify Installation
+```bash
+rbenv local 3.2.2
+```
 
-```ruby -v```
+### 4. Verify Installation
 
-You should see Ruby 3.1.0 as the output. If not, revisit the previous steps for potential corrections.
+Check that you are running the correct version:
 
-## Install Dependencies
+```bash
+ruby -v
+```
 
-### Install Jekyll and Bundler
+*Output should be `ruby 3.2.2...`*
 
-```gem install jekyll bundler```
+## Install Project Dependencies
 
-### Set Up Your Project
+### 1. Clone the Repository
 
-If you haven’t already, clone the repository to your desired location:
+If you haven’t already, clone the repository to your local machine:
 
-git clone <https://github.com/NYPL/ami-preservation.git> <optional-local-directory>
+```bash
+git clone https://github.com/NYPL/ami-preservation.git
+```
 
-Navigate to the /docs site folder within your local copy of the repository:
+### 2. Install Dependencies
 
-```cd /path/to/your-project/docs```
+Navigate to the `docs` folder where the site configuration lives:
 
-### Install Project Dependencies
+```bash
+cd ami-preservation/docs
+```
 
-Run the following command to install the necessary Ruby gems specified in your project's Gemfile:
+Install the required software libraries (Gems):
 
-```bundle install```
+```bash
+gem install bundler
+bundle install
+```
 
-## Editing Pages and Testing Site Changes Locally
+## Running the Site Locally
 
-* Edit Markdown files using a text editor
-* Save and commit changes to the repo.
-* Run ```cd /path/to/ami-preservation/docs/```
-* Run ```bundle exec jekyll serve```
-* Open your Web Browser and navigate to [http://localhost:4000](http://localhost:4000)
-* Reload page as needed to view changes in real time.
+You can preview the site on your own computer before pushing changes to GitHub.
+
+1.  Navigate to the docs folder:
+    ```bash
+    cd /path/to/ami-preservation/docs
+    ```
+2.  Start the local server:
+    ```bash
+    bundle exec jekyll serve
+    ```
+3.  Open your web browser and go to:
+    [http://127.0.0.1:4000/ami-preservation/](http://127.0.0.1:4000/ami-preservation/)
+
+*Note: As you edit and save markdown files, the site will auto-regenerate. Refresh your browser to see changes.*
+
+## Deployment (GitHub Actions)
+We do not use the legacy "GitHub Pages" gem anymore. Instead, this repository uses a modern **GitHub Actions** workflow.
+
+* **How to Deploy:** Simply commit and push your changes to the `main` branch.
+* **What happens next:** GitHub will automatically spin up a server, build the site using the configuration in `.github/workflows/deploy.yml`, and publish it to the live URL.
+* **Troubleshooting:** If the live site does not update, check the "Actions" tab in the GitHub repository to see build logs.
