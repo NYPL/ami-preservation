@@ -1,5 +1,18 @@
-source 'https://rubygems.org'
-gem 'github-pages', "~> 225", group: :jekyll_plugins
+source "https://rubygems.org"
 
+# Modern Jekyll 4
+gem "jekyll", "~> 4.3.3"
+
+# Your Theme
 gem "just-the-docs"
-gem "webrick", "~> 1.8"
+
+# Standard Plugins
+group :jekyll_plugins do
+  gem "jekyll-seo-tag"
+  gem "jekyll-sitemap"
+  gem "jekyll-feed"
+  gem "jekyll-include-cache"
+end
+
+# Required for Ruby 3.0+ compatibility
+gem "webrick"
