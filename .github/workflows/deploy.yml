@@ -39,7 +39,7 @@ jobs:
 
       - name: Build with Jekyll
         # We run the build command inside the docs folder
-        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        run: bundle exec jekyll build
         working-directory: './docs'
         env:
           JEKYLL_ENV: production
