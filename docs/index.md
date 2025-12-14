@@ -23,6 +23,9 @@ Scripts referenced in the documentation can be found within [AMI Production Scri
 #### Fran Dougherty, Media Preservation Engineer - Moving Image
 {: .no_toc }
 
+#### Shahed Dowlatshahi, Manager, Audio and Moving Image Preservation
+{: .no_toc }
+
 #### Ryan Marino, Media Preservation Coordinator
 {: .no_toc }
 
