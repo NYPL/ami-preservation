@@ -1,8 +1,9 @@
 ---
 title: AMI File Guide
 layout: default
-nav_order: 10
-parent: Resources
+nav_order: 2
+parent: Workflow Resources
+grand_parent: Resources
 ---
 
 # Quick Guide: Understanding AMI Digital Files

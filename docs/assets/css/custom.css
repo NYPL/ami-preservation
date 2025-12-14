@@ -1,0 +1,10 @@
+html {
+  /* This ensures that when you click a link, it stops "below" your sticky header */
+  scroll-padding-top: 80px; /* Adjust this number if your header is taller/shorter */
+  scroll-behavior: smooth;  /* Optional: Makes the jump look nicer */
+}
+
+/* Fix for specific target elements if the above isn't enough */
+:target {
+  scroll-margin-top: 80px;
+}

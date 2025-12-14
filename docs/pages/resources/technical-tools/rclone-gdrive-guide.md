@@ -1,8 +1,9 @@
 ---
 title: rclone guide
 layout: default
-nav_order: 7
-parent: Resources
+nav_order: 2
+parent: Technical Tools
+grand_parent: Resources
 ---
 
 # Using rclone with Google Drive

@@ -1,17 +1,18 @@
 ---
 title: tmux guide
 layout: default
-nav_order: 8
-parent: Resources
+nav_order: 4
+parent: Technical Tools
+grand_parent: Resources
 ---
 
-# 📌 tmux: Installation & Usage Guide
+# tmux: Installation & Usage Guide
 
 `tmux` (Terminal Multiplexer) is a powerful tool that allows you to manage multiple terminal sessions within a single SSH connection. It ensures long-running tasks continue even if your SSH session disconnects.
 
 ---
 
-## 📥 Installation
+## Installation
 
 ### Linux (Debian/Ubuntu)
 ```bash
@@ -41,7 +42,7 @@ tmux -V
 
 ---
 
-## 🚀 Basic Usage
+## Basic Usage
 
 ### 1. Start a New tmux Session
 ```bash
@@ -81,7 +82,7 @@ tmux kill-session -t my_session
 
 ---
 
-## 🎨 Multi-Window & Pane Management
+## Multi-Window & Pane Management
 
 ### 1. Create a New Window
 Inside tmux, press:
@@ -127,7 +128,7 @@ Ctrl + B, then X
 
 ---
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
 ### 1. "Error Connecting to /tmp/tmux-1000/default"
 Try:
@@ -150,7 +151,7 @@ If not installed, follow the installation steps above.
 
 ---
 
-## 🏆 Advanced Tips
+## Advanced Tips
 
 ### Customize tmux with `.tmux.conf`
 Add the following to `~/.tmux.conf` for a better experience:
@@ -174,7 +175,7 @@ tmux source ~/.tmux.conf
 
 ---
 
-## 📚 Further Reading
+## Further Reading
 
 - [tmux Cheat Sheet](https://tmuxcheatsheet.com/)
 - [tmux GitHub Repo](https://github.com/tmux/tmux)

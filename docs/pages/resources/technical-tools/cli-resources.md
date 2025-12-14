@@ -1,8 +1,9 @@
 ---
-title: Command Line Resources
+title: General Command Line Resources
 layout: default
-nav_order: 3
-parent: Resources
+nav_order: 1
+parent: Technical Tools
+grand_parent: Resources
 
 ---
 # Resources

@@ -1,8 +1,9 @@
 ---
 title: JDBC Troubleshooting 
 layout: default
-nav_order: 6
-parent: Resources
+nav_order: 3
+parent: Computer Setup
+grand_parent: Resources
 ---
 
 # Troubleshooting JDBC Connectivity for FileMaker Databases

@@ -2,8 +2,10 @@
 title: Configuring Environmental Variables for Scripts
 layout: default
 nav_order: 2
-parent: Resources
+parent: Computer Setup
+grand_parent: Resources
 ---
+
 
 # Configuring Environmental Variables for Scripts
 

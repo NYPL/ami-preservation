@@ -1,13 +1,12 @@
 ---
 title: Qumolo workflow
 layout: default
-nav_order: 9
-parent: Resources
+nav_order: 5
+parent: Workflow Resources
+grand_parent: Resources
 ---
 
 # Qumulo-Based Digitization and Preservation Workflow
-
-## Overview
 
 This document outlines the workflow and responsibilities for capturing digitized audio and video files directly to Qumulo working storage (`lpa-qu-cls.nypl.org`), using the `amip` share. The process includes digitization, file handoff, quality control (QC), and transfer to long-term digital preservation systems.
 

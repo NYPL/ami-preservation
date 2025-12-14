@@ -1,3 +1,29 @@
+<style>
+  /* We are using the theme's .btn class, but we need to override some defaults
+     to make it blend into the header until hovered. */
+  #theme-toggle.btn {
+    background-color: transparent; /* Override default gray background */
+    border-color: transparent;     /* Override default border */
+    color: var(--body-text-color); /* Force icon to match current text color normally */
+    
+    /* Ensure vertical alignment and smooth transitions */
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    
+    /* Optional: If you want it even wider than standard, uncomment below: */
+    /* padding-left: 20px; padding-right: 20px; */
+  }
+
+  /* On hover, the .btn class automatically changes the text 'color' to the brand purple/blue.
+     We use 'currentColor' to make the border match whatever that text color becomes. */
+  #theme-toggle.btn:hover {
+    border-color: currentColor;
+    /* Add a very faint background tint just for extra highlight */
+    background-color: rgba(127, 127, 127, 0.05);
+  }
+</style>
+
 <div id="main-header" class="main-header">
   {% if site.search_enabled != false %}
     {% include components/search_header.html %}
@@ -7,7 +33,7 @@
 
   {% include header_custom.html %}
 
-  <button id="theme-toggle" class="btn" aria-label="Toggle Dark Mode" style="margin-left: 10px; background: none; border: none; cursor: pointer; color: var(--body-text-color);">
+  <button id="theme-toggle" class="btn" aria-label="Toggle Dark Mode">
     <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
     </svg>

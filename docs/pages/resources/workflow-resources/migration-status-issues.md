@@ -1,8 +1,9 @@
 ---
 title: Migration Status and Issues (SPEC) 
 layout: default
-nav_order: 5
-parent: Resources
+nav_order: 3
+parent: Workflow Resources
+grand_parent: Resources
 ---
 
 # Updating Migration Status and Adding Issues in SPEC

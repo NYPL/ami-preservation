@@ -1,8 +1,9 @@
 ---
 title: SSH Optimization Guide
 layout: default
-nav_order: 10
-parent: Resources
+nav_order: 3
+parent: Technical Tools
+grand_parent: Resources
 ---
 
 # SSH Workflow Optimization Guide

@@ -2,8 +2,10 @@
 title: macOS Terminal Setup
 layout: default
 nav_order: 1
-parent: Resources
+parent: Computer Setup
+grand_parent: Resources
 ---
+
 # Basic Setup Instructions for macOS Terminal Environment
 
 This document provides troubleshooting steps for common problems encountered with terminal commands, software installations, and other shell-related issues. Instructions are centered around setting up the `zsh` terminal environment, the default shell for macOS Catalina and subsequent versions.
