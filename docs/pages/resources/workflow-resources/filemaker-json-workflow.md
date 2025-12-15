@@ -27,13 +27,13 @@ This document outlines the Python-based workflow used by the NYPL AMI Preservati
 
 To use the FileMaker integration features described below, your environment must be properly configured to support JDBC. Please review and follow the setup instructions here:
 
-👉 [Configuring Environmental Variables for Scripts](https://nypl.github.io/ami-preservation/pages/resources/configuring-env-variables.html)
+👉 [Configuring Environmental Variables for Scripts](https://nypl.github.io/ami-preservation/pages/resources/computer-setup/configuring-env-variables.html)
 
 This includes configuring your `.zshrc` and installing necessary Python packages like `jaydebeapi`.
 
 For troubleshooting JDBC connectivity, including testing port access and restarting the FileMaker server if needed, see:
 
-👉 [JDBC Connectivity Troubleshooting](https://nypl.github.io/ami-preservation/pages/resources/jdbc-connectivity-troubleshooting.html)
+👉 [JDBC Connectivity Troubleshooting](https://nypl.github.io/ami-preservation/pages/resources/computer-setup/jdbc-connectivity-troubleshooting.html)
 
 To confirm basic connectivity, use the [`test_jdbc.py`](https://github.com/NYPL/ami-preservation/tree/main/ami_scripts/test_jdbc.py) script to quickly test both production and development servers before running the main workflow.
 
