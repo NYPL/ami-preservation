@@ -56,4 +56,4 @@ The Lab uses a Python-based toolchain to automate the following:
 - Object packaging and BagIt creation
 
 👉 For a complete walkthrough of this workflow, see:  
-[**FileMaker Integration and JSON Metadata Workflow**](https://nypl.github.io/ami-preservation/pages/workflows/filemaker-json-workflow.html)
+[**FileMaker Integration and JSON Metadata Workflow**](https://nypl.github.io/ami-preservation/pages/workflow-resources/filemaker-json-workflow.html)

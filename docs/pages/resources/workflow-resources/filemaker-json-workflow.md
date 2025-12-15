@@ -1,8 +1,9 @@
 ---
 title: FileMaker and JSON Workflow
 layout: default
-nav_order: 1
-parent: Metadata
+nav_order: 6
+parent: Workflow Resources
+grand_parent: Resources
 ---
 
 # FileMaker Integration and JSON Metadata Workflow
@@ -11,7 +12,7 @@ parent: Metadata
 This document outlines the Python-based workflow used by the NYPL AMI Preservation Lab for integrating FileMaker data, importing technical metadata, creating and validating JSON files, and duplicating records. 
 
 - [FileMaker Integration and JSON Metadata Workflow](#filemaker-integration-and-json-metadata-workflow)
-  - [📌 Before You Begin: JDBC Setup Required](#-before-you-begin-jdbc-setup-required)
+  - [Before You Begin: JDBC Setup Required](#-before-you-begin-jdbc-setup-required)
   - [1. Digitize Preservation Master (PM) Files](#1-digitize-preservation-master-pm-files)
   - [2. Create Edit Master Files (Audio Only)](#2-create-edit-master-files-audio-only)
   - [3. Process Project Directory to Generate Derivatives](#3-process-project-directory-to-generate-derivatives)
@@ -22,7 +23,7 @@ This document outlines the Python-based workflow used by the NYPL AMI Preservati
 
 ---
 
-## 📌 Before You Begin: JDBC Setup Required
+## Before You Begin: JDBC Setup Required
 
 To use the FileMaker integration features described below, your environment must be properly configured to support JDBC. Please review and follow the setup instructions here:
 
