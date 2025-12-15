@@ -234,7 +234,9 @@ class ami_md_constants:
         "extension": "extension",
         "audioCodec": "audio_codec",
         "durationHuman": "duration_human",
-        "durationMilli.measure": "duration_milli"
+        "durationMilli.measure": "duration_milli",
+        "fileSize.measure": "size",
+        "dateCreated": "date_created"
     }
     JSON_TO_VIDEO_FILE_MAPPING = {
         "filename": "base_filename",
@@ -242,7 +244,9 @@ class ami_md_constants:
         "audioCodec": "audio_codec",
         "videoCodec": "video_codec",
         "durationHuman": "duration_human",
-        "durationMilli.measure": "duration_milli"
+        "durationMilli.measure": "duration_milli",
+        "fileSize.measure": "size",
+        "dateCreated": "date_created"
     }
     JSON_TO_VIDEOOPTICALPM_FILE_MAPPING = {
         "filename": "base_filename",
@@ -250,7 +254,9 @@ class ami_md_constants:
         "audioCodec": "audio_codec",
         "videoCodec": "video_codec",
         "durationHuman": "duration_human",
-        "durationMilli.measure": "duration_milli"
+        "durationMilli.measure": "duration_milli",
+        "fileSize.measure": "size",
+        "dateCreated": "date_created"
     }
 
 
@@ -782,51 +788,52 @@ class ami_json:
         return True
 
     def check_md_value(self, field: str, mapped_field: str, separator: str = '.') -> bool:
-        """
-        Compare the JSON's 'technical.[field]' to the media_file's corresponding attribute.
-        Special handling for dateCreated, audioCodec, and durations.
-        
-        :param field: The key in 'technical' (which may have dot segments).
-        :param mapped_field: The corresponding attribute in ami_file.
-        :param separator: The dot separator.
-        :raises AMIJSONError: If values do not match beyond fuzzy tolerance.
-        :return: True if matched or acceptable within tolerance.
-        """
-        try:
-            file_value = getattr(self.media_file, mapped_field)
-        except AttributeError:
-            self.raise_jsonerror(f"File missing expected attribute: {mapped_field}")
+            """
+            Compare the JSON's 'technical.[field]' to the media_file's corresponding attribute.
+            Special handling for dateCreated, audioCodec, and durations.
+            
+            :param field: The key in 'technical' (which may have dot segments).
+            :param mapped_field: The corresponding attribute in ami_file.
+            :param separator: The dot separator.
+            :raises AMIJSONError: If values do not match beyond fuzzy tolerance.
+            :return: True if matched or acceptable within tolerance.
+            """
+            try:
+                file_value = getattr(self.media_file, mapped_field)
+            except AttributeError:
+                self.raise_jsonerror(f"File missing expected attribute: {mapped_field}")
 
-        md_value = self.dict["technical"]
-        if separator in field:
-            parts = field.split(separator)
-            for p in parts:
-                md_value = md_value[p]
-        else:
-            md_value = md_value[field]
+            md_value = self.dict["technical"]
+            if separator in field:
+                parts = field.split(separator)
+                for p in parts:
+                    md_value = md_value[p]
+            else:
+                md_value = md_value[field]
 
-        if md_value != file_value:
-            if field == 'dateCreated':
-                LOGGER.warning(f"{field} mismatch: JSON {md_value}, file {file_value}")
-            elif field == 'audioCodec':
-                if md_value == 'AAC' and file_value == 'AAC LC':
-                    pass  # Acceptable difference
+            if md_value != file_value:
+                if field == 'dateCreated':
+                    # CHANGED: Raise error instead of just logging, so it flags the bag
+                    self.raise_jsonerror(f"{field} mismatch: JSON {md_value} != file {file_value}")
+                elif field == 'audioCodec':
+                    if md_value == 'AAC' and file_value == 'AAC LC':
+                        pass  # Acceptable difference
+                    else:
+                        self.raise_jsonerror(f"Incorrect value for {field}. JSON {md_value} != file {file_value}")
+                elif field == 'durationHuman':
+                    fuzz = 1
+                    md_ms = int(md_value.split('.')[-1])
+                    file_ms = int(file_value.split('.')[-1])
+                    if not fuzzy_check_md_value(md_ms, file_ms, fuzz):
+                        self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
+                elif field == 'durationMilli.measure':
+                    fuzz = 1
+                    if not fuzzy_check_md_value(md_value, file_value, fuzz):
+                        self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
                 else:
                     self.raise_jsonerror(f"Incorrect value for {field}. JSON {md_value} != file {file_value}")
-            elif field == 'durationHuman':
-                fuzz = 1
-                md_ms = int(md_value.split('.')[-1])
-                file_ms = int(file_value.split('.')[-1])
-                if not fuzzy_check_md_value(md_ms, file_ms, fuzz):
-                    self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
-            elif field == 'durationMilli.measure':
-                fuzz = 1
-                if not fuzzy_check_md_value(md_value, file_value, fuzz):
-                    self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
-            else:
-                self.raise_jsonerror(f"Incorrect value for {field}. JSON {md_value} != file {file_value}")
 
-        return True
+            return True
 
 
     def check_techfn(self) -> bool:
