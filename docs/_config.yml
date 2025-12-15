@@ -5,7 +5,7 @@ theme: just-the-docs
 search_enabled: true
 search_tokenizer_separator: /[\s/]+/
 heading_anchors: true
-color_scheme: "dark"
+color_scheme: "light"
 
 ga_tracking: G-Q1S5B27X4S
 ga_tracking_anonymize_ip: true
