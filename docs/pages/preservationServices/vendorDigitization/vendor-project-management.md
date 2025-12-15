@@ -22,13 +22,10 @@ grand_parent: Preservation Services
   * Vendor Project Worksheet & Metadata Inventory
   * Shipping Document
 
-## Project Preparation and Logistics
-* [Vendor Workflow](https://nypl.github.io/ami-preservation/pages/contractDigitization/vendor-workflow.html)
-* [Shipping](https://nypl.github.io/ami-preservation/pages/shipping.html)
 
 ## Project tracking
-  # [PAMI Database](pami-database)
-  * The PAMI Database is used to establish project IDs, track deliverables, and generate statistics and metadata for AMI digitization projects.
+  # [AMI Database)
+  * The AMI Database is used to establish project IDs, track deliverables, and generate statistics and metadata for AMI digitization projects.
 
   ## Trello
   * A Trello card is created for each project on the [MPS Outsourced Digitization](https://trello.com/b/F57dfPzd/nypl-ami-vendor-labs) board.
@@ -77,11 +74,11 @@ See [Quality Control workflow documentation](quality-control)
 ## Capture Issue Review
 * Review vendor's list of capture issues and add the items and notes to the 'captureIssues' tab in the project sheet.
 * Update the SPEC item record for each item on the capture issues list to include an issue and current migration status.
-  * [Updating Migration Status and Adding Issues in SPEC](https://nypl.github.io/ami-preservation/pages/preservationServices/dnc_doc.html)
+  * [Updating Migration Status and Adding Issues in SPEC](https://nypl.github.io/ami-preservation/pages/resources/workflow-resources/migration-status-issues.html)
 
 ## Project Close-Out
 ### Project Summaries
-Project summaries are created by compiling mediainfo manifests and capture issue reports.
+Project summaries are created by compiling MediaInfo manifests and capture issue reports.
 
 
 
