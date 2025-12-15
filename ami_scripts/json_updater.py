@@ -34,7 +34,7 @@ def get_media_files(source_directory):
     json_files = []
     
     for item in source_directory.glob('**/*'):
-        if item.is_file() and item.suffix in ('.flac', '.mp4', '.mkv', '.wav', '.iso'):
+        if item.is_file() and item.suffix in ('.flac', '.mp4', '.mkv', '.wav', '.iso', '.mov'):
             media_files.append(item)
         elif item.is_file() and item.suffix == '.json':
             json_files.append(item)
