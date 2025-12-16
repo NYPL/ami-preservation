@@ -115,7 +115,6 @@ fi
 
 check_network
 
-# === NEW BLOCK ===
 # Prompt for sudo password at the beginning and keep the timestamp alive
 info "Checking for administrator (sudo) access..."
 if sudo -v; then
@@ -126,14 +125,13 @@ else
     error "Sudo access failed. Please run this script as an Administrator."
     exit 1
 fi
-# === END NEW BLOCK ===
 
 if [[ "$DRY_RUN" == true ]]; then
     info "DRY RUN MODE - No changes will be made"
 fi
 
 # ----------------------------------
-# 1. Xcode Command-Line Tools (Enhanced)
+# 1. Xcode Command-Line Tools
 # ----------------------------------
 install_xcode_tools() {
     if xcode-select -p &>/dev/null; then
@@ -148,7 +146,6 @@ install_xcode_tools() {
         return 0
     fi
 
-    # Trigger installation
     xcode-select --install 2>&1 | tee -a "$LOG_FILE" || true
     
     info "A dialog should appear. Please complete the installation."
@@ -204,7 +201,6 @@ if [[ -n "$ENV_FILE" ]]; then
     
     if [[ "$DRY_RUN" == false ]]; then
         while IFS= read -r line; do
-            # Skip comments and empty lines
             [[ "$line" =~ ^\s*# ]] && continue
             [[ -z "${line// }" ]] && continue
             
@@ -222,7 +218,7 @@ if [[ -n "$ENV_FILE" ]]; then
 fi
 
 # ----------------------------------
-# 4. Homebrew installation with verification
+# 4. Homebrew installation
 # ----------------------------------
 install_homebrew() {
     if command -v brew &>/dev/null; then
@@ -237,20 +233,16 @@ install_homebrew() {
         return 0
     fi
 
-    # Install Homebrew
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
     
-    # Add to profile
     {
         echo
         echo '# Homebrew environment'
         echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
     } >> "$PROFILE"
     
-    # Source for current session
     eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
     
-    # Verify installation
     if ! verify_installation brew "Homebrew"; then
         error "Homebrew installation failed"
         exit 1
@@ -305,12 +297,13 @@ maintain_homebrew() {
 maintain_homebrew
 
 # ----------------------------------
-# 7. CLI packages installation with progress
+# 7. CLI packages installation
 # ----------------------------------
 install_cli_packages() {
+    # Added npm to this list to support ajv installation
     local packages=(
         git coreutils grep jq xmlstarlet tree wget trash
-        p7zip rsync rclone gnu-tar awscli clamav
+        p7zip rsync rclone gnu-tar awscli clamav npm
         graphicsmagick ffmpeg mediainfo mpc flac sox exiftool mkvtoolnix mediaconch qcli
         bagit rbenv jenv pyenv openjdk@11
     )
@@ -356,7 +349,38 @@ install_cli_packages() {
 install_cli_packages
 
 # ----------------------------------
-# 8. GUI applications (with skip option)
+# 8. Node.js Utilities (ajv-cli)
+# ----------------------------------
+install_node_utils() {
+    info "Installing Node.js utilities (ajv-cli)..."
+
+    if [[ "$DRY_RUN" == true ]]; then
+        info "[DRY RUN] Would install ajv-cli via npm"
+        return 0
+    fi
+
+    # Ensure npm is available (installed in step 7)
+    if ! command -v npm &>/dev/null; then
+        error "npm is not installed. Cannot install ajv-cli."
+        return 1
+    fi
+
+    if command -v ajv &>/dev/null; then
+        success "ajv-cli already installed"
+    else
+        info "Running 'npm install -g ajv-cli'..."
+        if npm install -g ajv-cli >>"$LOG_FILE" 2>&1; then
+            success "ajv-cli installed successfully"
+        else
+            warn "Failed to install ajv-cli. Check logs."
+        fi
+    fi
+}
+
+install_node_utils
+
+# ----------------------------------
+# 9. GUI applications
 # ----------------------------------
 install_gui_apps() {
     if [[ "$SKIP_GUI" == true ]]; then
@@ -406,7 +430,7 @@ install_gui_apps() {
 install_gui_apps
 
 # ----------------------------------
-# 9. Mac App Store CLI
+# 10. Mac App Store CLI
 # ----------------------------------
 install_mas() {
     info "Installing Mac App Store CLI..."
@@ -427,7 +451,7 @@ install_mas() {
 install_mas
 
 # ----------------------------------
-# 10. Shell profile setup for toolchains
+# 11. Shell profile setup for toolchains
 # ----------------------------------
 setup_toolchain_profile() {
     info "Setting up toolchain environment in shell profile..."
@@ -472,7 +496,7 @@ EOF
 setup_toolchain_profile
 
 # ----------------------------------
-# 11. Source profile with error handling
+# 12. Source profile
 # ----------------------------------
 reload_profile() {
     info "Reloading shell profile..."
@@ -493,7 +517,7 @@ reload_profile() {
 reload_profile
 
 # ----------------------------------
-# 12. Language runtime installation with verification
+# 13. Language runtime installation
 # ----------------------------------
 install_language_runtimes() {
     info "Installing language runtimes..."
@@ -534,7 +558,7 @@ install_language_runtimes() {
 install_language_runtimes
 
 # ----------------------------------
-# 13. VS Code extensions with error handling
+# 14. VS Code extensions
 # ----------------------------------
 install_vscode_extensions() {
     if [[ "$SKIP_GUI" == true ]]; then
@@ -596,7 +620,35 @@ install_vscode_extensions() {
 install_vscode_extensions
 
 # ----------------------------------
-# 14. Post-installation verification
+# 15. System Preferences (DS_Store)
+# ----------------------------------
+configure_system_prefs() {
+    info "Configuring macOS System Preferences..."
+    info "Disabling .DS_Store file creation on network volumes..."
+
+    if [[ "$DRY_RUN" == true ]]; then
+        info "[DRY RUN] Would set DSDontWriteNetworkStores to true"
+        return 0
+    fi
+
+    # Apply setting
+    defaults write com.apple.desktopservices DSDontWriteNetworkStores -boolean true
+    
+    # Verify setting
+    local ds_setting
+    ds_setting=$(defaults read com.apple.desktopservices DSDontWriteNetworkStores 2>/dev/null || echo "false")
+    
+    if [[ "$ds_setting" == "1" ]] || [[ "$ds_setting" == "true" ]]; then
+        success "Verified: .DS_Store generation on network drives is disabled"
+    else
+        warn "Failed to verify .DS_Store setting. Current value: $ds_setting"
+    fi
+}
+
+configure_system_prefs
+
+# ----------------------------------
+# 16. Post-installation verification
 # ----------------------------------
 verify_critical_tools() {
     info "Verifying critical AV preservation tools..."
@@ -608,6 +660,7 @@ verify_critical_tools() {
         "exiftool:ExifTool"
         "qcli:QCTools CLI"
         "mediaconch:MediaConch"
+        "ajv:AJV CLI" 
     )
     
     local verified=0
@@ -635,7 +688,7 @@ verify_critical_tools() {
 verify_critical_tools
 
 # ----------------------------------
-# 15. Installation summary
+# 17. Installation summary
 # ----------------------------------
 print_summary() {
     local end_time=$(date '+%Y-%m-%d %H:%M:%S')
