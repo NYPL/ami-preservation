@@ -5,27 +5,25 @@ import re
 import subprocess
 import json
 
-
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Manage files from an AWS S3 bucket.')
     parser.add_argument('-n', '--numbers', required=True, help='CSV file with numbers.')
     parser.add_argument('-i', '--input', required=True, help='Input CSV file to search in.')
     parser.add_argument('-d', '--destination', required=True, help='Local destination path.')
     parser.add_argument('-b', '--bucket', required=True, help='AWS S3 bucket name.')
-    parser.add_argument('-e', '--extension', required=True, choices=['mkv', 'mov', 'mp4', 'flac', 'wav'], help='File extension to filter by.')
-    parser.add_argument('-m', '--mode', required=True, choices=['copy', 'restore'], help='Operation mode: "copy" for immediate copy, "restore" to initiate a Glacier restore process.')
+    # Added Profile Argument
+    parser.add_argument('-p', '--profile', required=True, help='The AWS SSO profile name to use.')
+    parser.add_argument('-e', '--extension', required=True, choices=['mkv', 'mov', 'mp4', 'flac', 'wav','dv'], help='File extension to filter by.')
+    parser.add_argument('-m', '--mode', required=True, choices=['copy', 'restore', 'status'], help='Operation mode.')
     return parser.parse_args()
-
 
 def extract_id_from_filename(filename):
     match = re.search(r'_(\d{6})_', filename)
     return match.group(1) if match else None
 
-
 def read_numbers(file_path):
     with open(file_path, 'r') as file:
         return [str(int(row[0])) for row in csv.reader(file) if row]
-
 
 def find_files(input_csv, numbers_list, extension):
     files_to_copy = []
@@ -46,8 +44,7 @@ def find_files(input_csv, numbers_list, extension):
 
     return files_to_copy
 
-
-def initiate_restores(files_to_copy, bucket):
+def initiate_restores(files_to_copy, bucket, profile):
     restore_count = 0
     unique_objects = set()
 
@@ -56,7 +53,8 @@ def initiate_restores(files_to_copy, bucket):
         if file_id:
             unique_objects.add(file_id)
 
-        restore_command = f'aws s3api restore-object --bucket {bucket} --key {file_path} --restore-request Days=5'
+        # Added --profile to command
+        restore_command = f'aws s3api restore-object --bucket {bucket} --key {file_path} --restore-request Days=5 --profile {profile}'
         print(f"Initiating restore: {restore_command}")
         result = subprocess.run(restore_command, shell=True)
         if result.returncode == 0:
@@ -66,10 +64,10 @@ def initiate_restores(files_to_copy, bucket):
 
     print(f"Restore initiated for {restore_count} files, representing {len(unique_objects)} unique objects.")
 
-
-def check_restore_status(files_to_copy, bucket):
+def check_restore_status(files_to_copy, bucket, profile):
     for file_path in files_to_copy:
-        head_command = f'aws s3api head-object --bucket {bucket} --key {file_path}'
+        # Added --profile to command
+        head_command = f'aws s3api head-object --bucket {bucket} --key {file_path} --profile {profile}'
         process = subprocess.run(head_command, shell=True, capture_output=True, text=True)
         
         if process.returncode == 0:
@@ -84,8 +82,7 @@ def check_restore_status(files_to_copy, bucket):
         else:
             print(f"Error checking restore status for: {file_path}")
 
-
-def copy_files(files_to_copy, destination, bucket):
+def copy_files(files_to_copy, destination, bucket, profile):
     copied_count = 0
     unique_objects = set()
 
@@ -94,7 +91,8 @@ def copy_files(files_to_copy, destination, bucket):
         if file_id:
             unique_objects.add(file_id)
 
-        copy_command = f'aws s3 cp s3://{bucket}/{file_path} {destination}'
+        # Added --profile to command
+        copy_command = f'aws s3 cp s3://{bucket}/{file_path} {destination} --profile {profile}'
         print(f"Executing: {copy_command}")
         result = subprocess.run(copy_command, shell=True)
         if result.returncode == 0:
@@ -110,9 +108,11 @@ def main():
     files_to_copy = find_files(args.input, numbers_list, args.extension)
     
     if args.mode == 'restore':
-        initiate_restores(files_to_copy, args.bucket)
+        initiate_restores(files_to_copy, args.bucket, args.profile)
     elif args.mode == 'copy':
-        copy_files(files_to_copy, args.destination, args.bucket)
+        copy_files(files_to_copy, args.destination, args.bucket, args.profile)
+    elif args.mode == 'status':
+        check_restore_status(files_to_copy, args.bucket, args.profile)
 
 if __name__ == '__main__':
     main()
