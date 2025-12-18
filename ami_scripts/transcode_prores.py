@@ -21,7 +21,7 @@ def convert_to_prores(input_path, output_path):
         "-c:v", "prores_ks",
         "-profile:v", "3",  # ProRes HQ
         "-c:a", "pcm_s24le", # 24-bit PCM
-        "-ar", "48000"
+        "-ar", "48000",
         str(output_path)
     ]
     
