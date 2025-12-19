@@ -380,6 +380,11 @@ class ami_file:
             os.path.getctime(self.filepath)
         ).strftime('%Y-%m-%d')
 
+        # Capture the modification date explicitly so we can access it later
+        self.date_filesys_modified = datetime.datetime.fromtimestamp(
+            os.path.getmtime(self.filepath)
+        ).strftime('%Y-%m-%d')
+
         if md_track.encoded_date:
             self.date_created = parse_date(md_track.encoded_date)
         elif md_track.file_last_modification_date:
@@ -813,8 +818,21 @@ class ami_json:
 
             if md_value != file_value:
                 if field == 'dateCreated':
-                    # CHANGED: Raise error instead of just logging, so it flags the bag
-                    self.raise_jsonerror(f"{field} mismatch: JSON {md_value} != file {file_value}")
+                    # === FIX START: Check Filesystem Date Fallback ===
+                    # If the embedded date (file_value) doesn't match, check the filesystem date.
+                    # This handles cases where ISO/DV files have default dates (e.g. 2000-01-01)
+                    # Your existing line
+                    fs_date = getattr(self.media_file, 'date_filesys_modified', None) # or whatever you are testing                    
+                    if fs_date and md_value == fs_date:
+                        # Pass silently if it matches filesystem date
+                        pass
+                    else:
+                        self.raise_jsonerror(
+                            f"{field} mismatch: JSON {md_value} != embedded {file_value} "
+                            f"and != filesystem {fs_date}"
+                        )
+                    # === FIX END ===
+
                 elif field == 'audioCodec':
                     if md_value == 'AAC' and file_value == 'AAC LC':
                         pass  # Acceptable difference
@@ -822,19 +840,26 @@ class ami_json:
                         self.raise_jsonerror(f"Incorrect value for {field}. JSON {md_value} != file {file_value}")
                 elif field == 'durationHuman':
                     fuzz = 1
-                    md_ms = int(md_value.split('.')[-1])
-                    file_ms = int(file_value.split('.')[-1])
-                    if not fuzzy_check_md_value(md_ms, file_ms, fuzz):
-                        self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
+                    try:
+                        md_ms = int(md_value.split('.')[-1])
+                        file_ms = int(file_value.split('.')[-1])
+                        if not fuzzy_check_md_value(md_ms, file_ms, fuzz):
+                            self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
+                    except (ValueError, IndexError):
+                        self.raise_jsonerror(f"Could not parse duration for comparison: {md_value} vs {file_value}")
+
                 elif field == 'durationMilli.measure':
                     fuzz = 1
                     if not fuzzy_check_md_value(md_value, file_value, fuzz):
                         self.raise_jsonerror(f"Duration mismatch (±{fuzz} ms): {md_value} vs {file_value}")
+                elif field == 'fileSize.measure':
+                    # Exact match required for file size
+                    if md_value != file_value:
+                        self.raise_jsonerror(f"Incorrect value for {field}. JSON {md_value} != file {file_value}")
                 else:
                     self.raise_jsonerror(f"Incorrect value for {field}. JSON {md_value} != file {file_value}")
 
             return True
-
 
     def check_techfn(self) -> bool:
         """
