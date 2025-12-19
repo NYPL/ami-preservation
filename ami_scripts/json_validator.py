@@ -37,7 +37,7 @@ def get_info(source_directory, metadata_directory):
     for root, dirs, files in os.walk(source_directory):
         for file in files:
             if file.endswith('.json'):
-                if file.startswith('premis-events'):
+                if file.startswith(('premis-events', '.')):
                     pass
                 else:
                     item_path = os.path.join(root, file)
