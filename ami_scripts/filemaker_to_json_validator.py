@@ -385,40 +385,42 @@ class DataTransformer:
         return self._cleanup_nested_structure(nested)
     
     def _apply_field_transformations(self, col: str, val: Any, media_type: str, 
-                                   is_iso: bool, obj_type: str, record: Dict[str, Any]) -> Any:
-        """Apply all field-specific transformations."""
-        # Drop asset.fileExt entirely
-        if col == 'asset.fileExt':
-            return None
-        
-        # Skip None/empty values early, except for special cases
-        if val is None or val == '':
-            # ISO capacity field override
-            if is_iso and col == 'source.physicalDescription.dataCapacity.measure':
-                return 'unknown'
+                                    is_iso: bool, obj_type: str, record: Dict[str, Any]) -> Any:
+            """Apply all field-specific transformations."""
+            # Drop asset.fileExt entirely
+            if col == 'asset.fileExt':
+                return None
             
-            # Grooved disc/cylinder specific defaults for None values
-            if obj_type in ('audio grooved disc', 'audio grooved cylinder'):
-                # eqRolloff: measure key + check unit == 'dB'
-                if col == 'digitizationProcess.phonoPreamp.eqRolloff.measure':
-                    unit = record.get('digitizationProcess.phonoPreamp.eqRolloff.unit')
-                    if unit == 'dB':
-                        return 0
-                # eqTurnover: measure key + check unit == 'Hz'
-                elif col == 'digitizationProcess.phonoPreamp.eqTurnover.measure':
-                    unit = record.get('digitizationProcess.phonoPreamp.eqTurnover.unit')
-                    if unit == 'Hz':
-                        return 0
+            # Skip None/empty values early, except for special cases
+            if val is None or val == '':
+                # ISO capacity field override
+                # CHANGE: Check if it is an ISO OR if the object type is video optical disc
+                if col == 'source.physicalDescription.dataCapacity.measure':
+                    if is_iso or obj_type == 'video optical disc':
+                        return 'unknown'
+                
+                # Grooved disc/cylinder specific defaults for None values
+                if obj_type in ('audio grooved disc', 'audio grooved cylinder'):
+                    # eqRolloff: measure key + check unit == 'dB'
+                    if col == 'digitizationProcess.phonoPreamp.eqRolloff.measure':
+                        unit = record.get('digitizationProcess.phonoPreamp.eqRolloff.unit')
+                        if unit == 'dB':
+                            return 0
+                    # eqTurnover: measure key + check unit == 'Hz'
+                    elif col == 'digitizationProcess.phonoPreamp.eqTurnover.measure':
+                        unit = record.get('digitizationProcess.phonoPreamp.eqTurnover.unit')
+                        if unit == 'Hz':
+                            return 0
+                
+                return None
             
-            return None
-        
-        # Type conversions (only for non-None values)
-        if col in FieldRules.NUMERIC_MEASURE_FIELDS:
-            val = self.convert_mixed_types(val)
-        elif col in FieldRules.STRING_MEASURE_FIELDS:
-            val = str(val)
-        
-        return val
+            # Type conversions (only for non-None values)
+            if col in FieldRules.NUMERIC_MEASURE_FIELDS:
+                val = self.convert_mixed_types(val)
+            elif col in FieldRules.STRING_MEASURE_FIELDS:
+                val = str(val)
+            
+            return val
     
     def _handle_grooved_disc_fields(self, col: str, val: Any, record: Dict) -> Any:
         """Handle special grooved disc/cylinder field defaults."""
