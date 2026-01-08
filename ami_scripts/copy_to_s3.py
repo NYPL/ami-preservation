@@ -7,12 +7,12 @@ import glob
 import re
 import json
 import warnings
-
+import tempfile
+import shutil
 
 def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
 
-    # CHANGED: allow multiple directories for -d/--directory
     parser.add_argument(
         '-d', '--directories',
         nargs='+',
@@ -36,22 +36,24 @@ def get_args():
               'and upload ONLY the valid ones not in the AWS bucket')
     )
     
-    # CHANGED: Added --profile argument for SSO
     parser.add_argument(
         '-p', '--profile',
         help='The AWS profile name to use (for SSO login)',
         default=None
+    )
+
+    parser.add_argument(
+        '--transcode',
+        action='store_true',
+        help=('If set, transcode FLAC files to MP4 (AAC) in a temporary directory '
+              'and update corresponding JSON referenceFilename before uploading. '
+              'Original source files remain unchanged.')
     )
     
     args = parser.parse_args()
     return args
 
 def find_bags(directory):
-    """
-    Given a single directory path, finds all bagit bag folders
-    by locating 'manifest-md5.txt' recursively.
-    Returns two lists: list_of_bag_paths, list_of_bag_ids
-    """
     try:
         test_directory = os.listdir(directory)
     except OSError:
@@ -65,14 +67,11 @@ def find_bags(directory):
             recursive=True
         )
         for filepath in all_manifests:
-            if '$RECYCLE' not in filepath:  # skip recycle bin
+            if '$RECYCLE' not in filepath:
                 bag_path = os.path.split(filepath)[0]
                 bags.append(bag_path)
 
         for bag in bags:
-            # In your original example: re.findall('\d{6}', bag)[-1] 
-            # might cause an IndexError if the path doesn't match.
-            # We'll do a small try/except or just check length.
             match = re.findall(r'\d{6}', bag)
             if match:
                 bag_ids.append(match[-1])
@@ -81,13 +80,6 @@ def find_bags(directory):
     return bags, bag_ids
 
 def get_files(source_directory):
-    """
-    Returns a tuple of:
-      all_file_paths_list,
-      all_file_list (filenames only),
-      media_paths_list,
-      json_paths_list
-    """
     em_dir = os.path.join(source_directory, 'data', 'EditMasters')
     sc_dir = os.path.join(source_directory, 'data', 'ServiceCopies')
 
@@ -120,10 +112,6 @@ def get_files(source_directory):
     return all_file_paths_list, all_file_list, media_paths_list, json_paths_list
 
 def valid_fn_convention(all_file_list):
-    """
-    Check that filenames match pattern: \w{3}_\d{6}_\w+_(sc|em)
-    Returns True if valid, else returns a list of invalid filenames.
-    """
     pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
     invalid_fn_ls = []
 
@@ -133,17 +121,11 @@ def valid_fn_convention(all_file_list):
         except AttributeError:
             print(f'{file} not named correctly')
             invalid_fn_ls.append(file)
-    # If there were any invalid filenames, return them
     if invalid_fn_ls:
         return invalid_fn_ls
     return True
 
 def valid_media_json_match(media_paths_list, json_paths_list):
-    """
-    Checks that for every media file there is a matching JSON file 
-    (base name should match).
-    Returns True if perfect match, else returns the difference.
-    """
     media_set = set([os.path.splitext(os.path.basename(i))[0]
                      for i in media_paths_list])
     json_set = set([os.path.splitext(os.path.basename(i))[0]
@@ -155,11 +137,6 @@ def valid_media_json_match(media_paths_list, json_paths_list):
         return media_set.symmetric_difference(json_set)
 
 def valid_json_reference(media_file_list, json_file_list):
-    """
-    Checks the 'asset.referenceFilename' in each JSON 
-    to ensure it matches the actual media filename.
-    Returns True if all match, otherwise returns a set of mismatches.
-    """
     media_names = set([os.path.basename(file) for file in media_file_list])
     json_names = set()
 
@@ -174,10 +151,6 @@ def valid_json_reference(media_file_list, json_file_list):
         return json_names.symmetric_difference(media_names)
 
 def valid_json_barcode(json_file_list):
-    """
-    Checks that each JSON's 'bibliographic.barcode' starts with '33433...'.
-    If all good, return True. Else return the first problematic file.
-    """
     for file in json_file_list:
         with open(file, "r", encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
@@ -187,84 +160,165 @@ def valid_json_barcode(json_file_list):
                 return file
     return True
 
-# CHANGED: Added profile_name parameter
 def check_bucket(filenames_list, profile_name=None):
     """
-    Checks if the given filenames exist in the bucket by calling `aws s3api head-object`.
-    If an audio file is not found, we also check if its SC version is there, etc.
-    Returns a list of files that need to be uploaded.
+    Checks if filenames exist in bucket.
+    Returns a list of FILENAMES (not full paths) that are missing.
     """
     to_upload = []
     
-    # CHANGED: Build command base first
     cmd = ['aws', 's3api', 'head-object',
            '--bucket', 'ami-carnegie-servicecopies']
     
-    # CHANGED: Add profile if provided
     if profile_name:
         cmd.extend(['--profile', profile_name])
         
-    # CHANGED: Add key placeholder
     cmd.extend(['--key', ''])
     
     for file in filenames_list:
         if 'flac' in file or 'wav' in file:
-            cmd[-1] = file # Set the key
+            cmd[-1] = file 
             output_original_media = subprocess.run(cmd, capture_output=True).stdout
             if not output_original_media:
+                # If original missing, check for mp4 variant
                 mp4_key = file.replace('flac', 'mp4').replace('wav', 'mp4')
-                cmd[-1] = mp4_key # Set the new key
+                cmd[-1] = mp4_key 
                 output_mp4 = subprocess.run(cmd, capture_output=True).stdout
                 if not output_mp4:
                     to_upload.append(file)
         else:
-            cmd[-1] = file # Set the key
+            cmd[-1] = file
             output_json_mp4 = subprocess.run(cmd, capture_output=True).stdout
             if not output_json_mp4:
                 to_upload.append(file)
     return to_upload
 
 def file_type_counts(all_file_list):
-    """
-    Returns counts of how many mp4, wav, flac, json are in the list.
-    """
     mp4_files = [f for f in all_file_list if f.lower().endswith('.mp4')]
     wav_files = [f for f in all_file_list if f.lower().endswith('.wav')]
     flac_files = [f for f in all_file_list if f.lower().endswith('.flac')]
     json_files = [f for f in all_file_list if f.lower().endswith('.json')]
-    mp4_ct = len(mp4_files)
-    wav_ct = len(wav_files)
-    flac_ct = len(flac_files)
-    json_ct = len(json_files)
-    return mp4_ct, wav_ct, flac_ct, json_ct
+    return len(mp4_files), len(wav_files), len(flac_files), len(json_files)
 
-# CHANGED: Added profile_name parameter
+# CHANGED: Now accepts an explicit output path
+def transcode_flac(input_path, output_path):
+    print(f"Transcoding {os.path.basename(input_path)} to temp MP4...")
+    
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i", input_path,
+        "-c:a", "aac",
+        "-b:a", "320k",
+        "-dither_method", "rectangular",
+        "-ar", "44100",
+        "-loglevel", "error",
+        output_path
+    ]
+    
+    result = subprocess.run(command)
+    if result.returncode == 0:
+        return True
+    else:
+        print(f"Error transcoding {input_path}")
+        return False
+
+# CHANGED: Reads from input_path, writes modified JSON to output_path
+def create_modified_json(input_path, output_path, new_ref_filename):
+    try:
+        with open(input_path, "r", encoding='utf-8-sig') as jsonFile:
+            data = json.load(jsonFile)
+        
+        data['asset']['referenceFilename'] = new_ref_filename
+        
+        # Write to the TEMP location, leaving original untouched
+        with open(output_path, "w", encoding='utf-8') as jsonFile:
+            json.dump(data, jsonFile, indent=4)
+        return True
+            
+    except Exception as e:
+        print(f"Failed to create modified JSON: {e}")
+        return False
+
+# CHANGED: Logic to route files to temp_dir
+def prepare_transcodes(file_list_to_upload, all_files_in_bag, temp_dir):
+    final_list = []
+    processed_json_bases = set()
+    
+    # Map base filenames to full JSON paths from the entire bag context
+    json_map = {}
+    for f in all_files_in_bag:
+        if f.lower().endswith('.json'):
+            base = os.path.splitext(os.path.basename(f))[0]
+            json_map[base] = f
+
+    for f in file_list_to_upload:
+        if f.lower().endswith('.flac'):
+            # Define temp paths
+            base_name = os.path.splitext(os.path.basename(f))[0]
+            mp4_filename = base_name + ".mp4"
+            mp4_temp_path = os.path.join(temp_dir, mp4_filename)
+            
+            # Transcode
+            if transcode_flac(f, mp4_temp_path):
+                final_list.append(mp4_temp_path)
+                
+                # Handle JSON
+                if base_name in json_map:
+                    src_json_path = json_map[base_name]
+                    json_filename = os.path.basename(src_json_path)
+                    json_temp_path = os.path.join(temp_dir, json_filename)
+                    
+                    if create_modified_json(src_json_path, json_temp_path, mp4_filename):
+                        final_list.append(json_temp_path)
+                        processed_json_bases.add(base_name)
+                else:
+                    print(f"Warning: No matching JSON found for {f}")
+            else:
+                # Transcode failed, skipping this file
+                pass
+
+        elif f.lower().endswith('.json'):
+            # If we already processed this JSON via the FLAC loop, skip it
+            base_name = os.path.splitext(os.path.basename(f))[0]
+            if base_name in processed_json_bases:
+                continue
+            
+            # If this is a standalone JSON upload (or FLAC was missing), 
+            # we should still assume the target is MP4 and modify it.
+            json_filename = os.path.basename(f)
+            json_temp_path = os.path.join(temp_dir, json_filename)
+            mp4_ref_name = base_name + ".mp4"
+            
+            if create_modified_json(f, json_temp_path, mp4_ref_name):
+                 final_list.append(json_temp_path)
+                 
+        else:
+            # Non-transcode files (e.g. existing MP4s) - just upload original
+            final_list.append(f)
+            
+    # Remove duplicates and sort
+    return sorted(list(set(final_list)))
+
 def cp_files(file_list, profile_name=None):
-    """
-    Uploads the given files to S3 via `aws s3 cp`.
-    """
     for filename in sorted(file_list):
+        if not os.path.exists(filename):
+             print(f"Error: File not found for upload: {filename}")
+             continue
+
         cp_command = [
             'aws', 's3', 'cp',
             filename,
             's3://ami-carnegie-servicecopies'
         ]
         
-        # CHANGED: Add profile if provided
         if profile_name:
             cp_command.extend(['--profile', profile_name])
             
-        print(cp_command)
+        print(f"Uploading: {os.path.basename(filename)}")
         subprocess.call(cp_command)
 
 def process_single_directory(directory, arguments):
-    """
-    Process a SINGLE directory of bagit bags: 
-      - find all bags
-      - do all checks
-      - if necessary, upload 
-    Returns a dictionary with summary info that we can print later.
-    """
     bags, bag_ids = find_bags(directory)
 
     summary = {
@@ -287,6 +341,8 @@ def process_single_directory(directory, arguments):
 
     for bag in sorted(bags):
         all_file_paths, all_files, media_list, json_list = get_files(bag)
+        filename_to_path = {os.path.basename(p): p for p in all_file_paths}
+
         if not all_file_paths:
             summary['em_sc_issue_bags'].append(bag)
         else:
@@ -300,46 +356,47 @@ def process_single_directory(directory, arguments):
                 reference_check == True and
                 barcode_check == True):
                 
-                # If we're only checking or checking+uploading:
+                files_to_process_paths = []
+
                 if arguments.check_only or arguments.check_and_upload:
                     print(f'Now checking if {bag} is in the bucket:\n')
+                    missing_filenames = check_bucket(all_files, arguments.profile)
                     
-                    # CHANGED: Pass profile to check_bucket
-                    to_upload = check_bucket(all_files, arguments.profile)
-                    
-                    if to_upload:
+                    if missing_filenames:
                         summary['incomplete_in_bucket'].append(bag)
                         print(f'\nNo, {bag} not in the bucket.')
                         if arguments.check_and_upload:
-                            print(f'Now uploading: {bag}\n')
-                            mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
-                            
-                            # CHANGED: Pass profile to cp_files
-                            cp_files(all_file_paths, arguments.profile)
-                            
-                            summary['uploaded_counts']['mp4'] += mp4_ct
-                            summary['uploaded_counts']['wav'] += wav_ct
-                            summary['uploaded_counts']['flac'] += flac_ct
-                            summary['uploaded_counts']['json'] += json_ct
+                            files_to_process_paths = [filename_to_path[f] for f in missing_filenames]
                     else:
                         print(f'\nYes, {bag} is in the bucket.')
                 else:
-                    # No checks, just upload
-                    print(f'Now uploading: {bag}\n')
-                    mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(all_file_paths)
+                    files_to_process_paths = all_file_paths
+
+                if files_to_process_paths:
+                    print(f'Preparing to upload {len(files_to_process_paths)} files for {bag}\n')
                     
-                    # CHANGED: Pass profile to cp_files
-                    cp_files(all_file_paths, arguments.profile)
-                    
-                    summary['uploaded_counts']['mp4'] += mp4_ct
-                    summary['uploaded_counts']['wav'] += wav_ct
-                    summary['uploaded_counts']['flac'] += flac_ct
-                    summary['uploaded_counts']['json'] += json_ct
+                    # CHANGED: Use TemporaryDirectory for cleanup
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        if arguments.transcode:
+                            print("Transcoding enabled. Creating temporary MP4s and JSONs...")
+                            files_to_process_paths = prepare_transcodes(
+                                files_to_process_paths, 
+                                all_file_paths, 
+                                temp_dir
+                            )
+
+                        mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(files_to_process_paths)
+                        
+                        cp_files(files_to_process_paths, arguments.profile)
+                        
+                        summary['uploaded_counts']['mp4'] += mp4_ct
+                        summary['uploaded_counts']['wav'] += wav_ct
+                        summary['uploaded_counts']['flac'] += flac_ct
+                        summary['uploaded_counts']['json'] += json_ct
+                    # Temp dir is automatically deleted here
 
             else:
-                # Something didn't check out
                 if fn_check != True:
-                    # fn_check is a list of invalid filenames if not True
                     summary['invalid_fn_ls'].extend(fn_check)
                 if media_json_check != True:
                     summary['fn_mismatch_ls'].append(media_json_check)
@@ -351,58 +408,37 @@ def process_single_directory(directory, arguments):
     return summary
 
 def print_summary(arguments, summary):
-    """
-    Print summary info for a single directory after it's been processed.
-    The summary here is a dictionary returned by `process_single_directory`.
-    """
     directory = summary['directory']
     print(f"\n=== Summary for {directory} ===")
     print(f"Found {summary['num_bags_found']} bags.")
     print(f"Bag IDs: {summary['bag_ids']}")
     
+    uc = summary['uploaded_counts']
+    upload_msg = f"Uploaded counts: {uc['mp4']} MP4, {uc['wav']} WAV, {uc['flac']} FLAC, {uc['json']} JSON"
+    
+    issues_msg = f"""
+EM or SC issue bags: {summary['em_sc_issue_bags']}
+Bags with invalid filename(s): {summary['invalid_fn_ls']}
+Media/JSON mismatched bag(s): {summary['fn_mismatch_ls']}
+JSON reference mismatched bag(s): {summary['json_mismatch_ls']}
+Barcode mismatched bag(s): {summary['bc_mismatch_ls']}"""
+
     if arguments.check_only:
-        print(f"""
-EM or SC issue bags: {summary['em_sc_issue_bags']}
-Bags with invalid filename(s): {summary['invalid_fn_ls']}
-Media/JSON mismatched bag(s): {summary['fn_mismatch_ls']}
-JSON reference mismatched bag(s): {summary['json_mismatch_ls']}
-Barcode mismatched bag(s): {summary['bc_mismatch_ls']}
-Bags needing upload: {summary['incomplete_in_bucket']}
-        """)
-    elif arguments.check_and_upload:
-        uc = summary['uploaded_counts']
-        print(f"""
-Uploaded counts: {uc['mp4']} MP4, {uc['wav']} WAV, {uc['flac']} FLAC, {uc['json']} JSON
-
-EM or SC issue bags: {summary['em_sc_issue_bags']}
-Bags with invalid filename(s): {summary['invalid_fn_ls']}
-Media/JSON mismatched bag(s): {summary['fn_mismatch_ls']}
-JSON reference mismatched bag(s): {summary['json_mismatch_ls']}
-Barcode mismatched bag(s): {summary['bc_mismatch_ls']}
-        """)
+        print(issues_msg)
+        print(f"Bags needing upload: {summary['incomplete_in_bucket']}")
     else:
-        uc = summary['uploaded_counts']
-        print(f"""
-Uploaded counts: {uc['mp4']} MP4, {uc['wav']} WAV, {uc['flac']} FLAC, {uc['json']} JSON
-
-EM or SC issue bags: {summary['em_sc_issue_bags']}
-Bags with invalid filename(s): {summary['invalid_fn_ls']}
-Media/JSON mismatched bag(s): {summary['fn_mismatch_ls']}
-JSON reference mismatched bag(s): {summary['json_mismatch_ls']}
-Barcode mismatched bag(s): {summary['bc_mismatch_ls']}
-        """)
+        print(upload_msg)
+        print(issues_msg)
 
 def main():
     arguments = get_args()
 
-    # Process each directory individually and store results
     all_summaries = []
     for directory in arguments.directories:
         print(f"\nProcessing directory: {directory}")
         summary = process_single_directory(directory, arguments)
         all_summaries.append(summary)
     
-    # Print a final summary for each directory
     for summary in all_summaries:
         print_summary(arguments, summary)
 
