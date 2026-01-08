@@ -11,6 +11,7 @@ Features:
  - Download progress percentage
  - Specify output directory via -o/--output
  - Accept AMI IDs via -i/--ids or -c/--csv
+ - RESUMABLE DOWNLOADS: Automatically retries dropped connections via Range headers
 """
 
 import os
@@ -21,11 +22,14 @@ import logging
 import re
 import json
 import csv
+import time
 from typing import List, Tuple, Optional
 from urllib.parse import unquote
 
 import requests
 from requests.adapters import HTTPAdapter
+from requests.exceptions import ChunkedEncodingError, ConnectionError
+from urllib3.exceptions import ProtocolError
 from urllib3.util.retry import Retry
 import lxml.etree
 
@@ -98,12 +102,18 @@ class PreservicaClient:
 
     def get(self, path: str, **kwargs) -> requests.Response:
         url = f"{self.base_url}{path}"
+        if url.startswith(self.base_url + self.base_url):
+             # prevention against double-url construction if path already includes base
+             url = path 
+        
         resp = self.session.get(url, **kwargs)
         if resp.status_code == 401:
             logging.info("Token expired, re-authenticating")
             self._authenticate()
             resp = self.session.get(url, **kwargs)
-        resp.raise_for_status()
+        # We generally raise_for_status, but for range requests 416 is valid check logic
+        if resp.status_code != 416: 
+            resp.raise_for_status()
         return resp
 
     def post(self, path: str, **kwargs) -> requests.Response:
@@ -207,72 +217,110 @@ class PreservicaClient:
         return uuids
 
     def download_bitstream(self, co_uuid: str, output_dir: str):
-            """
-            Download the latest-active bitstream.
-            If Content-Length is missing, fetch size from metadata XML (deep search).
-            """
-            os.makedirs(output_dir, exist_ok=True)
+        """
+        Download the latest-active bitstream with support for resuming interrupted downloads.
+        """
+        os.makedirs(output_dir, exist_ok=True)
 
-            base_path = f"/api/entity/content-objects/{co_uuid}/generations/latest-active/bitstreams/1"
-            content_path = f"{base_path}/content"
+        base_path = f"/api/entity/content-objects/{co_uuid}/generations/latest-active/bitstreams/1"
+        content_path = f"{base_path}/content"
 
-            # Start the download stream
-            resp = self.get(content_path, stream=True)
+        # 1. Determine the filename first (needs a lightweight initial request)
+        # We fetch headers but don't download content yet
+        head_resp = self.get(content_path, stream=True)
+        head_resp.close() 
 
-            # 1. Try to get size from headers
-            total_bytes = resp.headers.get('Content-Length')
-            total = int(total_bytes) if total_bytes and total_bytes.isdigit() else None
+        disp = head_resp.headers.get('Content-Disposition', '')
+        filename = "output.bin"
+        if "filename=" in disp:
+            filename = unquote(disp.split("filename=")[1].strip('"\''))
+        
+        filepath = os.path.join(output_dir, filename)
 
-            # 2. Fallback: Fetch metadata
-            if total is None:
-                logging.info("Content-Length header missing; fetching metadata to find size...")
-                try:
-                    meta_resp = self.get(base_path, headers={"Accept": "application/xml"})
-                    tree = lxml.etree.fromstring(meta_resp.content)
-                    
-                    # Search ANYWHERE in the XML for FileSize or Size
-                    size_nodes = tree.xpath("//*[local-name()='FileSize']/text() | //*[local-name()='Size']/text()")
-                    
-                    if size_nodes:
-                        total = int(size_nodes[0].strip())
-                        logging.info("Found size in metadata: %s bytes", total)
-                    else:
-                        # DEBUG: Print the first 500 chars of XML if we can't find the tag
-                        logging.warning("Could not find <FileSize> tag. XML Start: %s", meta_resp.text[:500])
-                except Exception as e:
-                    logging.warning("Failed to retrieve file size from metadata: %s", e)
+        # 2. Get Total Size (Your existing robust logic)
+        # Try headers first, then metadata
+        total_bytes_str = head_resp.headers.get('Content-Length')
+        total_size = int(total_bytes_str) if total_bytes_str and total_bytes_str.isdigit() else None
 
-            # Determine filename
-            disp = resp.headers.get('Content-Disposition', '')
-            filename = "output.bin"
-            if "filename=" in disp:
-                filename = unquote(disp.split("filename=")[1].strip('"\''))
-            
-            filepath = os.path.join(output_dir, filename)
+        if total_size is None:
+            logging.info("Content-Length header missing; fetching metadata to find size...")
+            try:
+                meta_resp = self.get(base_path, headers={"Accept": "application/xml"})
+                tree = lxml.etree.fromstring(meta_resp.content)
+                size_nodes = tree.xpath("//*[local-name()='FileSize']/text() | //*[local-name()='Size']/text()")
+                if size_nodes:
+                    total_size = int(size_nodes[0].strip())
+                    logging.info("Found size in metadata: %s bytes", total_size)
+            except Exception as e:
+                logging.warning("Failed to retrieve file size from metadata: %s", e)
 
-            if total:
-                logging.info("Saving bitstream to %s (%s bytes)", filepath, total)
+        if total_size:
+            logging.info("Target: %s (%s bytes)", filepath, total_size)
+        else:
+            logging.info("Target: %s (unknown size)", filepath)
+
+        # 3. The Resumable Download Loop
+        retries = 0
+        max_retries = 20  # increased retry count for very large files
+        
+        while True:
+            # Check how much we have downloaded so far
+            if os.path.exists(filepath):
+                current_pos = os.path.getsize(filepath)
             else:
-                logging.info("Saving bitstream to %s (unknown bytes)", filepath)
+                current_pos = 0
 
-            # Download loop
-            downloaded = 0
-            with open(filepath, 'wb') as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    if not chunk:
-                        continue
-                    f.write(chunk)
-                    downloaded += len(chunk)
+            # If we are done, break
+            if total_size and current_pos >= total_size:
+                logging.info("\nDownload complete: %s", filepath)
+                break
+
+            # If we have some data, resume. If 0, start fresh.
+            headers = {}
+            mode = 'ab' if current_pos > 0 else 'wb'
+            
+            if current_pos > 0:
+                headers['Range'] = f'bytes={current_pos}-'
+                logging.info("Resuming download from byte %d...", current_pos)
+
+            try:
+                # We do NOT use self.get here because self.get has retry logic that might conflict with streaming
+                # We use the session directly to control the stream context
+                url = f"{self.base_url}{content_path}"
+                
+                with self.session.get(url, headers=headers, stream=True) as resp:
+                    resp.raise_for_status()
                     
-                    if total:
-                        percent = downloaded / total * 100
-                        sys.stdout.write(f"\r{percent:6.2f}% of {total} downloaded for {filename}")
-                    else:
-                        sys.stdout.write(f"\r{downloaded} bytes downloaded for {filename}")
-                    sys.stdout.flush()
+                    # If server ignores Range header (returns 200 instead of 206), we must overwrite
+                    if current_pos > 0 and resp.status_code == 200:
+                        logging.warning("Server does not support resuming (got 200, not 206). Restarting download.")
+                        current_pos = 0
+                        mode = 'wb'
 
-            print() 
-            logging.info("Downloaded %s", filepath)
+                    with open(filepath, mode) as f:
+                        for chunk in resp.iter_content(chunk_size=32768):
+                            if not chunk:
+                                continue
+                            f.write(chunk)
+                            current_pos += len(chunk)
+
+                            # Progress bar
+                            if total_size:
+                                percent = current_pos / total_size * 100
+                                sys.stdout.write(f"\r{percent:6.2f}% of {total_size} | {filename}")
+                            else:
+                                sys.stdout.write(f"\r{current_pos} bytes | {filename}")
+                            sys.stdout.flush()
+                
+            except (ChunkedEncodingError, ConnectionError, ProtocolError, requests.exceptions.RequestException) as e:
+                retries += 1
+                logging.warning(f"\nConnection lost: {e}. Retrying ({retries}/{max_retries})...")
+                if retries > max_retries:
+                    logging.error("Max retries exceeded.")
+                    raise e
+                time.sleep(5) # Wait before reconnecting
+
+        print() 
 
 
 # --- Helpers & CLI -----------------------------------------------------------
