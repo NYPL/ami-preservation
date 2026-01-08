@@ -5,8 +5,11 @@ import subprocess
 from pathlib import Path
 import sys
 
+# Define allowed input extensions
+VALID_EXTENSIONS = {'.mkv', '.mov', '.mp4'}
+
 def get_args():
-    parser = argparse.ArgumentParser(description="Transcode MKV to ProRes HQ MOV")
+    parser = argparse.ArgumentParser(description="Transcode MKV, MOV, and MP4 to ProRes HQ MOV")
     parser.add_argument("-i", "--input", required=True, help="Input file or directory")
     parser.add_argument("-o", "--output", required=True, help="Destination directory for ProRes files")
     return parser.parse_args()
@@ -14,19 +17,23 @@ def get_args():
 def convert_to_prores(input_path, output_path):
     cmd = [
         "ffmpeg",
-        "-n",               # Do not overwrite output file if it exists (optional safety)
+        "-hide_banner",      
+        "-n",                
         "-i", str(input_path),
         "-map", "0:v",
         "-map", "0:a?",
         "-c:v", "prores_ks",
-        "-profile:v", "3",  # ProRes HQ
-        "-c:a", "pcm_s24le", # 24-bit PCM
+        "-profile:v", "3",
+        "-c:a", "pcm_s24le",
         "-ar", "48000",
+        "-stats",            
         str(output_path)
     ]
     
-    print(f"Processing: {input_path.name} -> {output_path.name}")
-    # Using subprocess.run to execute ffmpeg
+    print(f"\nProcessing: {input_path.name} -> {output_path.name}")
+    print("-" * 60)
+    
+    # Run without capturing stdout/stderr so ffmpeg output flows to the terminal
     subprocess.run(cmd, check=True)
 
 def main():
@@ -41,37 +48,49 @@ def main():
     files_to_process = []
 
     if input_path.is_file():
-        # If input is a single file, just add it to the list
-        if input_path.suffix.lower() == '.mkv':
+        if input_path.suffix.lower() in VALID_EXTENSIONS:
             files_to_process.append(input_path)
         else:
-            print(f"Warning: The input file '{input_path.name}' does not appear to be an .mkv file.")
+            print(f"Warning: The input file '{input_path.name}' is not a supported format.")
             files_to_process.append(input_path)
             
     elif input_path.is_dir():
-        # If input is a directory, search recursively for .mkv
-        files_to_process = list(input_path.rglob("*.mkv"))
+        print(f"Scanning '{input_path}' for compatible files...")
+        for file_path in input_path.rglob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in VALID_EXTENSIONS:
+                if "_prores" not in file_path.stem:
+                    files_to_process.append(file_path)
+
         if not files_to_process:
-            print(f"No MKV files found in directory: {input_path}")
+            print(f"No compatible files found in directory: {input_path}")
             return
     else:
         print(f"Error: Input path '{input_path}' does not exist.")
         sys.exit(1)
 
-    # 3. Process the files
-    for mkv_file in files_to_process:
-        # Determine new filename
-        if "_pm.mkv" in mkv_file.name:
-            new_name = mkv_file.name.replace("_pm.mkv", "_prores.mov")
-        else:
-            new_name = mkv_file.stem + "_prores.mov"
+    # 3. Sort the files (Path objects sort alphabetically by default)
+    files_to_process.sort()
 
-        output_path = output_dir / new_name
+    print(f"Found {len(files_to_process)} files to process.")
+
+    # 4. Process the files
+    for source_file in files_to_process:
+        # Determine new filename based on the stem
+        original_stem = source_file.stem
+        
+        if original_stem.endswith("_pm"):
+            base_name = original_stem[:-3]
+        else:
+            base_name = original_stem
+
+        new_filename = f"{base_name}_prores.mov"
+        output_path = output_dir / new_filename
 
         try:
-            convert_to_prores(mkv_file, output_path)
-        except subprocess.CalledProcessError as e:
-            print(f"Error processing {mkv_file.name}: {e}")
+            convert_to_prores(source_file, output_path)
+        except subprocess.CalledProcessError:
+            print(f"\n[!] Failed to process: {source_file.name}")
+            continue
 
 if __name__ == "__main__":
     main()
