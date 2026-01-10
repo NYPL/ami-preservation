@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 This script processes audio files for digital preservation with a simplified workflow.
-It transcodes audio files and organizes them into PreservationMasters and EditMasters
-directories without metadata processing or bagging.
+It transcodes audio files and organizes them into PreservationMasters, EditMasters,
+and ServiceCopies directories.
 
 Includes verification of matching EM and PM FLAC files, copying of data disc .iso files,
-and a data disc migration test.
+generation of AAC MP4 service copies, and a data disc migration test.
 """
 
 import argparse
@@ -133,22 +133,29 @@ class SimplifiedAudioProcessor:
             return WorkflowType.MINIDISC
         return WorkflowType.STANDARD
 
-    def _make_work_dirs(self) -> Tuple[Path, Path]:
-        """Create and return PreservationMasters and EditMasters directories."""
+    def _make_work_dirs(self) -> Tuple[Path, Path, Path]:
+        """Create and return PreservationMasters, EditMasters, and ServiceCopies directories."""
         base = self.config.new_dest_dir
         pm_dir = base / "PreservationMasters"
         em_dir = base / "EditMasters"
+        sc_dir = base / "ServiceCopies"
+        
         pm_dir.mkdir(parents=True, exist_ok=True)
         em_dir.mkdir(parents=True, exist_ok=True)
-        return pm_dir, em_dir
+        sc_dir.mkdir(parents=True, exist_ok=True)
+        
+        return pm_dir, em_dir, sc_dir
 
     def _process_minidisc_workflow(self) -> None:
         """Process files using the Minidisc Workflow."""
         logger.info("Starting Minidisc Workflow")
-        pm_dir, em_dir = self._make_work_dirs()
+        pm_dir, em_dir, sc_dir = self._make_work_dirs()
 
         self._copy_preservation_masters_minidisc(pm_dir)
         self._process_edit_masters_minidisc(em_dir)
+        
+        # Generate Service Copies from the newly processed EM files
+        self._generate_service_copies(em_dir, sc_dir)
 
         if self.config.transcribe:
             self._transcribe_directory()
@@ -158,7 +165,7 @@ class SimplifiedAudioProcessor:
     def _process_standard_workflow(self) -> None:
         """Process files using the Standard Workflow."""
         logger.info("Starting Standard Workflow")
-        pm_dir, em_dir = self._make_work_dirs()
+        pm_dir, em_dir, sc_dir = self._make_work_dirs()
 
         # Copy data-disc ISO files
         self._copy_iso_files(pm_dir)
@@ -180,11 +187,47 @@ class SimplifiedAudioProcessor:
 
         # Organize into PM/EM dirs
         self._organize_files(pm_dir, em_dir)
+        
+        # Generate Service Copies from the organized EM files
+        self._generate_service_copies(em_dir, sc_dir)
 
         if self.config.transcribe:
             self._transcribe_directory()
 
         logger.info("Standard workflow completed")
+
+    def _generate_service_copies(self, source_dir: Path, dest_dir: Path) -> None:
+        """Generate AAC MP4 service copies from FLAC files in the source directory."""
+        logger.info("Generating Service Copies...")
+        flac_files = sorted(self._get_clean_files(source_dir.glob("*.flac")), key=lambda p: p.name)
+        
+        if not flac_files:
+            logger.warning(f"No FLAC files found in {source_dir} to generate Service Copies from.")
+            return
+
+        pbar = tqdm(flac_files, unit="file")
+        for flac in pbar:
+            pbar.set_description(f"Creating SC for {flac.name}")
+            
+            # Replace '_em' with '_sc' in the filename stem
+            new_stem = flac.stem.replace('_em', '_sc')
+            output_file = dest_dir / f"{new_stem}.mp4"
+            
+            command = [
+                "ffmpeg",
+                "-y", # Overwrite output files without asking
+                "-i", str(flac),
+                "-c:a", "aac",
+                "-b:a", "320k",
+                "-ar", "48000",
+                str(output_file)
+            ]
+            
+            try:
+                # Capture output to keep console clean, check=True to raise error on failure
+                subprocess.run(command, capture_output=True, check=True)
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Failed to create Service Copy for {flac.name}: {e.stderr}")
 
     def _copy_iso_files(self, pm_dir: Path) -> None:
         """Copy .iso files from source to PreservationMasters."""
@@ -235,7 +278,8 @@ class SimplifiedAudioProcessor:
         """Log counts of PM and EM FLAC files after processing."""
         pm_count = len(list((self.config.new_dest_dir / "PreservationMasters").glob("*.flac")))
         em_count = len(list((self.config.new_dest_dir / "EditMasters").glob("*.flac")))
-        logger.info(f"Final file summary: PM FLAC: {pm_count}, EM FLAC: {em_count}")
+        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.mp4")))
+        logger.info(f"Final file summary: PM FLAC: {pm_count}, EM FLAC: {em_count}, Service Copies: {sc_count}")
 
     def _transcode_single_file(self, input_file: Path, output_file: Path) -> bool:
         """Transcode a single file from input to output format (with subprocess.run)."""
