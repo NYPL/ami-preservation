@@ -10,6 +10,7 @@ Refactoring / improvements include:
 3. A 'Utilities' section for small helper functions.
 4. Minor duplication removal: a helper function to compare PM <-> MZ/EM/SC sets.
 5. Preserved all existing function names, exception types, and logic.
+6. Updated 'audio' subtype to allow ServiceCopies and MP4s.
 """
 
 # =========================== STANDARD LIBRARY IMPORTS =========================
@@ -144,7 +145,7 @@ def convert_dotKeyToNestedDict(tree: Dict[str, Any], key: str, value: Any) -> Di
 
 
 # =============================================================================
-#            ami_bag_constants (JSON only)
+#                   ami_bag_constants (JSON only)
 # =============================================================================
 
 FILENAME_REGEX = re.compile(
@@ -191,6 +192,7 @@ UNCOMPRESSABLE_EXTS = [DV_EXT_FULL, ISO_EXT_FULL, TAR_EXT_FULL]
 UNCOMPRESSED_EXTS = [MOV_EXT_FULL, WAV_EXT_FULL]
 
 # JSON_SUBTYPES only (Excel references removed)
+# UPDATE: Added SC_DIR and MP4_EXT_FULL to "audio" to support audio service copies
 JSON_SUBTYPES = {
     "film": (set([PM_DIR, MZ_DIR, SC_DIR, IM_DIR]),
              set([JSON_EXT, MKV_EXT_FULL, MOV_EXT_FULL, MP4_EXT_FULL, JPEG_EXT, JPG_EXT,
@@ -198,15 +200,15 @@ JSON_SUBTYPES = {
     "video": (set([PM_DIR, SC_DIR, IM_DIR]),
               set([JSON_EXT, MOV_EXT_FULL, MKV_EXT_FULL, DV_EXT_FULL, MP4_EXT_FULL,
                    JPEG_EXT, JPG_EXT, GZ_EXT, SRT_EXT, SCC_EXT, ISO_EXT_FULL])),
-    "audio": (set([PM_DIR, EM_DIR, IM_DIR]),
-              set([JSON_EXT, WAV_EXT_FULL, FLAC_EXT_FULL, AEA_EXT_FULL, JPEG_EXT, JPG_EXT, CUE_EXT, CSV_EXT])),
+    "audio": (set([PM_DIR, EM_DIR, SC_DIR, IM_DIR]),
+              set([JSON_EXT, WAV_EXT_FULL, FLAC_EXT_FULL, AEA_EXT_FULL, MP4_EXT_FULL, JPEG_EXT, JPG_EXT, CUE_EXT, CSV_EXT])),
     "data":  (set([PM_DIR, IM_DIR]),
               set([JSON_EXT, ISO_EXT_FULL, JPEG_EXT, JPG_EXT]))
 }
 
 
 # =============================================================================
-#                Minimal placeholders for ami_md_constants (JSON only)
+#                        Minimal placeholders for ami_md_constants (JSON only)
 # =============================================================================
 
 class ami_md_constants:
@@ -261,7 +263,7 @@ class ami_md_constants:
 
 
 # =============================================================================
-#                       Custom Exceptions
+#                        Custom Exceptions
 # =============================================================================
 
 class AMIFileError(Exception):
@@ -348,7 +350,7 @@ class ami_file:
             info = self._extract_with_ffprobe(Path(self.filepath))
             p = Path(self.filepath)
             self.base_filename        = p.stem
-            self.extension            = ext                          # now set it
+            self.extension            = ext                                  # now set it
             self.format               = info["file_format"]
             self.size                 = info["file_size"]
             # preserve filesystem creation date too
@@ -451,13 +453,13 @@ class ami_file:
         date_str = datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d')
 
         return {
-            'file_size':      size,
-            'duration_s':     duration_s,
+            'file_size':       size,
+            'duration_s':      duration_s,
             'human_duration': human_dur,
-            'file_format':    fmt_name,
-            'audio_codec':    audio_codec,
-            'video_codec':    video_codec,
-            'date_created':   date_str,
+            'file_format':     fmt_name,
+            'audio_codec':     audio_codec,
+            'video_codec':     video_codec,
+            'date_created':    date_str,
         }
 
     def raise_AMIFileError(self, msg: str) -> None:
@@ -470,7 +472,7 @@ class ami_file:
 
 
 # =============================================================================
-#                       ami_json
+#                        ami_json
 # =============================================================================
 
 ZERO_VALUE_FIELDS = ['source.audioRecording.numberOfAudioTracks']
@@ -958,7 +960,7 @@ class ami_json:
 
 
 # =============================================================================
-#                     ami_bag
+#                      ami_bag
 # =============================================================================
 
 class ami_bag(bagit.Bag):
@@ -1265,11 +1267,6 @@ class ami_bag(bagit.Bag):
                 issue was detected.
                 - error=True if at least one critical issue was detected, 
                 blocking ingestion.
-        """
-    def check_amibag(self, fast: bool = True, metadata: bool = False) -> Tuple[bool, bool]:
-        """
-        Run a series of validations on this bag and return warning/error flags.
-        …
         """
         error = False
         warning = False
@@ -1629,7 +1626,7 @@ class ami_bag(bagit.Bag):
 
 
 # =============================================================================
-#                           validate.py (JSON only)
+#                            validate.py (JSON only)
 # =============================================================================
 
 def _configure_logging(args: argparse.Namespace) -> None:
