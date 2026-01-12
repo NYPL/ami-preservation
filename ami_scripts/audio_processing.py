@@ -5,7 +5,11 @@ It transcodes audio files and organizes them into PreservationMasters, EditMaste
 and ServiceCopies directories.
 
 Includes verification of matching EM and PM FLAC files, copying of data disc .iso files,
-generation of AAC MP4 service copies, and a data disc migration test.
+generation of AAC MP4 (M4A) service copies, and a data disc migration test.
+
+Option B implemented:
+- Service copy generation uses ffprobe to get duration and streams ffmpeg stderr
+  to drive a per-file tqdm progress bar based on ffmpeg's reported timestamp.
 """
 
 import argparse
@@ -15,8 +19,9 @@ import os
 import sys
 import logging
 import importlib
+import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
 from enum import Enum
 from subprocess import CalledProcessError
@@ -101,7 +106,6 @@ class SimplifiedAudioProcessor:
             # Log final FLAC counts
             self._final_summary()
 
-
         except Exception as e:
             logger.exception(f"Processing failed: {e}")
             raise
@@ -139,11 +143,11 @@ class SimplifiedAudioProcessor:
         pm_dir = base / "PreservationMasters"
         em_dir = base / "EditMasters"
         sc_dir = base / "ServiceCopies"
-        
+
         pm_dir.mkdir(parents=True, exist_ok=True)
         em_dir.mkdir(parents=True, exist_ok=True)
         sc_dir.mkdir(parents=True, exist_ok=True)
-        
+
         return pm_dir, em_dir, sc_dir
 
     def _process_minidisc_workflow(self) -> None:
@@ -153,7 +157,7 @@ class SimplifiedAudioProcessor:
 
         self._copy_preservation_masters_minidisc(pm_dir)
         self._process_edit_masters_minidisc(em_dir)
-        
+
         # Generate Service Copies from the newly processed EM files
         self._generate_service_copies(em_dir, sc_dir)
 
@@ -187,7 +191,7 @@ class SimplifiedAudioProcessor:
 
         # Organize into PM/EM dirs
         self._organize_files(pm_dir, em_dir)
-        
+
         # Generate Service Copies from the organized EM files
         self._generate_service_copies(em_dir, sc_dir)
 
@@ -196,38 +200,136 @@ class SimplifiedAudioProcessor:
 
         logger.info("Standard workflow completed")
 
+    # -----------------------------
+    # Option B helpers (NEW)
+    # -----------------------------
+    @staticmethod
+    def _ffprobe_duration_seconds(media_path: Path) -> float:
+        """
+        Return duration in seconds using ffprobe.
+        Falls back to 0.0 if duration can't be determined.
+        """
+        cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(media_path),
+        ]
+        try:
+            out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+            return float(out) if out else 0.0
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _parse_ffmpeg_time_to_seconds(line: str) -> Optional[float]:
+        """
+        Parse ffmpeg stderr status lines like:
+          ... time=00:01:23.45 ...
+        and return seconds as float.
+        """
+        m = re.search(r"time=(\d+):(\d+):(\d+(?:\.\d+)?)", line)
+        if not m:
+            return None
+        hh = int(m.group(1))
+        mm = int(m.group(2))
+        ss = float(m.group(3))
+        return hh * 3600 + mm * 60 + ss
+
+    def _run_ffmpeg_with_tqdm_progress(self, command: List[str], duration_s: float, desc: str) -> None:
+        """
+        Run ffmpeg, streaming stderr and updating a tqdm bar based on parsed timestamps.
+
+        If duration is unknown, it streams ffmpeg output to stderr so the terminal still
+        shows activity, and raises on non-zero exit.
+        """
+        # If duration is unknown, stream output so it feels alive.
+        if duration_s <= 0:
+            logger.info(f"{desc} (duration unknown) — streaming ffmpeg output...")
+            proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
+            assert proc.stderr is not None
+            for line in proc.stderr:
+                sys.stderr.write(line)
+            rc = proc.wait()
+            if rc != 0:
+                raise subprocess.CalledProcessError(rc, command)
+            return
+
+        with tqdm(total=duration_s, unit="s", dynamic_ncols=True, desc=desc) as bar:
+            proc = subprocess.Popen(
+                command,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+            )
+            assert proc.stderr is not None
+
+            last_t = 0.0
+            last_status = ""
+
+            for line in proc.stderr:
+                t = self._parse_ffmpeg_time_to_seconds(line)
+                if t is not None:
+                    # Update bar by delta
+                    delta = max(0.0, t - last_t)
+                    if delta:
+                        bar.update(delta)
+                        last_t = t
+
+                    # Show a short live status snippet (keep compact)
+                    if "speed=" in line or "bitrate=" in line:
+                        last_status = line.strip()
+                        bar.set_postfix_str(last_status[-80:])  # last ~80 chars
+
+            rc = proc.wait()
+            if rc != 0:
+                raise subprocess.CalledProcessError(rc, command)
+
+            # Ensure bar finishes cleanly
+            if last_t < duration_s:
+                bar.update(duration_s - last_t)
+
     def _generate_service_copies(self, source_dir: Path, dest_dir: Path) -> None:
-        """Generate AAC MP4 service copies from FLAC files in the source directory."""
+        """Generate AAC M4A service copies from FLAC files in the source directory."""
         logger.info("Generating Service Copies...")
         flac_files = sorted(self._get_clean_files(source_dir.glob("*.flac")), key=lambda p: p.name)
-        
+
         if not flac_files:
             logger.warning(f"No FLAC files found in {source_dir} to generate Service Copies from.")
             return
 
-        pbar = tqdm(flac_files, unit="file")
-        for flac in pbar:
-            pbar.set_description(f"Creating SC for {flac.name}")
-            
+        # Outer progress: counts files
+        outer = tqdm(flac_files, unit="file", dynamic_ncols=True)
+        for flac in outer:
+            outer.set_description(f"Creating SC for {flac.name}")
+
             # Replace '_em' with '_sc' in the filename stem
             new_stem = flac.stem.replace('_em', '_sc')
-            output_file = dest_dir / f"{new_stem}.mp4"
-            
+            output_file = dest_dir / f"{new_stem}.m4a"
+
             command = [
                 "ffmpeg",
-                "-y", # Overwrite output files without asking
+                "-y",  # overwrite
                 "-i", str(flac),
                 "-c:a", "aac",
                 "-b:a", "320k",
+                "-movflags", "+faststart",
                 "-ar", "48000",
-                str(output_file)
+                str(output_file),
             ]
-            
+
             try:
-                # Capture output to keep console clean, check=True to raise error on failure
-                subprocess.run(command, capture_output=True, check=True)
+                dur = self._ffprobe_duration_seconds(flac)
+                self._run_ffmpeg_with_tqdm_progress(
+                    command=command,
+                    duration_s=dur,
+                    desc=f"ffmpeg {flac.name}",
+                )
             except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to create Service Copy for {flac.name}: {e.stderr}")
+                logger.error(f"Failed to create Service Copy for {flac.name}: {e}")
 
     def _copy_iso_files(self, pm_dir: Path) -> None:
         """Copy .iso files from source to PreservationMasters."""
@@ -278,7 +380,7 @@ class SimplifiedAudioProcessor:
         """Log counts of PM and EM FLAC files after processing."""
         pm_count = len(list((self.config.new_dest_dir / "PreservationMasters").glob("*.flac")))
         em_count = len(list((self.config.new_dest_dir / "EditMasters").glob("*.flac")))
-        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.mp4")))
+        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.m4a")))
         logger.info(f"Final file summary: PM FLAC: {pm_count}, EM FLAC: {em_count}, Service Copies: {sc_count}")
 
     def _transcode_single_file(self, input_file: Path, output_file: Path) -> bool:
