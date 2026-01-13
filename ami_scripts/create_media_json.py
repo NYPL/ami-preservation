@@ -75,6 +75,7 @@ def get_bibliographic_data(fms, cms_id):
             record = found_records[0]
             vernacular_division_code = getattr(record, 'division', '')
             division_code = map_division_code(vernacular_division_code)
+            
             biblio_data = {
                 'barcode': str(getattr(record, 'id_barcode', '')),
                 'cmsItemID': cms_id,
@@ -85,9 +86,11 @@ def get_bibliographic_data(fms, cms_id):
                 'format_1': getattr(record, 'format_1', ''),
                 'format_2': getattr(record, 'format_2', ''),
                 'format_3': getattr(record, 'format_3', ''),
-                'cmsCollectionID': str(getattr(record, 'ref_collection_id', ''))  # Convert to string here
+                'cmsCollectionID': str(getattr(record, 'ref_collection_id', '')),
+                'classmark': getattr(record, 'OBJ_AMI_ITEMS_from_OBJECTS::id.classmark', ''),
+                'formerClassmark': getattr(record, 'OBJ_AMI_ITEMS_from_OBJECTS::id.legacy', '')
             }
-            logger.debug(f"Bibliographic data retrieved: {biblio_data}")  # Log the complete data for debugging
+            logger.debug(f"Bibliographic data retrieved: {biblio_data}")
             return biblio_data
         else:
             logger.warning(f"No records found for AMI ID {cms_id}.")
@@ -194,10 +197,15 @@ def create_new_json(args, media_data, config):
         'vernacularDivisionCode': media_data['bibliographic'].get('vernacularDivisionCode', ''),
     }
     
-    # Add classmark only if not empty
+    # Add classmark only if not empty (as per your existing pattern)
     classmark = media_data['bibliographic'].get('classmark', '')
     if classmark:
         biblio_data['classmark'] = classmark
+
+    # Add formerClassmark only if not empty
+    former_classmark = media_data['bibliographic'].get('formerClassmark', '')
+    if former_classmark:
+        biblio_data['formerClassmark'] = former_classmark
 
     nested_json = {
         'asset': {
