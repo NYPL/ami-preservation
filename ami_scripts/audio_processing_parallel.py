@@ -7,9 +7,10 @@ and ServiceCopies directories.
 Includes verification of matching EM and PM FLAC files, copying of data disc .iso files,
 generation of AAC MP4 (M4A) service copies, and a data disc migration test.
 
-Option B implemented:
-- Service copy generation uses ffprobe to get duration and streams ffmpeg stderr
-  to drive a per-file tqdm progress bar based on ffmpeg's reported timestamp.
+Changes included:
+- Safe parallel service-copy generation (ThreadPoolExecutor) with a single tqdm bar.
+- Per-file ffmpeg logs written to ServiceCopies/*.ffmpeg.log for troubleshooting.
+- New CLI flag: --sc-workers (default 2; clamped to <= 4).
 """
 
 import argparse
@@ -26,6 +27,8 @@ from dataclasses import dataclass
 from enum import Enum
 from subprocess import CalledProcessError
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 # Centralized glob patterns
 PATTERNS = {
@@ -60,6 +63,8 @@ class ProcessingConfig:
     model: str = 'medium'
     output_format: str = 'vtt'
     transcribe: bool = False
+    sc_workers: int = 2  # NEW: parallel workers for ServiceCopies
+
 
     @property
     def new_dest_dir(self) -> Path:
@@ -158,7 +163,7 @@ class SimplifiedAudioProcessor:
         self._copy_preservation_masters_minidisc(pm_dir)
         self._process_edit_masters_minidisc(em_dir)
 
-        # Generate Service Copies from the newly processed EM files
+        # Generate Service Copies from the newly processed EM files (parallel)
         self._generate_service_copies(em_dir, sc_dir)
 
         if self.config.transcribe:
@@ -179,7 +184,7 @@ class SimplifiedAudioProcessor:
         wav_files = sorted(wav_files, key=lambda p: p.name)  # sort by filename
 
         # Transcode with a tqdm bar that names each file
-        pbar = tqdm(wav_files, unit="file")
+        pbar = tqdm(wav_files, unit="file", dynamic_ncols=True)
         for wav in pbar:
             pbar.set_description(f"Transcoding {wav.name}")
             output_file = self.config.new_dest_dir / f"{wav.stem}.flac"
@@ -192,7 +197,7 @@ class SimplifiedAudioProcessor:
         # Organize into PM/EM dirs
         self._organize_files(pm_dir, em_dir)
 
-        # Generate Service Copies from the organized EM files
+        # Generate Service Copies from the organized EM files (parallel)
         self._generate_service_copies(em_dir, sc_dir)
 
         if self.config.transcribe:
@@ -200,136 +205,97 @@ class SimplifiedAudioProcessor:
 
         logger.info("Standard workflow completed")
 
-    # -----------------------------
-    # Option B helpers (NEW)
-    # -----------------------------
-    @staticmethod
-    def _ffprobe_duration_seconds(media_path: Path) -> float:
+    def _encode_service_copy_one(self, flac: Path, dest_dir: Path) -> Tuple[Path, bool, str]:
         """
-        Return duration in seconds using ffprobe.
-        Falls back to 0.0 if duration can't be determined.
+        Encode one FLAC -> M4A service copy.
+
+        Returns: (output_file, success, error_message)
+
+        Writes ffmpeg stderr to a per-file log to keep the console clean and allow
+        troubleshooting if a job stalls or fails.
         """
-        cmd = [
-            "ffprobe",
-            "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "default=noprint_wrappers=1:nokey=1",
-            str(media_path),
+        new_stem = flac.stem.replace('_em', '_sc')
+        output_file = dest_dir / f"{new_stem}.m4a"
+        log_file = dest_dir / f"{new_stem}.ffmpeg.log"
+
+        command = [
+            "ffmpeg",
+            "-y",  # Overwrite output files without asking
+            "-i", str(flac),
+            "-threads", "0",
+            "-c:a", "aac",
+            "-b:a", "320k",
+            "-movflags", "+faststart",
+            "-ar", "48000",
+            str(output_file)
         ]
+
         try:
-            out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
-            return float(out) if out else 0.0
-        except Exception:
-            return 0.0
+            with open(log_file, "w", encoding="utf-8") as lf:
+                proc = subprocess.Popen(
+                    command,
+                    stdout=subprocess.DEVNULL,
+                    stderr=lf,
+                    text=True
+                )
+                rc = proc.wait()
 
-    @staticmethod
-    def _parse_ffmpeg_time_to_seconds(line: str) -> Optional[float]:
-        """
-        Parse ffmpeg stderr status lines like:
-          ... time=00:01:23.45 ...
-        and return seconds as float.
-        """
-        m = re.search(r"time=(\d+):(\d+):(\d+(?:\.\d+)?)", line)
-        if not m:
-            return None
-        hh = int(m.group(1))
-        mm = int(m.group(2))
-        ss = float(m.group(3))
-        return hh * 3600 + mm * 60 + ss
-
-    def _run_ffmpeg_with_tqdm_progress(self, command: List[str], duration_s: float, desc: str) -> None:
-        """
-        Run ffmpeg, streaming stderr and updating a tqdm bar based on parsed timestamps.
-
-        If duration is unknown, it streams ffmpeg output to stderr so the terminal still
-        shows activity, and raises on non-zero exit.
-        """
-        # If duration is unknown, stream output so it feels alive.
-        if duration_s <= 0:
-            logger.info(f"{desc} (duration unknown) — streaming ffmpeg output...")
-            proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
-            assert proc.stderr is not None
-            for line in proc.stderr:
-                sys.stderr.write(line)
-            rc = proc.wait()
             if rc != 0:
-                raise subprocess.CalledProcessError(rc, command)
-            return
+                return output_file, False, f"ffmpeg exit code {rc} (see {log_file.name})"
 
-        with tqdm(total=duration_s, unit="s", dynamic_ncols=True, desc=desc) as bar:
-            proc = subprocess.Popen(
-                command,
-                stderr=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
-            )
-            assert proc.stderr is not None
-
-            last_t = 0.0
-            last_status = ""
-
-            for line in proc.stderr:
-                t = self._parse_ffmpeg_time_to_seconds(line)
-                if t is not None:
-                    # Update bar by delta
-                    delta = max(0.0, t - last_t)
-                    if delta:
-                        bar.update(delta)
-                        last_t = t
-
-                    # Show a short live status snippet (keep compact)
-                    if "speed=" in line or "bitrate=" in line:
-                        last_status = line.strip()
-                        bar.set_postfix_str(last_status[-80:])  # last ~80 chars
-
-            rc = proc.wait()
-            if rc != 0:
-                raise subprocess.CalledProcessError(rc, command)
-
-            # Ensure bar finishes cleanly
-            if last_t < duration_s:
-                bar.update(duration_s - last_t)
+            return output_file, True, ""
+        except Exception as e:
+            return output_file, False, str(e)
 
     def _generate_service_copies(self, source_dir: Path, dest_dir: Path) -> None:
-        """Generate AAC M4A service copies from FLAC files in the source directory."""
-        logger.info("Generating Service Copies...")
-        flac_files = sorted(self._get_clean_files(source_dir.glob("*.flac")), key=lambda p: p.name)
+        """Generate AAC M4A service copies from FLAC files in the source directory (parallel)."""
+        logger.info("Generating Service Copies (parallel)...")
+        dest_dir.mkdir(parents=True, exist_ok=True)
 
+        flac_files = sorted(self._get_clean_files(source_dir.glob("*.flac")), key=lambda p: p.name)
         if not flac_files:
             logger.warning(f"No FLAC files found in {source_dir} to generate Service Copies from.")
             return
 
-        # Outer progress: counts files
-        outer = tqdm(flac_files, unit="file", dynamic_ncols=True)
-        for flac in outer:
-            outer.set_description(f"Creating SC for {flac.name}")
+        max_cpu = os.cpu_count() or 2
+        workers = max(1, min(self.config.sc_workers, max_cpu))
+        # "Safe parallel": cap at 4 unless you really know your storage/CPU can take more
+        workers = min(workers, 4)
 
-            # Replace '_em' with '_sc' in the filename stem
-            new_stem = flac.stem.replace('_em', '_sc')
-            output_file = dest_dir / f"{new_stem}.m4a"
+        logger.info(f"Service copy workers: {workers}")
 
-            command = [
-                "ffmpeg",
-                "-y",  # overwrite
-                "-i", str(flac),
-                "-c:a", "aac",
-                "-b:a", "320k",
-                "-movflags", "+faststart",
-                "-ar", "48000",
-                str(output_file),
-            ]
+        failures: List[Tuple[Path, str]] = []
 
-            try:
-                dur = self._ffprobe_duration_seconds(flac)
-                self._run_ffmpeg_with_tqdm_progress(
-                    command=command,
-                    duration_s=dur,
-                    desc=f"ffmpeg {flac.name}",
-                )
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to create Service Copy for {flac.name}: {e}")
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futures = {
+                ex.submit(self._encode_service_copy_one, flac, dest_dir): flac
+                for flac in flac_files
+            }
+
+            pbar = tqdm(total=len(futures), unit="file", dynamic_ncols=True, desc="ServiceCopies")
+            for fut in as_completed(futures):
+                flac = futures[fut]
+                try:
+                    output_file, ok, err = fut.result()
+                    if not ok:
+                        failures.append((flac, err))
+                        logger.error(f"SC failed for {flac.name}: {err}")
+                    else:
+                        logger.debug(f"SC created: {output_file.name}")
+                except Exception as e:
+                    failures.append((flac, str(e)))
+                    logger.error(f"SC failed for {flac.name}: {e}")
+                finally:
+                    pbar.update(1)
+            pbar.close()
+
+        if failures:
+            logger.warning("Some service copy encodes failed:")
+            for flac, err in failures:
+                logger.warning(f"  {flac.name}: {err}")
+        else:
+            logger.info("Service copy generation completed without errors.")
+
 
     def _copy_iso_files(self, pm_dir: Path) -> None:
         """Copy .iso files from source to PreservationMasters."""
@@ -400,7 +366,7 @@ class SimplifiedAudioProcessor:
             logger.info(f"Detected 32-bit float WAV for {input_file}. Attempting FFmpeg fallback.")
             ffmpeg_command = ['ffmpeg', '-i', str(input_file)] + self.FFMPEG_FALLBACK_PARAMS + [str(output_file)]
             try:
-                result = subprocess.run(ffmpeg_command, capture_output=True, text=True, check=True)
+                subprocess.run(ffmpeg_command, capture_output=True, text=True, check=True)
                 logger.info(f"Successfully transcoded {input_file.name} using FFmpeg fallback.")
                 self.fallback_files.append(input_file)
             except CalledProcessError as e:
@@ -552,6 +518,12 @@ def create_argument_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='Transcribe the audio files using Whisper'
     )
+    parser.add_argument(
+        '--sc-workers',
+        type=int,
+        default=2,
+        help='Number of parallel ffmpeg jobs for ServiceCopies (keep modest: 2–4)'
+    )
     return parser
 
 
@@ -577,8 +549,10 @@ def main() -> None:
         dest_dir=args.destination,
         model=args.model,
         output_format=args.format,
-        transcribe=args.transcribe
+        transcribe=args.transcribe,
+        sc_workers=args.sc_workers,
     )
+
     try:
         processor = SimplifiedAudioProcessor(config)
         processor.process()
