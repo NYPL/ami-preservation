@@ -21,6 +21,7 @@ AUDIO_DIGITAL_DAT = '2024_audio_digital_DAT.xml'
 AUDIO_DIGITAL = '2024_audio_digital.xml'
 AUDIO_OPTICAL = '2024_audio_optical.xml'
 AUDIO_OPTICAL_MINIDISC = None
+AUDIO_SC = '2026_audio_SC.xml' 
 FILM16_PM_COMP = '2024_film16_PM_compsound.xml'
 FILM16_PM_FLEX = '2024_film16_PM.xml'
 FILM16_PM_SLNT = '2024_film16_PM_silent.xml'
@@ -126,8 +127,10 @@ def get_json_values(asset_path):
     except KeyError:
         LOGGER.error(f'{bold("JSON invalid")}: {asset_path}')
 
-def assign_audio_policy(jformat, jtype, f1):
-    if re.search('optical', jtype):
+def assign_audio_policy(jformat, jtype, jrole, f1):
+    if jrole == 'sc':
+        policy = AUDIO_SC
+    elif re.search('optical', jtype):
         if re.search('minidisc', jformat):
             policy = AUDIO_OPTICAL_MINIDISC
         else:
@@ -192,7 +195,7 @@ def assign_video_policy(jformat, jrole, jtype):
 def assign_policy(jvals, f1, flex):
     jtype, jformat, jrole = [item.lower() for item in jvals]
     if re.search('audio', jtype):
-        policy = assign_audio_policy(jformat, jtype, f1)
+        policy = assign_audio_policy(jformat, jtype, jrole, f1)
     elif re.search('film', jtype):
         policy = assign_film_policy(jformat, jrole, flex)
     elif re.search('video', jtype):
@@ -354,5 +357,5 @@ def main():
     summarize(asset_count, inelig_count, elig_count, df.outcome.tolist())
     print()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
