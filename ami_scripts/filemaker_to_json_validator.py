@@ -375,7 +375,8 @@ class DataTransformer:
             val = self._apply_field_transformations(col, val, media_type, is_iso, obj_type, record)
             
             # Skip if value should be filtered out
-            if self._should_skip_field(col, val, media_type):
+            # CHANGE: Passed obj_type to this function to handle specific format exclusions
+            if self._should_skip_field(col, val, media_type, obj_type):
                 continue
             
             # Convert to nested structure
@@ -394,7 +395,6 @@ class DataTransformer:
             # Skip None/empty values early, except for special cases
             if val is None or val == '':
                 # ISO capacity field override
-                # CHANGE: Check if it is an ISO OR if the object type is video optical disc
                 if col == 'source.physicalDescription.dataCapacity.measure':
                     if is_iso or obj_type == 'video optical disc':
                         return 'unknown'
@@ -422,19 +422,20 @@ class DataTransformer:
             
             return val
     
-    def _handle_grooved_disc_fields(self, col: str, val: Any, record: Dict) -> Any:
-        """Handle special grooved disc/cylinder field defaults."""
-        # This method is now integrated into _apply_field_transformations
-        # Keeping for potential future use
-        return val
-    
-    def _should_skip_field(self, col: str, val: Any, media_type: str) -> bool:
+    def _should_skip_field(self, col: str, val: Any, media_type: str, obj_type: str) -> bool:
         """Determine if a field should be skipped."""
+        
+        # Ref: Data Optical Disc Update
+        # Explicitly drop audio tracks for data optical discs, regardless of value (0 or otherwise)
+        if (obj_type == 'data optical disc' and 
+            col == 'source.audioRecording.numberOfAudioTracks'):
+            return True
+
         # Skip None or empty values
         if val is None or val == '':
             return True
         
-        # For audio files, skip zero track entries
+        # For audio files, skip zero track entries (Generic rule)
         if (media_type == 'audio' and 
             col == 'source.audioRecording.numberOfAudioTracks' and 
             val == 0):
