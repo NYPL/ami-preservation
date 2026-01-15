@@ -139,7 +139,7 @@ def transcribe_directory(input_directory, model, output_format):
 
 
 def detect_ltc_in_channel(input_file, stream_index, channel,
-                          probe_duration=120,
+                          probe_duration=240,
                           match_threshold=6,           # min valid codes needed
                           min_unique=4,                # min unique codes
                           min_monotonic_ratio=0.6,     # >=60% adjacent pairs move in one direction
@@ -237,7 +237,7 @@ def detect_ltc_in_channel(input_file, stream_index, channel,
     return False
 
 def analyze_channel_activity(input_file, stream_index, channel,
-                             probe_duration=120, headroom_db=8.0,
+                             probe_duration=240, headroom_db=8.0,
                              min_active_ratio=0.01):
     """
     Returns richer metrics:
@@ -324,7 +324,7 @@ def analyze_channel_activity(input_file, stream_index, channel,
         "max_vol": max_vol
     }
 
-def detect_audio_pan(input_file, audio_pan, probe_duration=120,
+def detect_audio_pan(input_file, audio_pan, probe_duration=240,
                      relative_db_gate=8.0):
     """
     relative_db_gate: if both channels seem quiet by absolute gate,
