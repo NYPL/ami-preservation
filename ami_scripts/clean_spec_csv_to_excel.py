@@ -108,6 +108,7 @@ def map_csv_columns(df):
         'id.legacy': 'bibliographic.formerClassmark',
         'division': 'bibliographic.vernacularDivisionCode',
         'ref_collection_id': 'bibliographic.cmsCollectionID',
+        'title': 'cmsCollectionTitle',
         'name_d_calc': 'Archival box number',
         'date': 'bibliographic.date',
         'group': 'bibliographic.group',
@@ -161,7 +162,7 @@ def map_csv_columns(df):
 
     # Drop unneeded columns
     unneeded_columns = ['_account.entered', '_dtentered', 'cat_item_record_id',
-                        'ref_acq_id', 'title', 'ux_loc_active_d', 'desc.catY', 
+                        'ref_acq_id', 'ux_loc_active_d', 'desc.catY', 
                         'cm.trans.type', 'cm.trans.dont', 'cm.de.recY', 
                         'cm.de.rationale', 'time', 'condition_average',
                         '_inspected_y', '_inspected_by', '_inspected_dt', 
