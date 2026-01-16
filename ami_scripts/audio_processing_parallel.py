@@ -5,7 +5,7 @@ It transcodes audio files and organizes them into PreservationMasters, EditMaste
 and ServiceCopies directories.
 
 Includes verification of matching EM and PM FLAC files, copying of data disc .iso files,
-generation of AAC MP4 (M4A) service copies, and a data disc migration test.
+generation of AAC MP4 (MP4) service copies, and a data disc migration test.
 
 Changes included:
 - Safe parallel service-copy generation (ThreadPoolExecutor) with a single tqdm bar.
@@ -207,7 +207,7 @@ class SimplifiedAudioProcessor:
 
     def _encode_service_copy_one(self, flac: Path, dest_dir: Path) -> Tuple[Path, bool, str]:
         """
-        Encode one FLAC -> M4A service copy.
+        Encode one FLAC -> MP4 service copy.
 
         Returns: (output_file, success, error_message)
 
@@ -215,7 +215,7 @@ class SimplifiedAudioProcessor:
         troubleshooting if a job stalls or fails.
         """
         new_stem = flac.stem.replace('_em', '_sc')
-        output_file = dest_dir / f"{new_stem}.m4a"
+        output_file = dest_dir / f"{new_stem}.mp4"
         log_file = dest_dir / f"{new_stem}.ffmpeg.log"
 
         command = [
@@ -248,7 +248,7 @@ class SimplifiedAudioProcessor:
             return output_file, False, str(e)
 
     def _generate_service_copies(self, source_dir: Path, dest_dir: Path) -> None:
-        """Generate AAC M4A service copies from FLAC files in the source directory (parallel)."""
+        """Generate AAC MP4 service copies from FLAC files in the source directory (parallel)."""
         logger.info("Generating Service Copies (parallel)...")
         dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -346,7 +346,7 @@ class SimplifiedAudioProcessor:
         """Log counts of PM and EM FLAC files after processing."""
         pm_count = len(list((self.config.new_dest_dir / "PreservationMasters").glob("*.flac")))
         em_count = len(list((self.config.new_dest_dir / "EditMasters").glob("*.flac")))
-        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.m4a")))
+        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.mp4")))
         logger.info(f"Final file summary: PM FLAC: {pm_count}, EM FLAC: {em_count}, Service Copies: {sc_count}")
 
     def _transcode_single_file(self, input_file: Path, output_file: Path) -> bool:
