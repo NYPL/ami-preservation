@@ -279,7 +279,8 @@ def insert_new_record(conn, original_record, target_file_info, face_number=None,
             'Archival box barcode',
             'Archival box number',
             'asset.schemaVersion',
-            'technical.signalNotes'
+            'technical.signalNotes',
+            'cmsCollectionTitle'
         ]
         for field in additional_fields:
             if field in original_record:
