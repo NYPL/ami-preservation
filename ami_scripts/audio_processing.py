@@ -5,7 +5,7 @@ It transcodes audio files and organizes them into PreservationMasters, EditMaste
 and ServiceCopies directories.
 
 Includes verification of matching EM and PM FLAC files, copying of data disc .iso files,
-generation of AAC MP4 (M4A) service copies, and a data disc migration test.
+generation of AAC MP4 (MP4) service copies, and a data disc migration test.
 
 Option B implemented:
 - Service copy generation uses ffprobe to get duration and streams ffmpeg stderr
@@ -293,7 +293,7 @@ class SimplifiedAudioProcessor:
                 bar.update(duration_s - last_t)
 
     def _generate_service_copies(self, source_dir: Path, dest_dir: Path) -> None:
-        """Generate AAC M4A service copies from FLAC files in the source directory."""
+        """Generate AAC MP4 service copies from FLAC files in the source directory."""
         logger.info("Generating Service Copies...")
         flac_files = sorted(self._get_clean_files(source_dir.glob("*.flac")), key=lambda p: p.name)
 
@@ -308,7 +308,7 @@ class SimplifiedAudioProcessor:
 
             # Replace '_em' with '_sc' in the filename stem
             new_stem = flac.stem.replace('_em', '_sc')
-            output_file = dest_dir / f"{new_stem}.m4a"
+            output_file = dest_dir / f"{new_stem}.mp4"
 
             command = [
                 "ffmpeg",
@@ -380,7 +380,7 @@ class SimplifiedAudioProcessor:
         """Log counts of PM and EM FLAC files after processing."""
         pm_count = len(list((self.config.new_dest_dir / "PreservationMasters").glob("*.flac")))
         em_count = len(list((self.config.new_dest_dir / "EditMasters").glob("*.flac")))
-        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.m4a")))
+        sc_count = len(list((self.config.new_dest_dir / "ServiceCopies").glob("*.mp4")))
         logger.info(f"Final file summary: PM FLAC: {pm_count}, EM FLAC: {em_count}, Service Copies: {sc_count}")
 
     def _transcode_single_file(self, input_file: Path, output_file: Path) -> bool:
