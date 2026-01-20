@@ -2,6 +2,7 @@
 """
 Per-Stream / Per-Channel Audio Configuration Classifier (NumPy + ltcdump) - Late Audio Aware
 WITH: lag-aligned pair metrics + 2-window confirmation for dual-mono
+WITH: Total Audio Track Count (including silent channels)
 
 What it does:
 - Finds audio streams/channels with ffprobe
@@ -11,6 +12,7 @@ What it does:
 - Uses NumPy waveform similarity for dual-mono vs stereo:
     - estimate lag, align signals, then compute corr + best-fit residual
     - only calls Dual Mono if it passes in TWO windows (early + later) when possible
+- Reports Total Audio Tracks (container channel count)
 
 Requires: ffmpeg, ffprobe, ltcdump (ltc-tools), numpy
 """
@@ -22,6 +24,9 @@ import sys
 import re
 import math
 import os
+import logging
+import jaydebeapi
+from pathlib import Path
 from typing import Dict, Tuple, List, Optional
 from collections import Counter
 
@@ -30,6 +35,18 @@ import numpy as np
 # -------------------------
 # Configuration
 # -------------------------
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__name__)
+
+# FileMaker Config (Environment Variables)
+DB_SERVER_IP = os.getenv('FM_SERVER')
+DB_DEV_IP = os.getenv('FM_DEV_SERVER')
+DB_NAME = os.getenv('AMI_DATABASE')
+DB_USER = os.getenv('AMI_DATABASE_USERNAME')
+DB_PASS = os.getenv('AMI_DATABASE_PASSWORD')
+JDBC_PATH = os.path.expanduser('~/Desktop/ami-preservation/ami_scripts/jdbc/fmjdbc.jar')
 
 SILENCE_THRESH_DB = -60.0
 
@@ -44,7 +61,7 @@ LTC_FPS_CANDIDATES = (24, 25, 30)
 # Tighten these if you want to reduce false dual-mono further:
 # e.g. DUAL_MONO_CORR_MIN=0.985, DUAL_MONO_RESID_MAX=0.03
 DUAL_MONO_CORR_MIN = 0.97
-DUAL_MONO_RESID_MAX = 0.15
+DUAL_MONO_RESID_MAX = 0.15  # Loosened to 15% to allow for compression artifacts
 DUAL_MONO_LAG_MAX_SAMPLES = 8
 
 STEREO_CORR_MAX = 0.85
@@ -688,7 +705,72 @@ def analyze_file_per_stream(
     result = "; ".join(parts)
     status = "Exact Match" if result in KNOWN_CONFIGS else "New Configuration"
 
-    return {"result": result, "status": status, "flags": flags, "stats": global_stats, "streams": streams}
+    return {
+        "result": result,
+        "status": status,
+        "flags": flags,
+        "stats": global_stats,
+        "streams": streams,
+        "track_count": total_global_channels
+    }
+
+# -----------------------------------------------------------------------------
+# PART 2: DATABASE INTERACTION (JayDeBeApi)
+# -----------------------------------------------------------------------------
+
+def connect_to_database(use_dev=False):
+    target_ip = DB_DEV_IP if use_dev else DB_SERVER_IP
+    if not target_ip:
+        logger.error("Database IP not set in environment variables.")
+        return None
+    
+    url = f'jdbc:filemaker://{target_ip}/{DB_NAME}'
+    try:
+        conn = jaydebeapi.connect(
+            'com.filemaker.jdbc.Driver',
+            url,
+            [DB_USER, DB_PASS],
+            JDBC_PATH
+        )
+        logger.info(f"Connected to FileMaker at {target_ip}")
+        return conn
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        return None
+
+def check_record_exists(conn, filename):
+    curs = conn.cursor()
+    try:
+        # Note: Depending on FM SQL implementation, column names with dots might need quotes
+        query = 'SELECT COUNT(*) FROM tbl_metadata WHERE "asset.referenceFilename" = ?'
+        curs.execute(query, [filename])
+        count = curs.fetchone()[0]
+        return count > 0
+    except Exception as e:
+        logger.error(f"Error searching for {filename}: {e}")
+        return False
+    finally:
+        curs.close()
+
+def update_record(conn, filename, sound_field, track_count):
+    curs = conn.cursor()
+    try:
+        query = """
+            UPDATE tbl_metadata 
+            SET "source.audioRecording.audioSoundField" = ?,
+                "source.audioRecording.numberOfAudioTracks" = ?
+            WHERE "asset.referenceFilename" = ?
+        """
+        curs.execute(query, [sound_field, track_count, filename])
+        # Note: JayDeBeApi/FM JDBC usually auto-commits, but strictly:
+        # conn.commit() 
+        logger.info(f"✅ Updated {filename}")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to update {filename}: {e}")
+        return False
+    finally:
+        curs.close()
 
 # -------------------------
 # CLI
@@ -699,6 +781,7 @@ def main():
         description="Per-Stream Audio Configuration Classifier (NumPy + ltcdump, late-audio aware, 2-window dual-mono confirm)",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
+    # Original Analysis Flags
     parser.add_argument("-i", "--input", required=True, help="Input file or directory")
     parser.add_argument("-d", "--duration", type=int, default=240,
                         help="Max offset for seeking analysis windows + LTC probe upper bound (default: 240)")
@@ -715,9 +798,19 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Show debug output")
     parser.add_argument("--show-stats", action="store_true", help="Show RMS/Peak values")
     parser.add_argument("--no-ltc", action="store_true", help="Disable LTC detection")
+    
+    # New Database Flags
+    parser.add_argument("--update", action="store_true", help="Perform actual DB updates")
+    parser.add_argument("--dev-server", action="store_true", help="Use Dev Server")
+    
     args = parser.parse_args()
 
     enable_ltc = not args.no_ltc
+
+    # 1. Connect to Database (if we intend to interact with it)
+    conn = connect_to_database(use_dev=args.dev_server)
+    if not conn:
+        print("⚠️  Running in Offline Mode (Analysis Only). No DB connection established.")
 
     analysis_seconds = max(1, int(args.analysis_seconds))
     pair_seconds = max(1, int(args.pair_seconds))
@@ -747,12 +840,14 @@ def main():
     print(f"Found {len(files_to_process)} file(s) to process.\n")
 
     summary_stats = {"Exact Match": 0, "New Configuration": 0, "Error": 0}
+    db_stats = {"Updated": 0, "Skipped": 0, "Missing": 0}
     config_counts = Counter()
 
     for i, fpath in enumerate(files_to_process, 1):
         filename = os.path.basename(fpath)
         print(f"[{i}/{len(files_to_process)}] {filename}")
-
+        
+        # A. Analyze
         data = analyze_file_per_stream(
             input_file=fpath,
             ltc_duration=ltc_duration,
@@ -782,6 +877,7 @@ def main():
             print(f"  Streams: {stream_desc}")
 
         print(f"  Result: {data['result']}")
+        print(f"  Total Audio Tracks: {data.get('track_count', 0)}")
         if data["status"] != "Exact Match":
             print(f"  Status: {data['status']}")
 
@@ -797,7 +893,26 @@ def main():
                 peak_str = f"{peak_db:.1f}" if peak_db > -200 else "-inf"
                 print(f"    Ch{ch}: RMS={rms_str:>6s}  Peak={peak_str:>6s}")
 
+        # B. DB Update
+        if conn:
+            classification = data['result']
+            track_count = int(data['track_count'])
+
+            if check_record_exists(conn, filename):
+                if args.update:
+                    if update_record(conn, filename, classification, track_count):
+                        db_stats["Updated"] += 1
+                else:
+                    print(f"  [DB] ℹ️  Dry Run: Record found. Would set '{classification}' ({track_count} Trks)")
+                    db_stats["Skipped"] += 1
+            else:
+                print(f"  [DB] ⚠️  Record not found in FileMaker.")
+                db_stats["Missing"] += 1
+
         print("-" * 70)
+    
+    if conn:
+        conn.close()
 
     print("\n" + "=" * 70)
     print("BATCH ANALYSIS COMPLETE")
@@ -806,6 +921,14 @@ def main():
     print(f"  ✓ Exact Matches:      {summary_stats['Exact Match']}")
     print(f"  ⚠ New Configurations: {summary_stats['New Configuration']}")
     print(f"  ✗ Errors:             {summary_stats['Error']}")
+    
+    if conn:
+        print("-" * 70)
+        print("Database Actions:")
+        print(f"  ✓ Updated: {db_stats['Updated']}")
+        print(f"  ℹ️  Skipped: {db_stats['Skipped']} (Dry Run / No Change)")
+        print(f"  ⚠ Missing: {db_stats['Missing']}")
+
     print("-" * 70)
     print("Configuration Frequency (most common first):")
     print("-" * 70)
