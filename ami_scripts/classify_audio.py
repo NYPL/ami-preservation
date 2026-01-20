@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
-Per-Stream / Per-Channel Audio Configuration Classifier (Updated)
+Per-Stream / Per-Channel Audio Configuration Classifier (NumPy + ltcdump) - Late Audio Aware
+WITH: lag-aligned pair metrics + 2-window confirmation for dual-mono
 
-1) Dual-mono now requires STRONG evidence:
-   - Side much weaker than Mid (width very negative), AND/OR
-   - Very high correlation estimate (close to 1.0), AND
-   - Channels closely level-matched
-2) “Borderline” cases now default to STEREO (with a warning flag), not MONO.
-   Rationale: your reported failure mode is falsely calling stereo “dual mono.”
-   Defaulting to stereo reduces that error.
+What it does:
+- Finds audio streams/channels with ffprobe
+- Searches for a non-silent analysis window even if audio starts late (0s, +step, +2*step...)
+- Labels each channel: None / Timecode / Mono / Stereo Left / Stereo Right
+- Uses ltcdump for LTC detection
+- Uses NumPy waveform similarity for dual-mono vs stereo:
+    - estimate lag, align signals, then compute corr + best-fit residual
+    - only calls Dual Mono if it passes in TWO windows (early + later) when possible
 
-Notes:
-- This remains a heuristic classifier. The most robust discriminator is still
-  a direct L/R similarity check (e.g., correlation on PCM samples), but this
-  update tightens your existing mid/side approach without adding heavy DSP deps.
+Requires: ffmpeg, ffprobe, ltcdump (ltc-tools), numpy
 """
 
 import argparse
@@ -25,6 +24,8 @@ import math
 import os
 from typing import Dict, Tuple, List, Optional
 from collections import Counter
+
+import numpy as np
 
 # -------------------------
 # Configuration
@@ -39,21 +40,28 @@ LTC_MIN_UNIQUE = 4
 LTC_MIN_MONOTONIC_RATIO = 0.6
 LTC_FPS_CANDIDATES = (24, 25, 30)
 
-# Mid/Side width thresholds (Side RMS - Mid RMS)
-# Dual-mono (L≈R) should have Side MUCH weaker than Mid.
-# True stereo can still be center-heavy, but Side usually isn't *that* far down.
-DUAL_MONO_MAX_WIDTH_DB = -6.0     # <= -6 dB is strong evidence of dual-mono
-STEREO_MIN_WIDTH_DB = -2.0        # >= -2 dB is strong evidence of stereo
+# Waveform thresholds (tuneable)
+# Tighten these if you want to reduce false dual-mono further:
+# e.g. DUAL_MONO_CORR_MIN=0.985, DUAL_MONO_RESID_MAX=0.03
+DUAL_MONO_CORR_MIN = 0.97
+DUAL_MONO_RESID_MAX = 0.15
+DUAL_MONO_LAG_MAX_SAMPLES = 8
 
-# Correlation estimate thresholds (from mid/side energies)
-# This estimate tends to be "moderately positive" for many real stereo mixes.
-# So, use it only as strong evidence when it's VERY high.
-CORRELATION_DUAL_MONO_MIN = 0.85  # must be very high to call dual-mono in borderline
-CORRELATION_STEREO_MAX = 0.30     # low correlation suggests stereo (but not required)
+STEREO_CORR_MAX = 0.85
+STEREO_RESID_MIN = 0.20
 
-# Volume difference heuristics
-VOLUME_MATCH_DB = 1.5
-VOLUME_DIFFERENT_DB = 3.0
+# Analysis decoding (numpy)
+ANALYSIS_SAMPLE_RATE = 48000
+DEFAULT_ANALYSIS_SECONDS = 300     # bigger default window for “late start” cases
+DEFAULT_PAIR_SECONDS = 60          # more stable similarity stats
+
+# Late-audio search defaults
+DEFAULT_WINDOW_STEP_SECONDS = 180  # jump 3 minutes between attempts
+DEFAULT_MAX_WINDOWS = 4            # try 0, +3m, +6m, +9m by default
+
+# Dual-mono confirmation settings (second window inside the chosen decode window)
+CONFIRM_OFFSET_SECONDS = 120       # try a second window ~2 minutes into the decoded chunk
+CONFIRM_MIN_SECONDS = 5            # require >= 5 seconds for confirmation window
 
 # Known configs (your original list)
 KNOWN_CONFIGS = [
@@ -105,18 +113,13 @@ KNOWN_CONFIGS = [
 ]
 
 # -------------------------
-# Helpers
+# Utilities
 # -------------------------
 
-def _safe_float(s: str) -> float:
-    try:
-        v = float(s)
-        if math.isnan(v) or math.isinf(v):
-            return float("-inf")
-        return v
-    except Exception:
+def _dbfs_from_linear(x: float) -> float:
+    if x <= 0.0 or not math.isfinite(x):
         return float("-inf")
-
+    return 20.0 * math.log10(x)
 
 def ffprobe_audio_streams(input_file: str) -> List[Dict]:
     cmd = [
@@ -142,77 +145,270 @@ def ffprobe_audio_streams(input_file: str) -> List[Dict]:
     except Exception:
         return []
 
-
-def parse_astats(stderr: str) -> Dict[int, Dict[str, float]]:
-    stats: Dict[int, Dict[str, float]] = {}
-    current_channel = None
-
-    ch_re = re.compile(r"Channel:\s*(\d+)", re.I)
-    rms_re = re.compile(r"RMS level(?: dB)?:\s*([^\s]+)", re.I)
-    peak_re = re.compile(r"Peak level(?: dB)?:\s*([^\s]+)", re.I)
-    rms_peak_re = re.compile(r"RMS peak(?: dB)?:\s*([^\s]+)", re.I)
-
-    for line in stderr.splitlines():
-        m = ch_re.search(line)
-        if m:
-            current_channel = int(m.group(1))
-            stats.setdefault(current_channel, {})
-            continue
-        if current_channel is None:
-            continue
-
-        m = rms_re.search(line)
-        if m:
-            stats[current_channel]["rms"] = _safe_float(m.group(1))
-            continue
-
-        m = peak_re.search(line)
-        if m:
-            stats[current_channel]["peak"] = _safe_float(m.group(1))
-            continue
-
-        m = rms_peak_re.search(line)
-        if m:
-            stats[current_channel]["rms_peak"] = _safe_float(m.group(1))
-            continue
-
-    return stats
-
-
-def classify_silence_or_mono(rms_db: float, peak_db: float) -> str:
+def classify_silence_or_mono(rms_db: float) -> str:
     if rms_db == float("-inf") or rms_db <= SILENCE_THRESH_DB:
         return "None"
     return "Mono"
 
+# -------------------------
+# NumPy decode + stats
+# -------------------------
 
-def calculate_correlation_estimate(mid_rms: float, side_rms: float) -> float:
+def decode_stream_pcm_f32le(
+    input_file: str,
+    stream_index: int,
+    start: int,
+    seconds: int,
+    sample_rate: int = ANALYSIS_SAMPLE_RATE,
+    debug: bool = False,
+) -> Tuple[np.ndarray, int]:
     """
-    corr ≈ (M² - S²) / (M² + S²), with M/S in linear power (derived from dB)
-    - Dual mono (L=R): Side ~ -inf => corr ~ 1
-    - Uncorrelated-ish stereo: Mid ≈ Side => corr ~ 0
-    - Anti-corr (L=-R): Mid ~ -inf => corr ~ -1
+    Decode [start, start+seconds) of a single audio stream to float32 PCM interleaved.
+    Returns (pcm_1d, sample_rate).
     """
-    if mid_rms == float("-inf") and side_rms == float("-inf"):
-        return 1.0
-    if mid_rms == float("-inf") and side_rms != float("-inf"):
-        return -1.0
-    if side_rms == float("-inf"):
-        return 1.0
+    cmd = [
+        "ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error",
+        "-ss", str(start),
+        "-t", str(seconds),
+        "-i", input_file,
+        "-map", f"0:{stream_index}",
+        "-vn",
+        "-ar", str(sample_rate),
+        "-acodec", "pcm_f32le",
+        "-f", "f32le",
+        "pipe:1"
+    ]
+    try:
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+    except FileNotFoundError:
+        raise RuntimeError("ffmpeg not found on PATH")
 
-    mid_power = 10 ** (mid_rms / 10)
-    side_power = 10 ** (side_rms / 10)
-    denom = mid_power + side_power
-    if denom <= 0:
-        return 1.0
-    corr = (mid_power - side_power) / denom
-    return max(-1.0, min(1.0, corr))
+    if p.returncode != 0:
+        if debug and err:
+            try:
+                sys.stderr.write(err.decode("utf-8", errors="replace") + "\n")
+            except Exception:
+                pass
+        raise RuntimeError(f"ffmpeg decode failed for stream {stream_index} at start={start}s")
+    pcm = np.frombuffer(out, dtype=np.float32)
+    return pcm, sample_rate
 
+def reshape_interleaved(pcm: np.ndarray, channels: int) -> np.ndarray:
+    n = (pcm.size // channels) * channels
+    if n == 0:
+        return np.zeros((0, channels), dtype=np.float32)
+    return pcm[:n].reshape((-1, channels))
+
+def compute_channel_stats_dbfs(samples: np.ndarray) -> Dict[int, Dict[str, float]]:
+    stats: Dict[int, Dict[str, float]] = {}
+    if samples.size == 0:
+        return stats
+    x = samples.astype(np.float64, copy=False)
+    rms = np.sqrt(np.mean(x * x, axis=0))
+    peak = np.max(np.abs(x), axis=0)
+    for i in range(samples.shape[1]):
+        stats[i + 1] = {"rms": _dbfs_from_linear(float(rms[i])), "peak": _dbfs_from_linear(float(peak[i]))}
+    return stats
+
+def stream_has_any_signal(stats: Dict[int, Dict[str, float]]) -> bool:
+    for _ch, st in stats.items():
+        if st.get("rms", float("-inf")) > SILENCE_THRESH_DB:
+            return True
+    return False
+
+# -------------------------
+# Pair similarity (waveform-based) WITH lag alignment + 2-window confirmation
+# -------------------------
+
+def rms(x: np.ndarray) -> float:
+    if x.size == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
+
+def _safe_corrcoef(a: np.ndarray, b: np.ndarray) -> float:
+    if a.size < 8 or b.size < 8:
+        return 1.0
+    sa = float(np.std(a))
+    sb = float(np.std(b))
+    if sa <= 1e-12 or sb <= 1e-12:
+        return 1.0
+    c = float(np.corrcoef(a, b)[0, 1])
+    if not math.isfinite(c):
+        return 1.0
+    return max(-1.0, min(1.0, c))
+
+def best_fit_gain(a: np.ndarray, b: np.ndarray) -> float:
+    denom = float(np.dot(a, a))
+    if denom <= 1e-20:
+        return 1.0
+    return float(np.dot(b, a)) / denom
+
+def estimate_lag_samples(a: np.ndarray, b: np.ndarray, max_lag: int = 2000) -> int:
+    """
+    Estimate lag (samples) where b best aligns to a.
+    Positive lag means b is delayed vs a.
+    Uses downsampled cross-correlation for speed.
+    """
+    if a.size < 2048 or b.size < 2048:
+        return 0
+
+    step = max(1, a.size // 50000)  # target <= ~50k samples
+    aa = a[::step].astype(np.float64, copy=False)
+    bb = b[::step].astype(np.float64, copy=False)
+
+    aa = aa - np.mean(aa)
+    bb = bb - np.mean(bb)
+
+    max_lag_ds = max(1, max_lag // step)
+    if max_lag_ds >= aa.size - 1:
+        max_lag_ds = max(1, aa.size // 4)
+
+    corr = np.correlate(bb, aa, mode="full")
+    mid = corr.size // 2
+
+    lo = max(0, mid - max_lag_ds)
+    hi = min(corr.size, mid + max_lag_ds + 1)
+    window = corr[lo:hi]
+    idx = int(np.argmax(window))
+    lag_ds = (lo + idx) - mid
+
+    return int(lag_ds * step)
+
+def align_by_lag(a: np.ndarray, b: np.ndarray, lag: int) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Align b to a by trimming.
+    lag > 0: b is delayed -> trim first lag samples of b
+    lag < 0: b is early   -> trim first -lag samples of a
+    """
+    if lag == 0:
+        n = min(a.size, b.size)
+        return a[:n], b[:n]
+
+    if lag > 0:
+        if lag >= b.size:
+            return a[:0], b[:0]
+        b2 = b[lag:]
+        n = min(a.size, b2.size)
+        return a[:n], b2[:n]
+    else:
+        lag2 = -lag
+        if lag2 >= a.size:
+            return a[:0], b[:0]
+        a2 = a[lag2:]
+        n = min(a2.size, b.size)
+        return a2[:n], b[:n]
+
+def pair_metrics_aligned(L: np.ndarray, R: np.ndarray, lag: int) -> Dict[str, float]:
+    """
+    Compute corr + best-fit residual on aligned, zero-mean signals.
+    """
+    a, b = align_by_lag(L, R, lag)
+    if a.size == 0 or b.size == 0:
+        return {"corr": 1.0, "gain": 1.0, "resid_ratio": 0.0}
+
+    l = a.astype(np.float64, copy=False)
+    r = b.astype(np.float64, copy=False)
+
+    l = l - np.mean(l)
+    r = r - np.mean(r)
+
+    corr = _safe_corrcoef(l, r)
+    gain = best_fit_gain(l, r)
+    resid = r - (gain * l)
+
+    r_rms = rms(r)
+    resid_rms = rms(resid)
+    resid_ratio = (resid_rms / r_rms) if r_rms > 1e-12 else 0.0
+
+    return {"corr": float(corr), "gain": float(gain), "resid_ratio": float(resid_ratio)}
+
+def dual_mono_pass(metrics: Dict[str, float], lag: int) -> Tuple[bool, List[str]]:
+    flags: List[str] = []
+    corr = metrics["corr"]
+    resid_ratio = metrics["resid_ratio"]
+
+    if abs(corr) >= DUAL_MONO_CORR_MIN and resid_ratio <= DUAL_MONO_RESID_MAX and abs(lag) <= DUAL_MONO_LAG_MAX_SAMPLES:
+        if corr < 0:
+            flags.append(f"Polarity-inverted dual mono (corr={corr:.3f}, resid={resid_ratio:.3f}, lag={lag})")
+        return True, flags
+    return False, flags
+
+def analyze_pair_waveform(
+    L1: np.ndarray,
+    R1: np.ndarray,
+    *,
+    L2: Optional[np.ndarray] = None,
+    R2: Optional[np.ndarray] = None,
+) -> Tuple[str, str, Dict[str, float], List[str]]:
+    """
+    Dual mono vs stereo with:
+      - lag estimate + alignment before computing metrics
+      - 2-window confirmation: only call dual-mono if it passes in window1 and window2 (when provided)
+    """
+    flags: List[str] = []
+
+    # Window 1
+    lag1 = estimate_lag_samples(L1, R1, max_lag=2000)
+    m1 = pair_metrics_aligned(L1, R1, lag1)
+    dm1, dm_flags1 = dual_mono_pass(m1, lag1)
+
+    # Window 2 (optional)
+    if L2 is not None and R2 is not None and L2.size > 0 and R2.size > 0:
+        lag2 = estimate_lag_samples(L2, R2, max_lag=2000)
+        m2 = pair_metrics_aligned(L2, R2, lag2)
+        dm2, dm_flags2 = dual_mono_pass(m2, lag2)
+    else:
+        lag2 = None
+        m2 = None
+        dm2 = None
+        dm_flags2 = []
+
+    # Dual-mono requires window1 AND (if present) window2
+    if dm1:
+        if dm2 is None:
+            flags.extend(dm_flags1)
+            metrics_out = {"corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1)}
+            return "Mono", "Mono", metrics_out, flags
+
+        if dm2:
+            flags.extend(dm_flags1)
+            flags.extend(dm_flags2)
+            metrics_out = {
+                "corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1),
+                "corr2": m2["corr"], "gain2": m2["gain"], "resid_ratio2": m2["resid_ratio"], "lag2": float(lag2),
+            }
+            return "Mono", "Mono", metrics_out, flags
+
+        # Window 1 said dual-mono, window 2 contradicted -> do NOT label dual-mono
+        flags.append(
+            f"Window1 looked dual-mono but Window2 did not "
+            f"(w1 corr={m1['corr']:.3f} resid={m1['resid_ratio']:.3f} lag={lag1}; "
+            f"w2 corr={m2['corr']:.3f} resid={m2['resid_ratio']:.3f} lag={lag2})"
+        )
+
+    # Stereo decisions based on window1 (aligned) metrics
+    if abs(m1["corr"]) <= STEREO_CORR_MAX or m1["resid_ratio"] >= STEREO_RESID_MIN:
+        if abs(m1["corr"]) > 0.90:
+            flags.append(f"Highly correlated stereo (corr={m1['corr']:.3f}, resid={m1['resid_ratio']:.3f}, lag={lag1})")
+        metrics_out = {"corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1)}
+        return "Stereo Left", "Stereo Right", metrics_out, flags
+
+    # Borderline: default stereo (more conservative)
+    flags.append(f"Borderline -> Stereo (corr={m1['corr']:.3f}, resid={m1['resid_ratio']:.3f}, lag={lag1})")
+    metrics_out = {"corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1)}
+    return "Stereo Left", "Stereo Right", metrics_out, flags
+
+# -------------------------
+# LTC detection (ltcdump)
+# -------------------------
 
 def detect_ltc_in_channel(
     input_file: str,
     stream_index: int,
     channel_1based: int,
     probe_duration: int,
+    start: int = 0,
     match_threshold: int = LTC_MATCH_THRESHOLD,
     min_unique: int = LTC_MIN_UNIQUE,
     min_monotonic_ratio: float = LTC_MIN_MONOTONIC_RATIO,
@@ -224,6 +420,7 @@ def detect_ltc_in_channel(
 
     ffmpeg_command = [
         "ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error",
+        "-ss", str(start),
         "-t", str(probe_duration),
         "-i", str(input_file),
         "-map", f"0:{stream_index}",
@@ -244,7 +441,7 @@ def detect_ltc_in_channel(
         )
         assert ffmpeg_proc.stdout is not None
         ffmpeg_proc.stdout.close()
-        ltcdump_out, _ltcdump_err = ltcdump_proc.communicate()
+        ltcdump_out, _ = ltcdump_proc.communicate()
         ffmpeg_proc.wait()
     except FileNotFoundError as e:
         if debug:
@@ -260,7 +457,7 @@ def detect_ltc_in_channel(
            for m in tc_pat.finditer(ltcdump_out)]
 
     if debug:
-        print(f"  [LTC DEBUG] stream={stream_index} ch={channel_1based} tokens={len(raw)}")
+        print(f"  [LTC DEBUG] stream={stream_index} ch={channel_1based} start={start}s tokens={len(raw)}")
 
     if not raw:
         return False, None, 0.0, []
@@ -268,6 +465,7 @@ def detect_ltc_in_channel(
     def to_frames(h, m, s, f, fps):
         return (((h * 60) + m) * 60 + s) * fps + f
 
+    # dedupe while preserving order
     seen = set()
     ordered_unique = []
     for tc in raw:
@@ -307,140 +505,21 @@ def detect_ltc_in_channel(
 
     return False, best_fps, best_ratio, best_valid_seq
 
+# -------------------------
+# Analysis
+# -------------------------
 
-def get_raw_channel_stats_for_stream(input_file: str, stream_index: int, duration: int) -> Dict[int, Dict[str, float]]:
-    filt = "aformat=sample_fmts=fltp,astats=metadata=1:reset=1:measure_perchannel=RMS_level+Peak_level+RMS_peak"
-    cmd = [
-        "ffmpeg", "-hide_banner", "-v", "info",
-        "-i", input_file,
-        "-t", str(duration),
-        "-map", f"0:{stream_index}",
-        "-af", filt,
-        "-f", "null", "-"
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    _, stderr = proc.communicate()
-    return parse_astats(stderr)
-
-
-def get_pair_midside_rms(
+def analyze_file_per_stream(
     input_file: str,
-    stream_index: int,
-    duration: int,
-    l0: int,
-    r0: int
-) -> Tuple[float, float]:
-    filt = (
-        f"[0:{stream_index}]asplit=2[a][b];"
-        f"[a]pan=mono|c0=0.5*c{l0}+0.5*c{r0}[mid];"
-        f"[b]pan=mono|c0=0.5*c{l0}-0.5*c{r0}[side];"
-        f"[mid][side]amerge=inputs=2,"
-        f"aformat=sample_fmts=fltp,"
-        f"astats=metadata=1:reset=1:measure_perchannel=RMS_level"
-    )
-    cmd = [
-        "ffmpeg", "-hide_banner", "-v", "info",
-        "-i", input_file,
-        "-t", str(duration),
-        "-filter_complex", filt,
-        "-f", "null", "-"
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    _, stderr = proc.communicate()
-    stats = parse_astats(stderr)
-    mid_rms = stats.get(1, {}).get("rms", float("-inf"))
-    side_rms = stats.get(2, {}).get("rms", float("-inf"))
-    return mid_rms, side_rms
-
-
-def analyze_pair(
-    global_ch_l: int,
-    global_ch_r: int,
-    labels: Dict[int, str],
-    raw_stats_global: Dict[int, Dict[str, float]],
-    mid_rms: float,
-    side_rms: float,
-    debug: bool = False
-) -> Tuple[str, str, List[str]]:
-    flags: List[str] = []
-
-    # Only analyze pairs where both are currently Mono (and not None/Timecode/etc.)
-    if labels.get(global_ch_l) != "Mono" or labels.get(global_ch_r) != "Mono":
-        return labels.get(global_ch_l, "Mono"), labels.get(global_ch_r, "Mono"), flags
-
-    rms_l = raw_stats_global.get(global_ch_l, {}).get("rms", float("-inf"))
-    rms_r = raw_stats_global.get(global_ch_r, {}).get("rms", float("-inf"))
-    peak_l = raw_stats_global.get(global_ch_l, {}).get("peak", float("-inf"))
-    peak_r = raw_stats_global.get(global_ch_r, {}).get("peak", float("-inf"))
-
-    width_db = float("-inf")
-    if mid_rms != float("-inf") and side_rms != float("-inf"):
-        width_db = side_rms - mid_rms
-
-    vol_diff_db = 0.0
-    if rms_l != float("-inf") and rms_r != float("-inf"):
-        vol_diff_db = abs(rms_l - rms_r)
-
-    corr = calculate_correlation_estimate(mid_rms, side_rms)
-
-    if debug:
-        print(f"  [PAIR DEBUG] Ch{global_ch_l}/Ch{global_ch_r}:")
-        print(f"    L: RMS={rms_l:.1f}, Peak={peak_l:.1f}")
-        print(f"    R: RMS={rms_r:.1f}, Peak={peak_r:.1f}")
-        mr = f"{mid_rms:.1f}" if mid_rms > -200 else "-inf"
-        sr = f"{side_rms:.1f}" if side_rms > -200 else "-inf"
-        wd = f"{width_db:.1f}" if width_db > -200 else "-inf"
-        print(f"    Mid={mr}  Side={sr}  Width={wd}  VolDiff={vol_diff_db:.1f}  Corr={corr:.3f}")
-
-    # Polarity-inverted dual mono (mid=-inf, side has energy)
-    if mid_rms == float("-inf") and side_rms != float("-inf"):
-        flags.append(f"Ch{global_ch_l}/Ch{global_ch_r}: Polarity-inverted dual mono (Mid=-inf)")
-        return "Mono", "Mono", flags
-
-    # --- Strong evidence rules ---
-
-    # 1) Clear dual mono: Side far below Mid AND channels level-match reasonably
-    if width_db != float("-inf"):
-        if width_db <= DUAL_MONO_MAX_WIDTH_DB and vol_diff_db <= VOLUME_MATCH_DB:
-            # Optional extra confidence: corr should also be high-ish
-            if corr >= 0.70:
-                return "Mono", "Mono", flags
-            # Even if corr isn't super high, very weak side + level match is usually dual-mono
-            flags.append(f"Ch{global_ch_l}/Ch{global_ch_r}: Weak side (width={width_db:.1f}dB) -> Dual mono")
-            return "Mono", "Mono", flags
-
-        # 2) Clear stereo: Side not much weaker than Mid
-        if width_db >= STEREO_MIN_WIDTH_DB:
-            # This includes center-heavy stereo (width around -1 to -2 dB)
-            if corr < 0:
-                flags.append(f"Ch{global_ch_l}/Ch{global_ch_r}: Anti-correlated/phasey stereo (corr={corr:.2f})")
-            return "Stereo Left", "Stereo Right", flags
-
-    # --- Borderline zone (between the above width thresholds, or missing width) ---
-    # This is where your old logic over-called dual-mono.
-    # We now require VERY strong correlation AND close level match to call dual-mono.
-    if corr >= CORRELATION_DUAL_MONO_MIN and vol_diff_db <= VOLUME_MATCH_DB:
-        flags.append(f"Ch{global_ch_l}/Ch{global_ch_r}: High corr ({corr:.2f}) + level match -> Dual mono")
-        return "Mono", "Mono", flags
-
-    # If correlation is low, treat as stereo.
-    if corr <= CORRELATION_STEREO_MAX:
-        flags.append(f"Ch{global_ch_l}/Ch{global_ch_r}: Low corr ({corr:.2f}) -> Stereo")
-        return "Stereo Left", "Stereo Right", flags
-
-    # Large level difference often means stereo or at least non-identical channels
-    if vol_diff_db > VOLUME_DIFFERENT_DB:
-        flags.append(f"Ch{global_ch_l}/Ch{global_ch_r}: Level mismatch ({vol_diff_db:.1f}dB) -> Stereo")
-        return "Stereo Left", "Stereo Right", flags
-
-    # Final fallback: default to stereo to avoid the common failure mode (stereo miscalled as mono)
-    flags.append(
-        f"Ch{global_ch_l}/Ch{global_ch_r}: Borderline (width={width_db if width_db!=-float('inf') else float('nan'):.1f}dB, corr={corr:.2f}), defaulting to Stereo"
-    )
-    return "Stereo Left", "Stereo Right", flags
-
-
-def analyze_file_per_stream(input_file: str, duration: int, debug: bool = False, enable_ltc: bool = True) -> Dict:
+    ltc_duration: int,
+    analysis_seconds: int,
+    pair_seconds: int,
+    max_offset_seconds: int,
+    window_step_seconds: int,
+    max_windows: int,
+    debug: bool = False,
+    enable_ltc: bool = True,
+) -> Dict:
     streams = ffprobe_audio_streams(input_file)
     if not streams:
         return {"result": "No Audio Channels", "status": "Error", "flags": [], "stats": {}, "streams": []}
@@ -465,7 +544,9 @@ def analyze_file_per_stream(input_file: str, duration: int, debug: bool = False,
     global_stats: Dict[int, Dict[str, float]] = {}
     flags: List[str] = []
 
-    # Pass 1: RAW channel stats + initial None/Mono labels
+    stream_waveforms: Dict[int, np.ndarray] = {}
+
+    # Per stream: find a decode window with real audio
     for s in streams:
         stream_index = s["index"]
         n_ch = s["channels"]
@@ -473,42 +554,98 @@ def analyze_file_per_stream(input_file: str, duration: int, debug: bool = False,
             continue
         base = stream_to_global_base[stream_index]
 
-        raw_stats = get_raw_channel_stats_for_stream(input_file, stream_index, duration)
+        chosen_samples: Optional[np.ndarray] = None
+        chosen_stats: Optional[Dict[int, Dict[str, float]]] = None
+        chosen_start = 0
+
+        for w in range(max_windows):
+            start = w * window_step_seconds
+            if start > max_offset_seconds:
+                break
+            try:
+                pcm, _ = decode_stream_pcm_f32le(
+                    input_file=input_file,
+                    stream_index=stream_index,
+                    start=start,
+                    seconds=analysis_seconds,
+                    sample_rate=ANALYSIS_SAMPLE_RATE,
+                    debug=debug
+                )
+                samples = reshape_interleaved(pcm, n_ch)
+                st = compute_channel_stats_dbfs(samples)
+            except Exception as e:
+                flags.append(f"Stream {stream_index}: decode failed at {start}s ({e})")
+                continue
+
+            if stream_has_any_signal(st):
+                chosen_samples = samples
+                chosen_stats = st
+                chosen_start = start
+                break
+
+            if debug:
+                flags.append(f"Stream {stream_index}: window at {start}s appears silent; trying later window")
+
+        if chosen_samples is None or chosen_stats is None:
+            for local_ch in range(1, n_ch + 1):
+                gch = base + (local_ch - 1)
+                labels[gch] = "None"
+                global_stats[gch] = {"rms": float("-inf"), "peak": float("-inf")}
+            continue
+
+        stream_waveforms[stream_index] = chosen_samples
+
+        # initial channel labels from RMS
         for local_ch in range(1, n_ch + 1):
             gch = base + (local_ch - 1)
-            rms = raw_stats.get(local_ch, {}).get("rms", float("-inf"))
-            peak = raw_stats.get(local_ch, {}).get("peak", float("-inf"))
-            global_stats[gch] = {"rms": rms, "peak": peak}
-            labels[gch] = classify_silence_or_mono(rms, peak)
+            rms_db = chosen_stats.get(local_ch, {}).get("rms", float("-inf"))
+            peak_db = chosen_stats.get(local_ch, {}).get("peak", float("-inf"))
+            global_stats[gch] = {"rms": rms_db, "peak": peak_db}
+            labels[gch] = classify_silence_or_mono(rms_db)
 
-        # LTC detection
+        # LTC detection near the chosen window
         if enable_ltc:
-            ltc_probe = min(duration, LTC_PROBE_DURATION_DEFAULT)
+            probe = min(ltc_duration, LTC_PROBE_DURATION_DEFAULT)
             for local_ch in range(1, n_ch + 1):
                 gch = base + (local_ch - 1)
                 if labels.get(gch) == "None":
                     continue
-                is_ltc, best_fps, best_ratio, _seq = detect_ltc_in_channel(
+                is_ltc, best_fps, best_ratio, _ = detect_ltc_in_channel(
                     input_file=input_file,
                     stream_index=stream_index,
                     channel_1based=local_ch,
-                    probe_duration=ltc_probe,
+                    probe_duration=probe,
+                    start=chosen_start,
                     debug=debug
                 )
                 if is_ltc:
                     labels[gch] = "Timecode"
                     if debug:
-                        flags.append(f"Ch{gch}: LTC detected (fps={best_fps}, score={best_ratio:.2f})")
+                        flags.append(f"Ch{gch}: LTC detected (fps={best_fps}, score={best_ratio:.2f}) at start={chosen_start}s")
 
-    # Pass 2: Per-stream pair analysis (only within each stream)
+    # Pair analysis per stream within chosen window, with 2-window confirmation when possible
     for s in streams:
         stream_index = s["index"]
         n_ch = s["channels"]
         if n_ch <= 1:
             continue
         base = stream_to_global_base[stream_index]
-        n_pairs = n_ch // 2
+        samples = stream_waveforms.get(stream_index)
+        if samples is None or samples.size == 0:
+            continue
 
+        sr = ANALYSIS_SAMPLE_RATE
+        pair_frames = int(pair_seconds * sr)
+        max_frames_early = min(samples.shape[0], pair_frames)
+        early_win = samples[:max_frames_early, :]
+
+        # Build a later confirmation window from inside the SAME decoded chunk
+        late_start = int(CONFIRM_OFFSET_SECONDS * sr)
+        late_end = min(samples.shape[0], late_start + pair_frames)
+        have_late = (late_end - late_start) >= int(CONFIRM_MIN_SECONDS * sr)
+        late_win = samples[late_start:late_end, :] if have_late else None
+
+        n_pairs = n_ch // 2
         for p in range(n_pairs):
             local_l = (p * 2) + 1
             local_r = (p * 2) + 2
@@ -518,53 +655,77 @@ def analyze_file_per_stream(input_file: str, duration: int, debug: bool = False,
             if labels.get(g_l) != "Mono" or labels.get(g_r) != "Mono":
                 continue
 
-            mid_rms, side_rms = get_pair_midside_rms(
-                input_file=input_file,
-                stream_index=stream_index,
-                duration=duration,
-                l0=local_l - 1,
-                r0=local_r - 1
-            )
+            L1 = early_win[:, local_l - 1]
+            R1 = early_win[:, local_r - 1]
 
-            label_l, label_r, pair_flags = analyze_pair(
-                global_ch_l=g_l,
-                global_ch_r=g_r,
-                labels=labels,
-                raw_stats_global=global_stats,
-                mid_rms=mid_rms,
-                side_rms=side_rms,
-                debug=debug
-            )
-            labels[g_l] = label_l
-            labels[g_r] = label_r
-            flags.extend(pair_flags)
+            L2 = None
+            R2 = None
+            if late_win is not None:
+                L2 = late_win[:, local_l - 1]
+                R2 = late_win[:, local_r - 1]
+
+            lab_l, lab_r, m, pair_flags = analyze_pair_waveform(L1, R1, L2=L2, R2=R2)
+            labels[g_l] = lab_l
+            labels[g_r] = lab_r
+
+            if debug:
+                if "corr2" in m:
+                    print(
+                        f"  [PAIR DEBUG] Ch{g_l}/Ch{g_r}: "
+                        f"w1 corr={m['corr']:.3f} resid={m['resid_ratio']:.3f} lag={int(m['lag'])} | "
+                        f"w2 corr={m['corr2']:.3f} resid={m['resid_ratio2']:.3f} lag={int(m['lag2'])}"
+                    )
+                else:
+                    print(
+                        f"  [PAIR DEBUG] Ch{g_l}/Ch{g_r}: "
+                        f"corr={m['corr']:.3f} resid={m['resid_ratio']:.3f} lag={int(m['lag'])}"
+                    )
+
+            for pf in pair_flags:
+                flags.append(f"Ch{g_l}/Ch{g_r}: {pf}")
 
     parts = [f"Ch{i}: {labels.get(i, 'None')}" for i in range(1, total_global_channels + 1)]
     result = "; ".join(parts)
     status = "Exact Match" if result in KNOWN_CONFIGS else "New Configuration"
 
-    return {
-        "result": result,
-        "status": status,
-        "flags": flags,
-        "stats": global_stats,
-        "streams": streams
-    }
+    return {"result": result, "status": status, "flags": flags, "stats": global_stats, "streams": streams}
 
+# -------------------------
+# CLI
+# -------------------------
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Per-Stream Audio Configuration Classifier (Updated dual-mono/stereo logic)",
+        description="Per-Stream Audio Configuration Classifier (NumPy + ltcdump, late-audio aware, 2-window dual-mono confirm)",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("-i", "--input", required=True, help="Input file or directory")
-    parser.add_argument("-d", "--duration", type=int, default=240, help="Scan duration (default: 240)")
+    parser.add_argument("-d", "--duration", type=int, default=240,
+                        help="Max offset for seeking analysis windows + LTC probe upper bound (default: 240)")
+    parser.add_argument("--analysis-seconds", type=int, default=DEFAULT_ANALYSIS_SECONDS,
+                        help=f"Seconds decoded per window per stream (default: {DEFAULT_ANALYSIS_SECONDS})")
+    parser.add_argument("--pair-seconds", type=int, default=DEFAULT_PAIR_SECONDS,
+                        help=f"Seconds used for waveform pair similarity (default: {DEFAULT_PAIR_SECONDS})")
+    parser.add_argument("--window-step-seconds", type=int, default=DEFAULT_WINDOW_STEP_SECONDS,
+                        help=f"Seconds to jump between windows when searching for late audio (default: {DEFAULT_WINDOW_STEP_SECONDS})")
+    parser.add_argument("--max-windows", type=int, default=DEFAULT_MAX_WINDOWS,
+                        help=f"Max windows to try per stream (default: {DEFAULT_MAX_WINDOWS})")
+    parser.add_argument("--max-offset-seconds", type=int, default=None,
+                        help="Max start offset to search for audio. Defaults to -d/--duration.")
     parser.add_argument("--debug", action="store_true", help="Show debug output")
     parser.add_argument("--show-stats", action="store_true", help="Show RMS/Peak values")
     parser.add_argument("--no-ltc", action="store_true", help="Disable LTC detection")
     args = parser.parse_args()
 
     enable_ltc = not args.no_ltc
+
+    analysis_seconds = max(1, int(args.analysis_seconds))
+    pair_seconds = max(1, int(args.pair_seconds))
+    ltc_duration = max(1, int(args.duration))
+    window_step_seconds = max(1, int(args.window_step_seconds))
+    max_windows = max(1, int(args.max_windows))
+    max_offset_seconds = int(args.max_offset_seconds) if args.max_offset_seconds is not None else ltc_duration
+    max_offset_seconds = max(0, max_offset_seconds)
 
     files_to_process: List[str] = []
     if os.path.isfile(args.input):
@@ -592,7 +753,17 @@ def main():
         filename = os.path.basename(fpath)
         print(f"[{i}/{len(files_to_process)}] {filename}")
 
-        data = analyze_file_per_stream(fpath, args.duration, debug=args.debug, enable_ltc=enable_ltc)
+        data = analyze_file_per_stream(
+            input_file=fpath,
+            ltc_duration=ltc_duration,
+            analysis_seconds=analysis_seconds,
+            pair_seconds=pair_seconds,
+            max_offset_seconds=max_offset_seconds,
+            window_step_seconds=window_step_seconds,
+            max_windows=max_windows,
+            debug=args.debug,
+            enable_ltc=enable_ltc
+        )
 
         if data["status"] == "Exact Match":
             summary_stats["Exact Match"] += 1
@@ -620,10 +791,10 @@ def main():
         if args.show_stats and data.get("stats"):
             print("  Channel Stats (dBFS):")
             for ch in sorted(data["stats"].keys()):
-                rms = data["stats"][ch].get("rms", float("-inf"))
-                peak = data["stats"][ch].get("peak", float("-inf"))
-                rms_str = f"{rms:.1f}" if rms > -200 else "-inf"
-                peak_str = f"{peak:.1f}" if peak > -200 else "-inf"
+                rms_db = data["stats"][ch].get("rms", float("-inf"))
+                peak_db = data["stats"][ch].get("peak", float("-inf"))
+                rms_str = f"{rms_db:.1f}" if rms_db > -200 else "-inf"
+                peak_str = f"{peak_db:.1f}" if peak_db > -200 else "-inf"
                 print(f"    Ch{ch}: RMS={rms_str:>6s}  Peak={peak_str:>6s}")
 
         print("-" * 70)
@@ -642,7 +813,6 @@ def main():
         pct = (count / len(files_to_process)) * 100
         print(f"  [{count:3d}] ({pct:5.1f}%)  {config}")
     print("=" * 70)
-
 
 if __name__ == "__main__":
     main()
