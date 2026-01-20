@@ -15,6 +15,9 @@ What it does:
 - Reports Total Audio Tracks (container channel count)
 
 Requires: ffmpeg, ffprobe, ltcdump (ltc-tools), numpy
+
+Usage:
+  python3 classify_audio_refactored.py -i <input_file_or_dir>
 """
 
 import argparse
@@ -24,10 +27,11 @@ import sys
 import re
 import math
 import os
+import shutil
 import logging
 import jaydebeapi
 from pathlib import Path
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Any
 from collections import Counter
 
 import numpy as np
@@ -36,8 +40,7 @@ import numpy as np
 # Configuration
 # -------------------------
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+# Logging setup will be done in main()
 logger = logging.getLogger(__name__)
 
 # FileMaker Config (Environment Variables)
@@ -57,11 +60,9 @@ LTC_MIN_UNIQUE = 4
 LTC_MIN_MONOTONIC_RATIO = 0.6
 LTC_FPS_CANDIDATES = (24, 25, 30)
 
-# Waveform thresholds (tuneable)
-# Tighten these if you want to reduce false dual-mono further:
-# e.g. DUAL_MONO_CORR_MIN=0.985, DUAL_MONO_RESID_MAX=0.03
+# Waveform thresholds
 DUAL_MONO_CORR_MIN = 0.97
-DUAL_MONO_RESID_MAX = 0.15  # Loosened to 15% to allow for compression artifacts
+DUAL_MONO_RESID_MAX = 0.15
 DUAL_MONO_LAG_MAX_SAMPLES = 8
 
 STEREO_CORR_MAX = 0.85
@@ -69,18 +70,17 @@ STEREO_RESID_MIN = 0.20
 
 # Analysis decoding (numpy)
 ANALYSIS_SAMPLE_RATE = 48000
-DEFAULT_ANALYSIS_SECONDS = 300     # bigger default window for “late start” cases
-DEFAULT_PAIR_SECONDS = 60          # more stable similarity stats
+DEFAULT_ANALYSIS_SECONDS = 300
+DEFAULT_PAIR_SECONDS = 60
 
 # Late-audio search defaults
-DEFAULT_WINDOW_STEP_SECONDS = 180  # jump 3 minutes between attempts
-DEFAULT_MAX_WINDOWS = 4            # try 0, +3m, +6m, +9m by default
+DEFAULT_WINDOW_STEP_SECONDS = 180
+DEFAULT_MAX_WINDOWS = 4
 
-# Dual-mono confirmation settings (second window inside the chosen decode window)
-CONFIRM_OFFSET_SECONDS = 120       # try a second window ~2 minutes into the decoded chunk
-CONFIRM_MIN_SECONDS = 5            # require >= 5 seconds for confirmation window
+# Dual-mono confirmation settings
+CONFIRM_OFFSET_SECONDS = 120
+CONFIRM_MIN_SECONDS = 5
 
-# Known configs (your original list)
 KNOWN_CONFIGS = [
     "Ch1: None; Ch2: None",
     "Ch1: Mono",
@@ -133,12 +133,20 @@ KNOWN_CONFIGS = [
 # Utilities
 # -------------------------
 
+def check_dependencies():
+    """Ensure required external tools are available."""
+    required_tools = ["ffmpeg", "ffprobe", "ltcdump"]
+    missing = [tool for tool in required_tools if shutil.which(tool) is None]
+    if missing:
+        logger.error(f"Missing required tools: {', '.join(missing)}")
+        sys.exit(1)
+
 def _dbfs_from_linear(x: float) -> float:
     if x <= 0.0 or not math.isfinite(x):
         return float("-inf")
     return 20.0 * math.log10(x)
 
-def ffprobe_audio_streams(input_file: str) -> List[Dict]:
+def ffprobe_audio_streams(input_file: str) -> List[Dict[str, Any]]:
     cmd = [
         "ffprobe", "-v", "error",
         "-select_streams", "a",
@@ -159,7 +167,8 @@ def ffprobe_audio_streams(input_file: str) -> List[Dict]:
                 "codec_name": s.get("codec_name") or ""
             })
         return cleaned
-    except Exception:
+    except Exception as e:
+        logger.error(f"ffprobe failed for {input_file}: {e}")
         return []
 
 def classify_silence_or_mono(rms_db: float) -> str:
@@ -177,12 +186,7 @@ def decode_stream_pcm_f32le(
     start: int,
     seconds: int,
     sample_rate: int = ANALYSIS_SAMPLE_RATE,
-    debug: bool = False,
 ) -> Tuple[np.ndarray, int]:
-    """
-    Decode [start, start+seconds) of a single audio stream to float32 PCM interleaved.
-    Returns (pcm_1d, sample_rate).
-    """
     cmd = [
         "ffmpeg", "-hide_banner", "-nostats", "-loglevel", "error",
         "-ss", str(start),
@@ -202,12 +206,10 @@ def decode_stream_pcm_f32le(
         raise RuntimeError("ffmpeg not found on PATH")
 
     if p.returncode != 0:
-        if debug and err:
-            try:
-                sys.stderr.write(err.decode("utf-8", errors="replace") + "\n")
-            except Exception:
-                pass
+        if err:
+            logger.debug(f"ffmpeg decode error: {err.decode('utf-8', errors='replace')}")
         raise RuntimeError(f"ffmpeg decode failed for stream {stream_index} at start={start}s")
+    
     pcm = np.frombuffer(out, dtype=np.float32)
     return pcm, sample_rate
 
@@ -222,6 +224,7 @@ def compute_channel_stats_dbfs(samples: np.ndarray) -> Dict[int, Dict[str, float
     if samples.size == 0:
         return stats
     x = samples.astype(np.float64, copy=False)
+    # Avoid mean of empty slice warning by checking size above
     rms = np.sqrt(np.mean(x * x, axis=0))
     peak = np.max(np.abs(x), axis=0)
     for i in range(samples.shape[1]):
@@ -235,7 +238,7 @@ def stream_has_any_signal(stats: Dict[int, Dict[str, float]]) -> bool:
     return False
 
 # -------------------------
-# Pair similarity (waveform-based) WITH lag alignment + 2-window confirmation
+# Pair similarity / Dual-Mono Logic
 # -------------------------
 
 def rms(x: np.ndarray) -> float:
@@ -262,15 +265,10 @@ def best_fit_gain(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(b, a)) / denom
 
 def estimate_lag_samples(a: np.ndarray, b: np.ndarray, max_lag: int = 2000) -> int:
-    """
-    Estimate lag (samples) where b best aligns to a.
-    Positive lag means b is delayed vs a.
-    Uses downsampled cross-correlation for speed.
-    """
     if a.size < 2048 or b.size < 2048:
         return 0
 
-    step = max(1, a.size // 50000)  # target <= ~50k samples
+    step = max(1, a.size // 50000)
     aa = a[::step].astype(np.float64, copy=False)
     bb = b[::step].astype(np.float64, copy=False)
 
@@ -293,11 +291,6 @@ def estimate_lag_samples(a: np.ndarray, b: np.ndarray, max_lag: int = 2000) -> i
     return int(lag_ds * step)
 
 def align_by_lag(a: np.ndarray, b: np.ndarray, lag: int) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Align b to a by trimming.
-    lag > 0: b is delayed -> trim first lag samples of b
-    lag < 0: b is early   -> trim first -lag samples of a
-    """
     if lag == 0:
         n = min(a.size, b.size)
         return a[:n], b[:n]
@@ -317,9 +310,6 @@ def align_by_lag(a: np.ndarray, b: np.ndarray, lag: int) -> Tuple[np.ndarray, np
         return a2[:n], b[:n]
 
 def pair_metrics_aligned(L: np.ndarray, R: np.ndarray, lag: int) -> Dict[str, float]:
-    """
-    Compute corr + best-fit residual on aligned, zero-mean signals.
-    """
     a, b = align_by_lag(L, R, lag)
     if a.size == 0 or b.size == 0:
         return {"corr": 1.0, "gain": 1.0, "resid_ratio": 0.0}
@@ -371,14 +361,15 @@ def analyze_pair_waveform(
     dm1, dm_flags1 = dual_mono_pass(m1, lag1)
 
     # Window 2 (optional)
+    lag2 = None
+    m2 = None
+    dm2 = None
+    
     if L2 is not None and R2 is not None and L2.size > 0 and R2.size > 0:
         lag2 = estimate_lag_samples(L2, R2, max_lag=2000)
         m2 = pair_metrics_aligned(L2, R2, lag2)
         dm2, dm_flags2 = dual_mono_pass(m2, lag2)
     else:
-        lag2 = None
-        m2 = None
-        dm2 = None
         dm_flags2 = []
 
     # Dual-mono requires window1 AND (if present) window2
@@ -397,7 +388,7 @@ def analyze_pair_waveform(
             }
             return "Mono", "Mono", metrics_out, flags
 
-        # Window 1 said dual-mono, window 2 contradicted -> do NOT label dual-mono
+        # Contradiction
         flags.append(
             f"Window1 looked dual-mono but Window2 did not "
             f"(w1 corr={m1['corr']:.3f} resid={m1['resid_ratio']:.3f} lag={lag1}; "
@@ -405,15 +396,15 @@ def analyze_pair_waveform(
         )
 
     # Stereo decisions based on window1 (aligned) metrics
+    metrics_out = {"corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1)}
+    
     if abs(m1["corr"]) <= STEREO_CORR_MAX or m1["resid_ratio"] >= STEREO_RESID_MIN:
         if abs(m1["corr"]) > 0.90:
             flags.append(f"Highly correlated stereo (corr={m1['corr']:.3f}, resid={m1['resid_ratio']:.3f}, lag={lag1})")
-        metrics_out = {"corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1)}
         return "Stereo Left", "Stereo Right", metrics_out, flags
 
-    # Borderline: default stereo (more conservative)
+    # Borderline: default stereo (conservative)
     flags.append(f"Borderline -> Stereo (corr={m1['corr']:.3f}, resid={m1['resid_ratio']:.3f}, lag={lag1})")
-    metrics_out = {"corr": m1["corr"], "gain": m1["gain"], "resid_ratio": m1["resid_ratio"], "lag": float(lag1)}
     return "Stereo Left", "Stereo Right", metrics_out, flags
 
 # -------------------------
@@ -429,8 +420,7 @@ def detect_ltc_in_channel(
     match_threshold: int = LTC_MATCH_THRESHOLD,
     min_unique: int = LTC_MIN_UNIQUE,
     min_monotonic_ratio: float = LTC_MIN_MONOTONIC_RATIO,
-    fps_candidates: Tuple[int, ...] = LTC_FPS_CANDIDATES,
-    debug: bool = False,
+    fps_candidates: Tuple[int, ...] = LTC_FPS_CANDIDATES
 ) -> Tuple[bool, Optional[int], float, List[Tuple[int, int, int, int]]]:
     ch0 = channel_1based - 1
     pan_filter = f"pan=mono|c0=c{ch0}"
@@ -456,25 +446,17 @@ def detect_ltc_in_channel(
             stderr=subprocess.PIPE,
             text=True
         )
-        assert ffmpeg_proc.stdout is not None
-        ffmpeg_proc.stdout.close()
+        if ffmpeg_proc.stdout:
+            ffmpeg_proc.stdout.close()
         ltcdump_out, _ = ltcdump_proc.communicate()
         ffmpeg_proc.wait()
-    except FileNotFoundError as e:
-        if debug:
-            print(f"  [LTC DEBUG] tool missing: {e}")
-        return False, None, 0.0, []
     except Exception as e:
-        if debug:
-            print(f"  [LTC DEBUG] exception: {e}")
+        logger.debug(f"[LTC] Exception for {input_file} s{stream_index} ch{channel_1based}: {e}")
         return False, None, 0.0, []
 
     tc_pat = re.compile(r'(?P<h>\d{2}):(?P<m>\d{2}):(?P<s>\d{2})[.:;](?P<f>\d{2})')
     raw = [(int(m.group('h')), int(m.group('m')), int(m.group('s')), int(m.group('f')))
            for m in tc_pat.finditer(ltcdump_out)]
-
-    if debug:
-        print(f"  [LTC DEBUG] stream={stream_index} ch={channel_1based} start={start}s tokens={len(raw)}")
 
     if not raw:
         return False, None, 0.0, []
@@ -482,7 +464,7 @@ def detect_ltc_in_channel(
     def to_frames(h, m, s, f, fps):
         return (((h * 60) + m) * 60 + s) * fps + f
 
-    # dedupe while preserving order
+    # Deduplicate preserving order
     seen = set()
     ordered_unique = []
     for tc in raw:
@@ -523,8 +505,136 @@ def detect_ltc_in_channel(
     return False, best_fps, best_ratio, best_valid_seq
 
 # -------------------------
-# Analysis
+# Analysis Helpers
 # -------------------------
+
+def find_active_window(
+    input_file: str,
+    stream_index: int,
+    channels: int,
+    analysis_seconds: int,
+    window_step_seconds: int,
+    max_windows: int,
+    max_offset_seconds: int
+) -> Tuple[Optional[np.ndarray], Optional[Dict[str, Any]], int, List[str]]:
+    """
+    Search for a window of audio that is not silent.
+    Returns (samples, stats, start_time, logs).
+    """
+    logs = []
+    for w in range(max_windows):
+        start = w * window_step_seconds
+        if start > max_offset_seconds:
+            break
+        try:
+            pcm, rate = decode_stream_pcm_f32le(
+                input_file=input_file,
+                stream_index=stream_index,
+                start=start,
+                seconds=analysis_seconds
+            )
+            samples = reshape_interleaved(pcm, channels)
+            stats = compute_channel_stats_dbfs(samples)
+            
+            if stream_has_any_signal(stats):
+                return samples, stats, start, logs
+            
+            logs.append(f"Stream {stream_index}: window at {start}s appears silent, skipping.")
+        except Exception as e:
+            logs.append(f"Stream {stream_index}: decode failed at {start}s ({e})")
+            continue
+
+    return None, None, 0, logs
+
+def process_stream_ltc(
+    input_file: str,
+    stream_index: int,
+    base_channel: int,
+    local_channels: int,
+    start_time: int,
+    ltc_duration: int,
+    labels: Dict[int, str]
+) -> List[str]:
+    """
+    Check for LTC in channels that are not 'None'.
+    Updates 'labels' in place.
+    """
+    logs = []
+    probe = min(ltc_duration, LTC_PROBE_DURATION_DEFAULT)
+    for local_ch in range(1, local_channels + 1):
+        gch = base_channel + (local_ch - 1)
+        if labels.get(gch) == "None":
+            continue
+        
+        is_ltc, best_fps, best_ratio, _ = detect_ltc_in_channel(
+            input_file=input_file,
+            stream_index=stream_index,
+            channel_1based=local_ch,
+            probe_duration=probe,
+            start=start_time
+        )
+        if is_ltc:
+            labels[gch] = "Timecode"
+            logs.append(f"Ch{gch}: LTC detected (fps={best_fps}, score={best_ratio:.2f})")
+            
+    return logs
+
+def process_stream_pairs(
+    stream_index: int,
+    base_channel: int,
+    channels: int,
+    samples: np.ndarray,
+    labels: Dict[int, str],
+    pair_seconds: int
+) -> List[str]:
+    """
+    Analyze stereo pairs for Mono vs Stereo.
+    Updates 'labels' in place.
+    """
+    logs = []
+    if channels <= 1 or samples is None or samples.size == 0:
+        return logs
+
+    sr = ANALYSIS_SAMPLE_RATE
+    pair_frames = int(pair_seconds * sr)
+    max_frames_early = min(samples.shape[0], pair_frames)
+    early_win = samples[:max_frames_early, :]
+
+    # Confirmation window
+    late_start = int(CONFIRM_OFFSET_SECONDS * sr)
+    late_end = min(samples.shape[0], late_start + pair_frames)
+    have_late = (late_end - late_start) >= int(CONFIRM_MIN_SECONDS * sr)
+    late_win = samples[late_start:late_end, :] if have_late else None
+
+    n_pairs = channels // 2
+    for p in range(n_pairs):
+        local_l = (p * 2) + 1
+        local_r = (p * 2) + 2
+        g_l = base_channel + (local_l - 1)
+        g_r = base_channel + (local_r - 1)
+
+        # Only check if both are currently Mono
+        if labels.get(g_l) != "Mono" or labels.get(g_r) != "Mono":
+            continue
+
+        L1 = early_win[:, local_l - 1]
+        R1 = early_win[:, local_r - 1]
+        L2 = late_win[:, local_l - 1] if late_win is not None else None
+        R2 = late_win[:, local_r - 1] if late_win is not None else None
+
+        lab_l, lab_r, m, pair_flags = analyze_pair_waveform(L1, R1, L2=L2, R2=R2)
+        labels[g_l] = lab_l
+        labels[g_r] = lab_r
+
+        # Detailed pair logging
+        corr_str = f"corr={m.get('corr',0.0):.3f}"
+        if 'corr2' in m:
+             corr_str += f", corr2={m.get('corr2',0.0):.3f}"
+        logs.append(f"Ch{g_l}/Ch{g_r} Pair Analysis: {corr_str}")
+        for pf in pair_flags:
+            logs.append(f"Ch{g_l}/Ch{g_r}: {pf}")
+
+    return logs
 
 def analyze_file_per_stream(
     input_file: str,
@@ -534,13 +644,13 @@ def analyze_file_per_stream(
     max_offset_seconds: int,
     window_step_seconds: int,
     max_windows: int,
-    debug: bool = False,
     enable_ltc: bool = True,
-) -> Dict:
+) -> Dict[str, Any]:
     streams = ffprobe_audio_streams(input_file)
     if not streams:
         return {"result": "No Audio Channels", "status": "Error", "flags": [], "stats": {}, "streams": []}
 
+    # Map stream_index -> global_channel_start
     global_ch = 1
     stream_to_global_base: Dict[int, int] = {}
     total_global_channels = 0
@@ -553,17 +663,13 @@ def analyze_file_per_stream(
     if total_global_channels == 0:
         return {"result": "No Audio Channels", "status": "Error", "flags": [], "stats": {}, "streams": streams}
 
-    if debug:
-        print(f"[DEBUG] Processing {input_file}")
-        print(f"[DEBUG] Audio streams: {len(streams)}, total channels: {total_global_channels}")
-
     labels: Dict[int, str] = {}
     global_stats: Dict[int, Dict[str, float]] = {}
     flags: List[str] = []
-
+    
     stream_waveforms: Dict[int, np.ndarray] = {}
 
-    # Per stream: find a decode window with real audio
+    # 1. Decode & Initial Labeling (None vs Mono)
     for s in streams:
         stream_index = s["index"]
         n_ch = s["channels"]
@@ -571,136 +677,56 @@ def analyze_file_per_stream(
             continue
         base = stream_to_global_base[stream_index]
 
-        chosen_samples: Optional[np.ndarray] = None
-        chosen_stats: Optional[Dict[int, Dict[str, float]]] = None
-        chosen_start = 0
-
-        for w in range(max_windows):
-            start = w * window_step_seconds
-            if start > max_offset_seconds:
-                break
-            try:
-                pcm, _ = decode_stream_pcm_f32le(
-                    input_file=input_file,
-                    stream_index=stream_index,
-                    start=start,
-                    seconds=analysis_seconds,
-                    sample_rate=ANALYSIS_SAMPLE_RATE,
-                    debug=debug
-                )
-                samples = reshape_interleaved(pcm, n_ch)
-                st = compute_channel_stats_dbfs(samples)
-            except Exception as e:
-                flags.append(f"Stream {stream_index}: decode failed at {start}s ({e})")
-                continue
-
-            if stream_has_any_signal(st):
-                chosen_samples = samples
-                chosen_stats = st
-                chosen_start = start
-                break
-
-            if debug:
-                flags.append(f"Stream {stream_index}: window at {start}s appears silent; trying later window")
-
-        if chosen_samples is None or chosen_stats is None:
+        # A. Find active window
+        samples, stats, start_time, search_logs = find_active_window(
+            input_file, stream_index, n_ch, analysis_seconds, 
+            window_step_seconds, max_windows, max_offset_seconds
+        )
+        for log in search_logs:
+            logger.debug(log)
+        
+        # B. Default to None if failed
+        if samples is None:
             for local_ch in range(1, n_ch + 1):
-                gch = base + (local_ch - 1)
-                labels[gch] = "None"
-                global_stats[gch] = {"rms": float("-inf"), "peak": float("-inf")}
+                labels[base + local_ch - 1] = "None"
             continue
-
-        stream_waveforms[stream_index] = chosen_samples
-
-        # initial channel labels from RMS
+            
+        stream_waveforms[stream_index] = samples
+        
+        # C. Initial RMS Check
         for local_ch in range(1, n_ch + 1):
             gch = base + (local_ch - 1)
-            rms_db = chosen_stats.get(local_ch, {}).get("rms", float("-inf"))
-            peak_db = chosen_stats.get(local_ch, {}).get("peak", float("-inf"))
-            global_stats[gch] = {"rms": rms_db, "peak": peak_db}
-            labels[gch] = classify_silence_or_mono(rms_db)
+            ch_stats = stats.get(local_ch, {})
+            rms_val = ch_stats.get("rms", float("-inf"))
+            global_stats[gch] = ch_stats
+            labels[gch] = classify_silence_or_mono(rms_val)
 
-        # LTC detection near the chosen window
+        # D. LTC Detection
         if enable_ltc:
-            probe = min(ltc_duration, LTC_PROBE_DURATION_DEFAULT)
-            for local_ch in range(1, n_ch + 1):
-                gch = base + (local_ch - 1)
-                if labels.get(gch) == "None":
-                    continue
-                is_ltc, best_fps, best_ratio, _ = detect_ltc_in_channel(
-                    input_file=input_file,
-                    stream_index=stream_index,
-                    channel_1based=local_ch,
-                    probe_duration=probe,
-                    start=chosen_start,
-                    debug=debug
-                )
-                if is_ltc:
-                    labels[gch] = "Timecode"
-                    if debug:
-                        flags.append(f"Ch{gch}: LTC detected (fps={best_fps}, score={best_ratio:.2f}) at start={chosen_start}s")
+            ltc_logs = process_stream_ltc(
+                input_file, stream_index, base, n_ch, 
+                start_time, ltc_duration, labels
+            )
+            flags.extend(ltc_logs)
 
-    # Pair analysis per stream within chosen window, with 2-window confirmation when possible
+    # 2. Pair Analysis (Mono vs Stereo)
     for s in streams:
         stream_index = s["index"]
         n_ch = s["channels"]
         if n_ch <= 1:
             continue
-        base = stream_to_global_base[stream_index]
+        
         samples = stream_waveforms.get(stream_index)
-        if samples is None or samples.size == 0:
+        if samples is None:
             continue
+            
+        base = stream_to_global_base[stream_index]
+        pair_logs = process_stream_pairs(
+            stream_index, base, n_ch, samples, labels, pair_seconds
+        )
+        flags.extend(pair_logs)
 
-        sr = ANALYSIS_SAMPLE_RATE
-        pair_frames = int(pair_seconds * sr)
-        max_frames_early = min(samples.shape[0], pair_frames)
-        early_win = samples[:max_frames_early, :]
-
-        # Build a later confirmation window from inside the SAME decoded chunk
-        late_start = int(CONFIRM_OFFSET_SECONDS * sr)
-        late_end = min(samples.shape[0], late_start + pair_frames)
-        have_late = (late_end - late_start) >= int(CONFIRM_MIN_SECONDS * sr)
-        late_win = samples[late_start:late_end, :] if have_late else None
-
-        n_pairs = n_ch // 2
-        for p in range(n_pairs):
-            local_l = (p * 2) + 1
-            local_r = (p * 2) + 2
-            g_l = base + (local_l - 1)
-            g_r = base + (local_r - 1)
-
-            if labels.get(g_l) != "Mono" or labels.get(g_r) != "Mono":
-                continue
-
-            L1 = early_win[:, local_l - 1]
-            R1 = early_win[:, local_r - 1]
-
-            L2 = None
-            R2 = None
-            if late_win is not None:
-                L2 = late_win[:, local_l - 1]
-                R2 = late_win[:, local_r - 1]
-
-            lab_l, lab_r, m, pair_flags = analyze_pair_waveform(L1, R1, L2=L2, R2=R2)
-            labels[g_l] = lab_l
-            labels[g_r] = lab_r
-
-            if debug:
-                if "corr2" in m:
-                    print(
-                        f"  [PAIR DEBUG] Ch{g_l}/Ch{g_r}: "
-                        f"w1 corr={m['corr']:.3f} resid={m['resid_ratio']:.3f} lag={int(m['lag'])} | "
-                        f"w2 corr={m['corr2']:.3f} resid={m['resid_ratio2']:.3f} lag={int(m['lag2'])}"
-                    )
-                else:
-                    print(
-                        f"  [PAIR DEBUG] Ch{g_l}/Ch{g_r}: "
-                        f"corr={m['corr']:.3f} resid={m['resid_ratio']:.3f} lag={int(m['lag'])}"
-                    )
-
-            for pf in pair_flags:
-                flags.append(f"Ch{g_l}/Ch{g_r}: {pf}")
-
+    # 3. Final Result Generation
     parts = [f"Ch{i}: {labels.get(i, 'None')}" for i in range(1, total_global_channels + 1)]
     result = "; ".join(parts)
     status = "Exact Match" if result in KNOWN_CONFIGS else "New Configuration"
@@ -714,9 +740,9 @@ def analyze_file_per_stream(
         "track_count": total_global_channels
     }
 
-# -----------------------------------------------------------------------------
-# PART 2: DATABASE INTERACTION (JayDeBeApi)
-# -----------------------------------------------------------------------------
+# -------------------------
+# Database Interaction
+# -------------------------
 
 def connect_to_database(use_dev=False):
     target_ip = DB_DEV_IP if use_dev else DB_SERVER_IP
@@ -738,23 +764,29 @@ def connect_to_database(use_dev=False):
         logger.error(f"Database connection failed: {e}")
         return None
 
-def check_record_exists(conn, filename):
+def update_record_safe(conn, filename, sound_field, track_count, dry_run=False):
+    """
+    Check if record exists, then update.
+    Returns: 'Updated', 'Skipped', 'Missing', or 'Error'
+    """
+    if not conn:
+        return 'Skipped'
+        
     curs = conn.cursor()
     try:
-        # Note: Depending on FM SQL implementation, column names with dots might need quotes
-        query = 'SELECT COUNT(*) FROM tbl_metadata WHERE "asset.referenceFilename" = ?'
-        curs.execute(query, [filename])
+        # Check existence
+        curs.execute('SELECT COUNT(*) FROM tbl_metadata WHERE "asset.referenceFilename" = ?', [filename])
         count = curs.fetchone()[0]
-        return count > 0
-    except Exception as e:
-        logger.error(f"Error searching for {filename}: {e}")
-        return False
-    finally:
-        curs.close()
-
-def update_record(conn, filename, sound_field, track_count):
-    curs = conn.cursor()
-    try:
+        
+        if count == 0:
+            logger.warning(f"[DB] Record not found: {filename}")
+            return 'Missing'
+            
+        if dry_run:
+            logger.info(f"[DB] Dry Run: Would update {filename} -> {sound_field}, {track_count} tracks")
+            return 'Skipped'
+            
+        # Update
         query = """
             UPDATE tbl_metadata 
             SET "source.audioRecording.audioSoundField" = ?,
@@ -762,13 +794,12 @@ def update_record(conn, filename, sound_field, track_count):
             WHERE "asset.referenceFilename" = ?
         """
         curs.execute(query, [sound_field, track_count, filename])
-        # Note: JayDeBeApi/FM JDBC usually auto-commits, but strictly:
-        # conn.commit() 
-        logger.info(f"✅ Updated {filename}")
-        return True
+        logger.info(f"[DB] Updated {filename}")
+        return 'Updated'
+        
     except Exception as e:
-        logger.error(f"❌ Failed to update {filename}: {e}")
-        return False
+        logger.error(f"[DB] Error updating {filename}: {e}")
+        return 'Error'
     finally:
         curs.close()
 
@@ -778,164 +809,135 @@ def update_record(conn, filename, sound_field, track_count):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Per-Stream Audio Configuration Classifier (NumPy + ltcdump, late-audio aware, 2-window dual-mono confirm)",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        description="Audio Configuration Classifier (Refactored)",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    # Original Analysis Flags
     parser.add_argument("-i", "--input", required=True, help="Input file or directory")
-    parser.add_argument("-d", "--duration", type=int, default=240,
-                        help="Max offset for seeking analysis windows + LTC probe upper bound (default: 240)")
-    parser.add_argument("--analysis-seconds", type=int, default=DEFAULT_ANALYSIS_SECONDS,
-                        help=f"Seconds decoded per window per stream (default: {DEFAULT_ANALYSIS_SECONDS})")
-    parser.add_argument("--pair-seconds", type=int, default=DEFAULT_PAIR_SECONDS,
-                        help=f"Seconds used for waveform pair similarity (default: {DEFAULT_PAIR_SECONDS})")
-    parser.add_argument("--window-step-seconds", type=int, default=DEFAULT_WINDOW_STEP_SECONDS,
-                        help=f"Seconds to jump between windows when searching for late audio (default: {DEFAULT_WINDOW_STEP_SECONDS})")
-    parser.add_argument("--max-windows", type=int, default=DEFAULT_MAX_WINDOWS,
-                        help=f"Max windows to try per stream (default: {DEFAULT_MAX_WINDOWS})")
-    parser.add_argument("--max-offset-seconds", type=int, default=None,
-                        help="Max start offset to search for audio. Defaults to -d/--duration.")
-    parser.add_argument("--debug", action="store_true", help="Show debug output")
+    parser.add_argument("-d", "--duration", type=int, default=240, help="LTC probe duration & max offset")
+    parser.add_argument("--analysis-seconds", type=int, default=DEFAULT_ANALYSIS_SECONDS)
+    parser.add_argument("--pair-seconds", type=int, default=DEFAULT_PAIR_SECONDS)
+    parser.add_argument("--window-step-seconds", type=int, default=DEFAULT_WINDOW_STEP_SECONDS)
+    parser.add_argument("--max-windows", type=int, default=DEFAULT_MAX_WINDOWS)
+    parser.add_argument("--max-offset-seconds", type=int, default=None)
+    
+    parser.add_argument("--debug", action="store_true", help="Enable verbose debug logging")
     parser.add_argument("--show-stats", action="store_true", help="Show RMS/Peak values")
     parser.add_argument("--no-ltc", action="store_true", help="Disable LTC detection")
     
-    # New Database Flags
+    # DB Flags
     parser.add_argument("--update", action="store_true", help="Perform actual DB updates")
     parser.add_argument("--dev-server", action="store_true", help="Use Dev Server")
-    
+
     args = parser.parse_args()
 
-    enable_ltc = not args.no_ltc
+    # Logging Setup
+    logging.basicConfig(
+        level=logging.DEBUG if args.debug else logging.INFO,
+        format='%(message)s' if not args.debug else '%(asctime)s [%(levelname)s] %(message)s',
+    )
 
-    # 1. Connect to Database (if we intend to interact with it)
+    check_dependencies()
+
+    # DB Connection
     conn = connect_to_database(use_dev=args.dev_server)
     if not conn:
-        print("⚠️  Running in Offline Mode (Analysis Only). No DB connection established.")
+        logger.warning("Continuing in offline mode (Analysis Only).")
 
-    analysis_seconds = max(1, int(args.analysis_seconds))
-    pair_seconds = max(1, int(args.pair_seconds))
-    ltc_duration = max(1, int(args.duration))
-    window_step_seconds = max(1, int(args.window_step_seconds))
-    max_windows = max(1, int(args.max_windows))
-    max_offset_seconds = int(args.max_offset_seconds) if args.max_offset_seconds is not None else ltc_duration
-    max_offset_seconds = max(0, max_offset_seconds)
+    # Arguments
+    max_offset = args.max_offset_seconds if args.max_offset_seconds is not None else args.duration
+    enable_ltc = not args.no_ltc
 
-    files_to_process: List[str] = []
+    # File Discovery
+    files_to_process = []
     if os.path.isfile(args.input):
         files_to_process.append(args.input)
     elif os.path.isdir(args.input):
-        print(f"Scanning directory: {args.input}")
-        for root, _dirs, files in os.walk(args.input):
+        logger.info(f"Scanning directory: {args.input}")
+        for root, _, files in os.walk(args.input):
             for file in files:
-                if file.startswith("."):
-                    continue
-                if file.lower().endswith(('.mov', '.mkv', '.mp4', '.mxf', '.avi', '.wav')):
+                if not file.startswith(".") and file.lower().endswith(('.mov', '.mkv', '.mp4', '.mxf', '.avi', '.wav')):
                     files_to_process.append(os.path.join(root, file))
 
     if not files_to_process:
-        print("No media files found.")
+        logger.error("No media files found.")
         sys.exit(0)
 
     files_to_process.sort()
-    print(f"Found {len(files_to_process)} file(s) to process.\n")
+    logger.info(f"Found {len(files_to_process)} file(s) to process.\n")
 
-    summary_stats = {"Exact Match": 0, "New Configuration": 0, "Error": 0}
-    db_stats = {"Updated": 0, "Skipped": 0, "Missing": 0}
+    summary = Counter()
+    db_stats = Counter()
     config_counts = Counter()
 
     for i, fpath in enumerate(files_to_process, 1):
         filename = os.path.basename(fpath)
-        print(f"[{i}/{len(files_to_process)}] {filename}")
+        logger.info(f"[{i}/{len(files_to_process)}] {filename}")
         
-        # A. Analyze
         data = analyze_file_per_stream(
             input_file=fpath,
-            ltc_duration=ltc_duration,
-            analysis_seconds=analysis_seconds,
-            pair_seconds=pair_seconds,
-            max_offset_seconds=max_offset_seconds,
-            window_step_seconds=window_step_seconds,
-            max_windows=max_windows,
-            debug=args.debug,
+            ltc_duration=args.duration,
+            analysis_seconds=args.analysis_seconds,
+            pair_seconds=args.pair_seconds,
+            max_offset_seconds=max_offset,
+            window_step_seconds=args.window_step_seconds,
+            max_windows=args.max_windows,
             enable_ltc=enable_ltc
         )
-
-        if data["status"] == "Exact Match":
-            summary_stats["Exact Match"] += 1
-        elif data["status"] == "Error":
-            summary_stats["Error"] += 1
-        else:
-            summary_stats["New Configuration"] += 1
-
+        
+        summary[data["status"]] += 1
         config_counts[data["result"]] += 1
-
-        if args.debug and data.get("streams"):
-            stream_desc = ", ".join(
-                f"#{s['index']}({s['codec_name']},{s['channels']}ch)"
-                for s in data["streams"] if s.get("channels", 0) > 0
-            )
-            print(f"  Streams: {stream_desc}")
-
-        print(f"  Result: {data['result']}")
-        print(f"  Total Audio Tracks: {data.get('track_count', 0)}")
+        
+        logger.info(f"  Result: {data['result']}")
+        logger.info(f"  Total Audio Tracks: {data.get('track_count', 0)}")
         if data["status"] != "Exact Match":
-            print(f"  Status: {data['status']}")
-
+            logger.info(f"  Status: {data['status']}")
+            
         for flag in data.get("flags", []):
-            print(f"  ⚠️  {flag}")
-
-        if args.show_stats and data.get("stats"):
-            print("  Channel Stats (dBFS):")
+            logger.info(f"  ⚠️  {flag}")
+            
+        if args.show_stats:
+            logger.info("  Channel Stats (dBFS):")
             for ch in sorted(data["stats"].keys()):
-                rms_db = data["stats"][ch].get("rms", float("-inf"))
-                peak_db = data["stats"][ch].get("peak", float("-inf"))
-                rms_str = f"{rms_db:.1f}" if rms_db > -200 else "-inf"
-                peak_str = f"{peak_db:.1f}" if peak_db > -200 else "-inf"
-                print(f"    Ch{ch}: RMS={rms_str:>6s}  Peak={peak_str:>6s}")
+                s = data["stats"][ch]
+                logger.info(f"    Ch{ch}: RMS={s.get('rms', -inf):.1f}  Peak={s.get('peak', -inf):.1f}")
 
-        # B. DB Update
-        if conn:
-            classification = data['result']
-            track_count = int(data['track_count'])
+        # DB Update
+        if conn or args.update:
+             res = update_record_safe(
+                 conn, 
+                 filename, 
+                 data['result'], 
+                 int(data['track_count']), 
+                 dry_run=not args.update
+             )
+             db_stats[res] += 1
+        
+        logger.info("-" * 70)
 
-            if check_record_exists(conn, filename):
-                if args.update:
-                    if update_record(conn, filename, classification, track_count):
-                        db_stats["Updated"] += 1
-                else:
-                    print(f"  [DB] ℹ️  Dry Run: Record found. Would set '{classification}' ({track_count} Trks)")
-                    db_stats["Skipped"] += 1
-            else:
-                print(f"  [DB] ⚠️  Record not found in FileMaker.")
-                db_stats["Missing"] += 1
-
-        print("-" * 70)
-    
     if conn:
         conn.close()
 
-    print("\n" + "=" * 70)
-    print("BATCH ANALYSIS COMPLETE")
-    print("=" * 70)
-    print(f"Total Files Processed: {len(files_to_process)}")
-    print(f"  ✓ Exact Matches:      {summary_stats['Exact Match']}")
-    print(f"  ⚠ New Configurations: {summary_stats['New Configuration']}")
-    print(f"  ✗ Errors:             {summary_stats['Error']}")
+    logger.info("\n" + "=" * 70)
+    logger.info("BATCH ANALYSIS COMPLETE")
+    logger.info("=" * 70)
+    logger.info(f"Total Files: {len(files_to_process)}")
+    logger.info(f"  Exact Matches:      {summary['Exact Match']}")
+    logger.info(f"  New Configurations: {summary['New Configuration']}")
+    logger.info(f"  Errors:             {summary['Error']}")
     
-    if conn:
-        print("-" * 70)
-        print("Database Actions:")
-        print(f"  ✓ Updated: {db_stats['Updated']}")
-        print(f"  ℹ️  Skipped: {db_stats['Skipped']} (Dry Run / No Change)")
-        print(f"  ⚠ Missing: {db_stats['Missing']}")
+    if args.update or args.dev_server:
+        logger.info("-" * 70)
+        logger.info("Database Actions:")
+        logger.info(f"  Updated: {db_stats['Updated']}")
+        logger.info(f"  Skipped: {db_stats['Skipped']}")
+        logger.info(f"  Missing: {db_stats['Missing']}")
+        logger.info(f"  Errors:  {db_stats['Error']}")
 
-    print("-" * 70)
-    print("Configuration Frequency (most common first):")
-    print("-" * 70)
+    logger.info("-" * 70)
+    logger.info("Configuration Frequency:")
     for config, count in config_counts.most_common():
         pct = (count / len(files_to_process)) * 100
-        print(f"  [{count:3d}] ({pct:5.1f}%)  {config}")
-    print("=" * 70)
+        logger.info(f"  [{count:3d}] ({pct:5.1f}%)  {config}")
 
 if __name__ == "__main__":
     main()
