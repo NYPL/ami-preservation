@@ -48,8 +48,8 @@ def get_args():
     # DETECTION SETTINGS
     p.add_argument('--noise-scan-duration', type=float, default=45.0,
                    help='Seconds to scan for noise floor (default: 45.0, increased from 30)')
-    p.add_argument('--headroom', type=float, default=6.0,
-                   help='dB above noise floor to set silence threshold (default: 6.0, safer than 10)')
+    p.add_argument('--headroom', type=float, default=10.0,
+                   help='dB above noise floor to set silence threshold (default: 10.0, increased for safety)')
     p.add_argument('--min-silence-duration', type=float, default=0.3,
                    help='Minimum silence duration in seconds (default: 0.3)')
     p.add_argument('--padding', type=float, default=2.5,
@@ -278,6 +278,57 @@ def detect_silence_boundaries(
 
     start_time = max(0, times[content_indices[0]] - 0.1)
     end_time = min(total_duration, times[content_indices[-1]] + 0.1)
+
+    # --- SMART ONSET VERIFICATION ---
+    # Check if the "Start" is actually just loud noise (Flat & Stable)
+    # We iterate in 0.5s chunks until we find "Dynamic" content or "Loud" content
+    
+    current_start_idx = content_indices[0]
+    
+    while True:
+        # Define a check window (e.g., 0.5s) from current start
+        check_duration = 0.5
+        check_frames = int(check_duration * sr / hop_length)
+        
+        # Ensure we have enough data
+        if current_start_idx + check_frames >= len(rms_db):
+            break
+            
+        region = rms_db[current_start_idx : current_start_idx + check_frames]
+        
+        # Measure Characteristics
+        r_min = np.min(region)
+        r_max = np.max(region)
+        r_med = np.median(region)
+        r_spread = r_max - r_min
+        
+        # Criteria for "Noise" (even if it's above threshold):
+        # 1. It is "Stable/Flat" (Low Spread) < 5dB
+        # 2. It is not "Super Loud" (e.g. < -30dB). Real speech/music usually peaks higher.
+        
+        is_stable_noise = (r_spread < 5.0) and (r_med < -30.0)
+        
+        if is_stable_noise:
+            if show_stats:
+                logging.info(f"     [Smart Onset] Skipping block at {times[current_start_idx]:.2f}s: Spread={r_spread:.1f}dB (Flat) | Med={r_med:.1f}dB")
+            
+            # Move start forward
+            current_start_idx += check_frames
+            start_time = times[current_start_idx]
+            
+            # Safety: Don't eat the whole file. Stop if we pass the end.
+            if times[current_start_idx] >= end_time:
+                # Revert if we skipped everything (maybe it was a drone piece?)
+                logging.warning("     [Smart Onset] Skipped entire file as noise! Reverting to original detection.")
+                start_time = max(0, times[content_indices[0]] - 0.1)
+                break
+        else:
+            # We found dynamic content (Spread > 5) OR Loud content (Med > -30)
+            if show_stats:
+                logging.info(f"     [Smart Onset] Valid content found at {times[current_start_idx]:.2f}s: Spread={r_spread:.1f}dB | Med={r_med:.1f}dB")
+            break
+            
+    # Update end time (we don't check tail as aggressively, preserving fade outs is better)
 
     # Calculate SNR for validation
     content_rms = np.median(rms_db[content_indices])
