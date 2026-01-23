@@ -49,6 +49,13 @@ def get_args():
               'and update corresponding JSON referenceFilename before uploading. '
               'Original source files remain unchanged.')
     )
+
+    parser.add_argument(
+        '--dry_run',
+        action='store_true',
+        help=('Simulate the process without running FFmpeg commands, modifying JSONs, '
+              'or uploading to AWS. Useful for verifying logic.')
+    )
     
     args = parser.parse_args()
     return args
@@ -80,36 +87,49 @@ def find_bags(directory):
     return bags, bag_ids
 
 def get_files(source_directory):
-    em_dir = os.path.join(source_directory, 'data', 'EditMasters')
-    sc_dir = os.path.join(source_directory, 'data', 'ServiceCopies')
+    """
+    Locates files within a bag.
+    Priority Logic:
+    1. If 'ServiceCopies' (sc.mp4/sc.json) exist, return ONLY those.
+    2. Else if 'EditMasters' (em.flac/em.wav/em.json) exist, return those.
+    """
+    sc_files = {'paths': [], 'names': [], 'media': [], 'json': []}
+    em_files = {'paths': [], 'names': [], 'media': [], 'json': []}
 
-    all_file_list = []
-    media_paths_list = []
-    json_paths_list = []
-    all_file_paths_list = []
+    for root, dirs, files in os.walk(source_directory):
+        for file in files:
+            if file.startswith('._'):
+                continue
+            
+            path = os.path.join(root, file)
+            lower = file.lower()
+            
+            # Categorize Service Copies (SC)
+            if lower.endswith(('sc.mp4', 'sc.json')):
+                sc_files['paths'].append(path)
+                sc_files['names'].append(file)
+                if lower.endswith('.mp4'):
+                    sc_files['media'].append(path)
+                elif lower.endswith('.json'):
+                    sc_files['json'].append(path)
+            
+            # Categorize Edit Masters (EM)
+            elif lower.endswith(('em.wav', 'em.flac', 'em.json')):
+                em_files['paths'].append(path)
+                em_files['names'].append(file)
+                if lower.endswith(('.wav', '.flac')):
+                    em_files['media'].append(path)
+                elif lower.endswith('.json'):
+                    em_files['json'].append(path)
 
-    if os.path.exists(em_dir) or os.path.exists(sc_dir):
-        for root, dirs, files in os.walk(source_directory):
-            for file in files:
-                item_path = os.path.join(root, file)
-                if (file.lower().endswith(('sc.mp4', 'em.wav', 'em.flac'))
-                        and not file.startswith('._')):
-                    all_file_paths_list.append(item_path)
-                    all_file_list.append(file)
-                    media_paths_list.append(item_path)
-
-                elif (file.lower().endswith(('sc.json', 'em.json'))
-                      and not file.startswith('._')):
-                    all_file_paths_list.append(item_path)
-                    all_file_list.append(file)
-                    json_paths_list.append(item_path)
+    # Priority Return: If SC found, ignore EM.
+    if sc_files['paths']:
+        return sc_files['paths'], sc_files['names'], sc_files['media'], sc_files['json']
+    elif em_files['paths']:
+        return em_files['paths'], em_files['names'], em_files['media'], em_files['json']
     else:
-        warnings.warn(f'{source_directory} has no EM or SC folder')
-
-    if not all_file_paths_list:
-        warnings.warn('No files found in the EM or SC folder')
-
-    return all_file_paths_list, all_file_list, media_paths_list, json_paths_list
+        warnings.warn(f'No valid SC or EM files found in {source_directory}')
+        return [], [], [], []
 
 def valid_fn_convention(all_file_list):
     pattern = r'(\w{3}_\d{6}_\w+_(sc|em))'
@@ -200,10 +220,7 @@ def file_type_counts(all_file_list):
     json_files = [f for f in all_file_list if f.lower().endswith('.json')]
     return len(mp4_files), len(wav_files), len(flac_files), len(json_files)
 
-# CHANGED: Now accepts an explicit output path
-def transcode_flac(input_path, output_path):
-    print(f"Transcoding {os.path.basename(input_path)} to temp MP4...")
-    
+def transcode_flac(input_path, output_path, dry_run=False):
     command = [
         "ffmpeg",
         "-y",
@@ -216,6 +233,11 @@ def transcode_flac(input_path, output_path):
         output_path
     ]
     
+    if dry_run:
+        print(f"[DRY RUN] Would run: {' '.join(command)}")
+        return True
+
+    print(f"Transcoding {os.path.basename(input_path)} to temp MP4...")
     result = subprocess.run(command)
     if result.returncode == 0:
         return True
@@ -223,15 +245,17 @@ def transcode_flac(input_path, output_path):
         print(f"Error transcoding {input_path}")
         return False
 
-# CHANGED: Reads from input_path, writes modified JSON to output_path
-def create_modified_json(input_path, output_path, new_ref_filename):
+def create_modified_json(input_path, output_path, new_ref_filename, dry_run=False):
+    if dry_run:
+        print(f"[DRY RUN] Would create modified JSON at {output_path} referencing {new_ref_filename}")
+        return True
+
     try:
         with open(input_path, "r", encoding='utf-8-sig') as jsonFile:
             data = json.load(jsonFile)
         
         data['asset']['referenceFilename'] = new_ref_filename
         
-        # Write to the TEMP location, leaving original untouched
         with open(output_path, "w", encoding='utf-8') as jsonFile:
             json.dump(data, jsonFile, indent=4)
         return True
@@ -240,8 +264,7 @@ def create_modified_json(input_path, output_path, new_ref_filename):
         print(f"Failed to create modified JSON: {e}")
         return False
 
-# CHANGED: Logic to route files to temp_dir
-def prepare_transcodes(file_list_to_upload, all_files_in_bag, temp_dir):
+def prepare_transcodes(file_list_to_upload, all_files_in_bag, temp_dir, dry_run=False):
     final_list = []
     processed_json_bases = set()
     
@@ -259,8 +282,8 @@ def prepare_transcodes(file_list_to_upload, all_files_in_bag, temp_dir):
             mp4_filename = base_name + ".mp4"
             mp4_temp_path = os.path.join(temp_dir, mp4_filename)
             
-            # Transcode
-            if transcode_flac(f, mp4_temp_path):
+            # Transcode (or simulate)
+            if transcode_flac(f, mp4_temp_path, dry_run=dry_run):
                 final_list.append(mp4_temp_path)
                 
                 # Handle JSON
@@ -269,40 +292,38 @@ def prepare_transcodes(file_list_to_upload, all_files_in_bag, temp_dir):
                     json_filename = os.path.basename(src_json_path)
                     json_temp_path = os.path.join(temp_dir, json_filename)
                     
-                    if create_modified_json(src_json_path, json_temp_path, mp4_filename):
+                    if create_modified_json(src_json_path, json_temp_path, mp4_filename, dry_run=dry_run):
                         final_list.append(json_temp_path)
                         processed_json_bases.add(base_name)
                 else:
                     print(f"Warning: No matching JSON found for {f}")
             else:
-                # Transcode failed, skipping this file
                 pass
 
         elif f.lower().endswith('.json'):
-            # If we already processed this JSON via the FLAC loop, skip it
             base_name = os.path.splitext(os.path.basename(f))[0]
             if base_name in processed_json_bases:
                 continue
             
             # If this is a standalone JSON upload (or FLAC was missing), 
-            # we should still assume the target is MP4 and modify it.
+            # assume target is MP4 and modify it.
             json_filename = os.path.basename(f)
             json_temp_path = os.path.join(temp_dir, json_filename)
             mp4_ref_name = base_name + ".mp4"
             
-            if create_modified_json(f, json_temp_path, mp4_ref_name):
+            if create_modified_json(f, json_temp_path, mp4_ref_name, dry_run=dry_run):
                  final_list.append(json_temp_path)
                  
         else:
             # Non-transcode files (e.g. existing MP4s) - just upload original
             final_list.append(f)
             
-    # Remove duplicates and sort
     return sorted(list(set(final_list)))
 
-def cp_files(file_list, profile_name=None):
+def cp_files(file_list, profile_name=None, dry_run=False):
     for filename in sorted(file_list):
-        if not os.path.exists(filename):
+        # In dry run, we skip the existence check for temp files because they weren't actually created
+        if not dry_run and not os.path.exists(filename):
              print(f"Error: File not found for upload: {filename}")
              continue
 
@@ -315,8 +336,12 @@ def cp_files(file_list, profile_name=None):
         if profile_name:
             cp_command.extend(['--profile', profile_name])
             
-        print(f"Uploading: {os.path.basename(filename)}")
-        subprocess.call(cp_command)
+        if dry_run:
+            print(f"[DRY RUN] Would upload: {os.path.basename(filename)}")
+            # print(f"           Command: {' '.join(cp_command)}") # Optional: print full command
+        else:
+            print(f"Uploading: {os.path.basename(filename)}")
+            subprocess.call(cp_command)
 
 def process_single_directory(directory, arguments):
     bags, bag_ids = find_bags(directory)
@@ -359,6 +384,7 @@ def process_single_directory(directory, arguments):
                 files_to_process_paths = []
 
                 if arguments.check_only or arguments.check_and_upload:
+                    # Note: We perform the REAL S3 check even in Dry Run to give accurate info
                     print(f'Now checking if {bag} is in the bucket:\n')
                     missing_filenames = check_bucket(all_files, arguments.profile)
                     
@@ -375,25 +401,23 @@ def process_single_directory(directory, arguments):
                 if files_to_process_paths:
                     print(f'Preparing to upload {len(files_to_process_paths)} files for {bag}\n')
                     
-                    # CHANGED: Use TemporaryDirectory for cleanup
                     with tempfile.TemporaryDirectory() as temp_dir:
                         if arguments.transcode:
-                            print("Transcoding enabled. Creating temporary MP4s and JSONs...")
                             files_to_process_paths = prepare_transcodes(
                                 files_to_process_paths, 
                                 all_file_paths, 
-                                temp_dir
+                                temp_dir,
+                                dry_run=arguments.dry_run
                             )
 
                         mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(files_to_process_paths)
                         
-                        cp_files(files_to_process_paths, arguments.profile)
+                        cp_files(files_to_process_paths, arguments.profile, dry_run=arguments.dry_run)
                         
                         summary['uploaded_counts']['mp4'] += mp4_ct
                         summary['uploaded_counts']['wav'] += wav_ct
                         summary['uploaded_counts']['flac'] += flac_ct
                         summary['uploaded_counts']['json'] += json_ct
-                    # Temp dir is automatically deleted here
 
             else:
                 if fn_check != True:
@@ -414,7 +438,9 @@ def print_summary(arguments, summary):
     print(f"Bag IDs: {summary['bag_ids']}")
     
     uc = summary['uploaded_counts']
-    upload_msg = f"Uploaded counts: {uc['mp4']} MP4, {uc['wav']} WAV, {uc['flac']} FLAC, {uc['json']} JSON"
+    
+    prefix = "[DRY RUN] " if arguments.dry_run else ""
+    upload_msg = f"{prefix}Uploaded counts: {uc['mp4']} MP4, {uc['wav']} WAV, {uc['flac']} FLAC, {uc['json']} JSON"
     
     issues_msg = f"""
 EM or SC issue bags: {summary['em_sc_issue_bags']}
@@ -432,6 +458,12 @@ Barcode mismatched bag(s): {summary['bc_mismatch_ls']}"""
 
 def main():
     arguments = get_args()
+    
+    if arguments.dry_run:
+        print("\n******************** DRY RUN MODE ********************")
+        print("No files will be transcoded or uploaded.")
+        print("S3 bucket checks are REAL (read-only).")
+        print("******************************************************\n")
 
     all_summaries = []
     for directory in arguments.directories:
