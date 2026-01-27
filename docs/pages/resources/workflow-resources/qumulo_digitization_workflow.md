@@ -1,7 +1,7 @@
 ---
 title: Qumolo workflow
 layout: default
-nav_order: 5
+nav_order: 6
 parent: Workflow Resources
 grand_parent: Resources
 ---
