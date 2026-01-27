@@ -110,10 +110,14 @@ class PreservicaClient:
         if resp.status_code == 401:
             logging.info("Token expired, re-authenticating")
             self._authenticate()
+            # Re-issue request with NEW token
             resp = self.session.get(url, **kwargs)
-        # We generally raise_for_status, but for range requests 416 is valid check logic
-        if resp.status_code != 416: 
-            resp.raise_for_status()
+        
+        # Handle 416 Range Not Satisfiable (e.g. file fully downloaded)
+        if resp.status_code == 416:
+             return resp
+             
+        resp.raise_for_status()
         return resp
 
     def post(self, path: str, **kwargs) -> requests.Response:
@@ -281,44 +285,68 @@ class PreservicaClient:
             
             if current_pos > 0:
                 headers['Range'] = f'bytes={current_pos}-'
-                logging.info("Resuming download from byte %d...", current_pos)
+                logging.info(f"Resuming download from byte {current_pos}...")
 
+            start_pos_for_this_attempt = current_pos
             try:
-                # We do NOT use self.get here because self.get has retry logic that might conflict with streaming
-                # We use the session directly to control the stream context
-                url = f"{self.base_url}{content_path}"
+                # Use self.get() so we get the auto-refresh behavior!
+                # Note: self.get() constructs full URL, so pass path only if possible, 
+                # but we have full content_path.
+                # Let's trust self.get logic to handle partial path logic or use full url if we must.
+                # self.get expects `path`.
                 
-                with self.session.get(url, headers=headers, stream=True) as resp:
-                    resp.raise_for_status()
-                    
-                    # If server ignores Range header (returns 200 instead of 206), we must overwrite
-                    if current_pos > 0 and resp.status_code == 200:
-                        logging.warning("Server does not support resuming (got 200, not 206). Restarting download.")
-                        current_pos = 0
-                        mode = 'wb'
-
-                    with open(filepath, mode) as f:
-                        for chunk in resp.iter_content(chunk_size=32768):
-                            if not chunk:
-                                continue
-                            f.write(chunk)
-                            current_pos += len(chunk)
-
-                            # Progress bar
-                            if total_size:
-                                percent = current_pos / total_size * 100
-                                sys.stdout.write(f"\r{percent:6.2f}% of {total_size} | {filename}")
-                            else:
-                                sys.stdout.write(f"\r{current_pos} bytes | {filename}")
-                            sys.stdout.flush()
+                # Careful: self.get does: url = f"{self.base_url}{path}"
+                # content_path already has /api/... so passing it is correct.
                 
-            except (ChunkedEncodingError, ConnectionError, ProtocolError, requests.exceptions.RequestException) as e:
+                resp = self.get(content_path, headers=headers, stream=True)
+                
+                # Check for 416 Range Not Satisfiable - usually means we are done
+                if resp.status_code == 416:
+                    logging.info("Server returned 416 (Range Not Satisfiable). Assuming download complete.")
+                    break
+
+                # If server ignores Range header (returns 200 instead of 206), we must overwrite
+                if current_pos > 0 and resp.status_code == 200:
+                    logging.warning("Server does not support resuming (got 200, not 206). Restarting download.")
+                    current_pos = 0
+                    mode = 'wb'
+                    # Truncate file
+                    with open(filepath, 'wb') as f:
+                        pass
+
+                with open(filepath, mode) as f:
+                    for chunk in resp.iter_content(chunk_size=1048576): # 1MB chunks
+                        if not chunk:
+                            continue
+                        f.write(chunk)
+                        current_pos += len(chunk)
+
+                        # SMART RETRY LOGIC:
+                        # If we successfully read *any* data, reset our retry counter.
+                        # This means we only fail if we get N *consecutive* failures without progress.
+                        if current_pos > start_pos_for_this_attempt + 1048576:
+                             # Reset retries if we managed to DL at least 1MB this session
+                             retries = 0
+
+                        # Progress bar
+                        if total_size:
+                            percent = current_pos / total_size * 100
+                            sys.stdout.write(f"\r{percent:6.2f}% of {total_size} | {filename}")
+                        else:
+                            sys.stdout.write(f"\r{current_pos} bytes | {filename}")
+                        sys.stdout.flush()
+                
+            except (ChunkedEncodingError, ConnectionError, ProtocolError, requests.exceptions.RequestException, PreservicaError) as e:
+                # Retries increment
                 retries += 1
-                logging.warning(f"\nConnection lost: {e}. Retrying ({retries}/{max_retries})...")
+                logging.warning(f"\nStream interrupted: {e}. Retrying ({retries}/{max_retries})...")
+                
                 if retries > max_retries:
-                    logging.error("Max retries exceeded.")
+                    logging.error("Max retries exceeded with no significant progress.")
                     raise e
-                time.sleep(5) # Wait before reconnecting
+                
+                # Backoff
+                time.sleep(5 * retries)  # linear backoff 5, 10, 15...
 
         print() 
 
