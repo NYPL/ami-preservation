@@ -155,18 +155,16 @@ def process_directory(root_dir):
             else:
                 LOGGER.error("FLAC conversion failed for %s", wav_file)
 
-        # 3) Direct-scanned MKV processing (new scenario)
+        # 3) Direct-scanned MKV processing
         elif mkv_file:
-            # Rename to strip trailing frame-index
-            base = mkv_file.stem.rsplit('_', 1)[0]
-            new_mkv = pm_folder / f"{base}.mkv"
-            LOGGER.info("Renaming %s to %s", mkv_file, new_mkv)
-            mkv_file.rename(new_mkv)
+            # Files are now correctly named off the scanner, so we skip the renaming step.
+            LOGGER.info("Found direct-scanned MKV: %s", mkv_file)
 
             # Transcode the mezzanine MOV to MP4
             sc_folder = film_folder / 'ServiceCopies'
             sc_folder.mkdir(exist_ok=True)
             mz_file = next(iter(sorted(mz_folder.glob('*.mov'))), None)
+            
             if mz_file:
                 convert_to_mp4(mz_file, sc_folder)
             else:
