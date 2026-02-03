@@ -23,9 +23,9 @@ Media Preservation Engineers (MPEs) may:
   /Volumes/amip/bturkus/
   /Volumes/amip/<username>/
   ```
-- **(b) Capture locally**, then use `rsync` to copy completed projects to the `READY/` folder within their personal Qumulo directory:
+- **(b) Capture locally**, then use `rsync` to copy completed projects to the centralized `_READYFORQC/` directory:
   ```
-  /Volumes/amip/<username>/READY/
+  /Volumes/amip//_READYFORQC/
   ```
 
 Use appropriate `rsync` flags (e.g., `-rtv --progress`) to preserve timestamps, resume transfers, and verify completion.
@@ -34,10 +34,10 @@ Use appropriate `rsync` flags (e.g., `-rtv --progress`) to preserve timestamps, 
 
 ### 1.2 Directory Structure
 
-Each Media Preservation Engineer's personal directory should contain:
+Engineers maintain personal directories for in-progress work. Once a project is finished, it must be moved to the centralized QC queue.
 
-- `READY/` – For completed, QC-ready projects.
-- `WORKING/` – *(Optional)* For in-progress files not yet ready for handoff.
+- **Personal Directory** `/Volumes/amip/<username>/WORKING` – Used for active capture/working files.
+- **QC Queue** `/Volumes/amip/_READYFORQC_` – The destination for all completed projects ready for QC handoff.
 
 Project subdirectories should be named using the Media Digitization Request (MDR) ID, optionally followed by barcode:
 ```
@@ -45,7 +45,7 @@ MDR0001424_33433087970004
 MDR0001438
 ```
 
-Avoid altering files or structure after placing a project in the `READY/` folder.
+Avoid altering files or structure after placing a project in the `_READYFORQC/` folder.
 
 ---
 
@@ -53,7 +53,7 @@ Avoid altering files or structure after placing a project in the `READY/` folder
 
 ### 2.1 Review Trigger
 
-The presence of a project folder in `READY/` signals that digitization is complete and the project is ready for QC.
+The presence of a project folder in `_READYFORQC/` signals that digitization is complete and the project is ready for QC.
 
 ### 2.2 QC Process
 
@@ -71,7 +71,7 @@ As part of the QC process, staff will:
 
 Upon successful completion of QC and the EAVie transfer:
 
-- QC Staff will move the project folder from `READY/` to the **`_QCPass/`** directory.
+- QC Staff will move the project folder from `_READYFORQC/` to the **`_QCPass/`** directory.
 - This action signals to the Digital Preservation team that the content is approved for final ingest.
 
 ---
