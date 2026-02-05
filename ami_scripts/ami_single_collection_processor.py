@@ -312,40 +312,41 @@ class CollectionProcessor:
         except (ValueError, TypeError):
             return None
 
+    def separate_inactive_records(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+            """
+            Splits DataFrame into active and inactive based on Location status.
+            """
+            if df.empty:
+                return df, pd.DataFrame()
+
+            # Any record with 'Object inactive' goes to the inactive list
+            inactive_mask = df['Location'] == 'Object inactive'
+            
+            df_inactive = df[inactive_mask].copy()
+            df_active = df[~inactive_mask].copy()
+            
+            logging.info(f"Separated {len(df_inactive)} inactive records.")
+            return df_active, df_inactive
+
     def apply_filters(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Apply business logic filters to the DataFrame.
-        
-        Args:
-            df: Input DataFrame
-            
-        Returns:
-            Filtered DataFrame
+        Refactored to only handle format exclusions.
         """
         if df.empty:
             return df
 
         initial_count = len(df)
         
-        # Filter 1: Exclude records with no barcode, unmigrated, and object inactive
-        exclusion_mask = (
-            (df['Barcode'] == '') &
-            (df['Migration Status'] == 'Unmigrated') &
-            (df['Location'] == 'Object inactive')
-        )
-        df = df[~exclusion_mask]
-        excluded_inactive = exclusion_mask.sum()
-        
-        # Drop the Location column as it's no longer needed
-        df = df.drop(columns=['Location'], errors='ignore')
-        
-        # Filter 2: Exclude unwanted formats
+        # Filter: Exclude unwanted formats (box, manuscript, etc.)
         format_mask = df['Format 1'].str.lower().isin(EXCLUDED_FORMATS)
         df = df[~format_mask]
         excluded_formats = format_mask.sum()
         
-        logging.info(f"Applied filters: {initial_count} → {len(df)} records "
-                    f"(excluded {excluded_inactive} inactive, {excluded_formats} unwanted formats)")
+        # We drop Location here for the 'All Records' sheet cleanliness
+        df = df.drop(columns=['Location'], errors='ignore')
+        
+        logging.info(f"Applied format filters: {initial_count} -> {len(df)} records "
+                    f"(excluded {excluded_formats} unwanted formats)")
         
         return df
 
@@ -415,33 +416,25 @@ class ReportGenerator:
         self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def generate_excel(self, df_main: pd.DataFrame, df_digital: pd.DataFrame, 
-                      output_file: str) -> None:
-        """
-        Generate Excel report with multiple sheets and formatting.
-        
-        Args:
-            df_main: Main DataFrame
-            df_digital: Digital carriers DataFrame  
-            output_file: Output file path
-        """
-        logging.info(f"Generating Excel report: {output_file}")
-        
-        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-            # Main sheet
-            if not df_main.empty:
-                df_main.to_excel(writer, sheet_name='All Records', index=False)
-                logging.info(f"Wrote 'All Records' sheet with {len(df_main)} rows")
+                        df_inactive: pd.DataFrame, output_file: str) -> None:
+            logging.info(f"Generating Excel report: {output_file}")
+            
+            with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+                # Main sheet (Active items)
+                if not df_main.empty:
+                    df_main.to_excel(writer, sheet_name='All Records', index=False)
+                    self._create_status_sheets(df_main, writer)
                 
-                # Create sheets by migration status
-                self._create_status_sheets(df_main, writer)
-            
-            # Digital carriers sheet
-            if not df_digital.empty:
-                df_digital.to_excel(writer, sheet_name='Digital Carriers', index=False)
-                logging.info(f"Wrote 'Digital Carriers' sheet with {len(df_digital)} rows")
-            
-            # Format all sheets
-            self._format_excel_sheets(writer)
+                # Digital carriers sheet
+                if not df_digital.empty:
+                    df_digital.to_excel(writer, sheet_name='Digital Carriers', index=False)
+
+                # NEW: Inactive Records sheet
+                if not df_inactive.empty:
+                    df_inactive.to_excel(writer, sheet_name='Inactive Records', index=False)
+                    logging.info(f"Wrote 'Inactive Records' sheet with {len(df_inactive)} rows")
+                
+                self._format_excel_sheets(writer)
 
     def _create_status_sheets(self, df: pd.DataFrame, writer: pd.ExcelWriter) -> None:
         """Create separate sheets for each migration status."""
@@ -991,16 +984,24 @@ def main() -> int:
                 logging.warning("No data found for the specified collection ID")
                 return 0
 
-            # Apply filters, separate carriers, sort
-            df = processor.apply_filters(df)
-            df_main, df_digital = processor.separate_digital_carriers(df)
+            # --- UPDATED PROCESSING LOGIC ---
+            # 1. Branch off inactive records first so they aren't lost in filters
+            df_active, df_inactive = processor.separate_inactive_records(df)
+            
+            # 2. Filter remaining active records and separate carriers
+            df_active = processor.apply_filters(df_active)
+            df_main, df_digital = processor.separate_digital_carriers(df_active)
+            
+            # 3. Sort all sets
             df_main = processor.sort_by_ami_id(df_main)
+            df_digital = processor.sort_by_ami_id(df_digital)
+            df_inactive = processor.sort_by_ami_id(df_inactive)
 
             # Generate reports
             report_generator = ReportGenerator(args.collection_id)
 
-            # Excel report
-            report_generator.generate_excel(df_main, df_digital, str(excel_path))
+            # Excel report (including inactive)
+            report_generator.generate_excel(df_main, df_digital, df_inactive, str(excel_path))
             logging.info(f"Excel report completed: {excel_path}")
 
             # PDF report (if requested)
@@ -1009,9 +1010,9 @@ def main() -> int:
                 logging.info(f"PDF report completed: {pdf_path}")
 
             # Final summary
-            total_items = len(df_main) + len(df_digital)
+            total_items = len(df_main) + len(df_digital) + len(df_inactive)
             logging.info(f"Processing complete: {total_items} total items processed")
-            logging.info(f"Main records: {len(df_main)}, Digital carriers: {len(df_digital)}")
+            logging.info(f"Main: {len(df_main)}, Digital: {len(df_digital)}, Inactive: {len(df_inactive)}")
 
         except FileMakerConnectionError as e:
             logging.error(f"FileMaker error: {e}")
