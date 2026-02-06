@@ -74,11 +74,18 @@ COLORS = {
 
 def sanitize_sheet_name(name: str) -> str:
     """
-    Sanitize sheet name for Excel compatibility.
-    Remove invalid Excel sheet chars: [ ] : * ? / \\
+    Sanitize sheet name for Excel compatibility (max 31 chars).
     """
+    # Remove invalid characters
     cleaned = re.sub(r"[\[\]\:\*\?/\\]", '_', name)
-    return cleaned[:31] or 'Sheet'
+    
+    # Specific fix for 'Migration failed (will not retry)' -> 33 chars
+    # We can shorten 'Migration' to 'Mig' or 'retry' to 'rty' if needed,
+    # but most users prefer a clean cut or a known abbreviation.
+    if "Migration failed (will not retry)" in cleaned:
+        return "Mig Fail (will not retry)"
+        
+    return cleaned[:31].strip() or 'Sheet'
 
 
 class ConfigurationError(Exception):
@@ -280,6 +287,7 @@ class CollectionProcessor:
                     'Box Name': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::name_d_calc')),
                     'Box Barcode': self._clean_string(record.get('OBJECTS_parent_from_OBJECTS::id_barcode')),
                     'Location': self._clean_string(record.get('ux_loc_active_d')),
+                    'Active': record.get('active'), # Capture the 1 or 0
                 }
                 
                 # 2. Get the dynamically generated issue columns.
@@ -312,43 +320,41 @@ class CollectionProcessor:
         except (ValueError, TypeError):
             return None
 
-    def separate_inactive_records(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def apply_filters(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
             """
-            Splits DataFrame into active and inactive based on Location status.
+            1. Splits data into Active and Inactive.
+            2. Filters out unwanted formats from the Active set.
             """
             if df.empty:
                 return df, pd.DataFrame()
 
-            # Any record with 'Object inactive' goes to the inactive list
-            inactive_mask = df['Location'] == 'Object inactive'
-            
+            # --- STEP 1: Split by 'active' field ---
+            # FileMaker 'active' is 1 or 0
+            inactive_mask = (df['Active'].astype(str) == '0')
             df_inactive = df[inactive_mask].copy()
             df_active = df[~inactive_mask].copy()
+
+            # --- STEP 2: Content Filter (Active items only) ---
+            initial_active_count = len(df_active)
             
-            logging.info(f"Separated {len(df_inactive)} inactive records.")
+            # Exclude unwanted formats (e.g., boxes, posters, etc.)
+            format_mask = df_active['Format 1'].str.lower().isin(EXCLUDED_FORMATS)
+            df_active = df_active[~format_mask]
+            
+            excluded_formats_count = format_mask.sum()
+
+            logging.info(
+                f"Filter Results:\n"
+                f" - Shunted to Inactive Sheet: {len(df_inactive)}\n"
+                f" - Active records kept: {len(df_active)}\n"
+                f" - Active records excluded (format filter): {excluded_formats_count}"
+            )
+
+            # Cleanup columns for the report
+            df_active = df_active.drop(columns=['Active', 'Location'], errors='ignore')
+            df_inactive = df_inactive.drop(columns=['Active'], errors='ignore')
+
             return df_active, df_inactive
-
-    def apply_filters(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Refactored to only handle format exclusions.
-        """
-        if df.empty:
-            return df
-
-        initial_count = len(df)
-        
-        # Filter: Exclude unwanted formats (box, manuscript, etc.)
-        format_mask = df['Format 1'].str.lower().isin(EXCLUDED_FORMATS)
-        df = df[~format_mask]
-        excluded_formats = format_mask.sum()
-        
-        # We drop Location here for the 'All Records' sheet cleanliness
-        df = df.drop(columns=['Location'], errors='ignore')
-        
-        logging.info(f"Applied format filters: {initial_count} -> {len(df)} records "
-                    f"(excluded {excluded_formats} unwanted formats)")
-        
-        return df
 
     def separate_digital_carriers(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -420,19 +426,20 @@ class ReportGenerator:
             logging.info(f"Generating Excel report: {output_file}")
             
             with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
-                # Main sheet (Active items)
+                # 1. Main Active Records (Filtered)
                 if not df_main.empty:
                     df_main.to_excel(writer, sheet_name='All Records', index=False)
+                    # This creates the sub-sheets (Migrated, Unmigrated, etc) 
+                    # based ONLY on the filtered active items
                     self._create_status_sheets(df_main, writer)
                 
-                # Digital carriers sheet
+                # 2. Digital Carriers (Also technically active)
                 if not df_digital.empty:
                     df_digital.to_excel(writer, sheet_name='Digital Carriers', index=False)
 
-                # NEW: Inactive Records sheet
+                # 3. Inactive Records (The "Archive" sheet)
                 if not df_inactive.empty:
                     df_inactive.to_excel(writer, sheet_name='Inactive Records', index=False)
-                    logging.info(f"Wrote 'Inactive Records' sheet with {len(df_inactive)} rows")
                 
                 self._format_excel_sheets(writer)
 
@@ -984,23 +991,19 @@ def main() -> int:
                 logging.warning("No data found for the specified collection ID")
                 return 0
 
-            # --- UPDATED PROCESSING LOGIC ---
-            # 1. Branch off inactive records first so they aren't lost in filters
-            df_active, df_inactive = processor.separate_inactive_records(df)
-            
-            # 2. Filter remaining active records and separate carriers
-            df_active = processor.apply_filters(df_active)
+            # 1. Split active from inactive and filter unwanted formats
+            df_active, df_inactive = processor.apply_filters(df)
+
+            # 2. Further split the 'good' active records into Main vs Digital
             df_main, df_digital = processor.separate_digital_carriers(df_active)
-            
-            # 3. Sort all sets
+
+            # 3. Sort all groups by AMI ID for readability
             df_main = processor.sort_by_ami_id(df_main)
             df_digital = processor.sort_by_ami_id(df_digital)
             df_inactive = processor.sort_by_ami_id(df_inactive)
 
-            # Generate reports
+            # 4. Generate the final Excel report
             report_generator = ReportGenerator(args.collection_id)
-
-            # Excel report (including inactive)
             report_generator.generate_excel(df_main, df_digital, df_inactive, str(excel_path))
             logging.info(f"Excel report completed: {excel_path}")
 
@@ -1010,9 +1013,9 @@ def main() -> int:
                 logging.info(f"PDF report completed: {pdf_path}")
 
             # Final summary
-            total_items = len(df_main) + len(df_digital) + len(df_inactive)
+            total_items = len(df_main) + len(df_digital)
             logging.info(f"Processing complete: {total_items} total items processed")
-            logging.info(f"Main: {len(df_main)}, Digital: {len(df_digital)}, Inactive: {len(df_inactive)}")
+            logging.info(f"Main records: {len(df_main)}, Digital carriers: {len(df_digital)}")
 
         except FileMakerConnectionError as e:
             logging.error(f"FileMaker error: {e}")
