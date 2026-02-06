@@ -8,7 +8,17 @@ import re
 import json
 import warnings
 import tempfile
-import shutil
+try:
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound, TokenRetrievalError, SSOTokenLoadError
+except ImportError:
+    print("\n[ERROR] Required library 'boto3' is not installed.")
+    print("Please install it by running:")
+    print("    python3 -m pip install boto3")
+    print("Or if using a virtual environment, ensure it is activated.\n")
+    sys.exit(1)
+
+BUCKET_NAME = 'ami-carnegie-servicecopies'
 
 def get_args():
     parser = argparse.ArgumentParser(description='Copy SC Video and EM Audio to AWS')
@@ -60,11 +70,38 @@ def get_args():
     args = parser.parse_args()
     return args
 
+def get_s3_client(profile_name=None):
+    """
+    Establish an S3 client session.
+    Checks for valid credentials immediately.
+    """
+    try:
+        session = boto3.Session(profile_name=profile_name)
+        # Capture the actual profile being used (handles default/env vars)
+        effective_profile = session.profile_name 
+        
+        sts = session.client('sts')
+        # Simple call to verify credentials are active
+        identity = sts.get_caller_identity()
+        # print(f"Authenticated as: {identity['Arn']}")
+        return session.client('s3')
+    except (NoCredentialsError, ClientError, ProfileNotFound, TokenRetrievalError, SSOTokenLoadError) as e:
+        print(f"\n[ERROR] AWS Authentication Failed: {e}")
+        print("Please ensure you are logged in.")
+        
+        # Determine which profile name to show in the hint
+        # If we successfully created the session, use its resolved profile.
+        # Otherwise fallback to the argument or 'default'.
+        target_profile = locals().get('effective_profile') or profile_name or 'default'
+        
+        print(f"Try running: aws sso login --profile {target_profile}")
+        sys.exit(1)
+
 def find_bags(directory):
     try:
         test_directory = os.listdir(directory)
     except OSError:
-        exit(f'Please retry with a valid directory of files: {directory}')
+        sys.exit(f'Please retry with a valid directory of files: {directory}')
 
     bags = []
     bag_ids = []
@@ -180,37 +217,56 @@ def valid_json_barcode(json_file_list):
                 return file
     return True
 
-def check_bucket(filenames_list, profile_name=None):
+def check_bucket(s3_client, filenames_list):
     """
-    Checks if filenames exist in bucket.
+    Checks if filenames exist in bucket using boto3.
+    Optimized to use list_objects_v2 with a common prefix to reduce API calls.
     Returns a list of FILENAMES (not full paths) that are missing.
     """
+    if not filenames_list:
+        return []
+
+    # 1. Determine common prefix to narrow down the listing
+    #    (e.g., "MDR_123456_")
+    common_prefix = os.path.commonprefix(filenames_list)
+    
+    # 2. Fetch all existing objects with that prefix
+    found_keys = set()
+    paginator = s3_client.get_paginator('list_objects_v2')
+    
+    # If common_prefix is empty, this lists the whole bucket.
+    # We rely on bag structure having a shared ID/prefix to keep this efficient.
+    
+    try:
+        page_iterator = paginator.paginate(
+            Bucket=BUCKET_NAME,
+            Prefix=common_prefix
+        )
+
+        for page in page_iterator:
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    found_keys.add(obj['Key'])
+    except ClientError as e:
+        print(f"Error listing objects: {e}")
+        pass
+
     to_upload = []
-    
-    cmd = ['aws', 's3api', 'head-object',
-           '--bucket', 'ami-carnegie-servicecopies']
-    
-    if profile_name:
-        cmd.extend(['--profile', profile_name])
-        
-    cmd.extend(['--key', ''])
-    
+
     for file in filenames_list:
+        # Check primary key
+        if file in found_keys:
+            continue
+            
+        # Fallback check for MP4 variant if FLAC/WAV
         if 'flac' in file or 'wav' in file:
-            cmd[-1] = file 
-            output_original_media = subprocess.run(cmd, capture_output=True).stdout
-            if not output_original_media:
-                # If original missing, check for mp4 variant
-                mp4_key = file.replace('flac', 'mp4').replace('wav', 'mp4')
-                cmd[-1] = mp4_key 
-                output_mp4 = subprocess.run(cmd, capture_output=True).stdout
-                if not output_mp4:
-                    to_upload.append(file)
-        else:
-            cmd[-1] = file
-            output_json_mp4 = subprocess.run(cmd, capture_output=True).stdout
-            if not output_json_mp4:
-                to_upload.append(file)
+            mp4_key = file.replace('flac', 'mp4').replace('wav', 'mp4')
+            if mp4_key in found_keys:
+                continue
+        
+        # If we get here, neither the file nor its variant was found
+        to_upload.append(file)
+
     return to_upload
 
 def file_type_counts(all_file_list):
@@ -234,7 +290,7 @@ def transcode_flac(input_path, output_path, dry_run=False):
     ]
     
     if dry_run:
-        print(f"[DRY RUN] Would run: {' '.join(command)}")
+        print(f"dict[DRY RUN] Would run: {' '.join(command)}")
         return True
 
     print(f"Transcoding {os.path.basename(input_path)} to temp MP4...")
@@ -320,30 +376,29 @@ def prepare_transcodes(file_list_to_upload, all_files_in_bag, temp_dir, dry_run=
             
     return sorted(list(set(final_list)))
 
-def cp_files(file_list, profile_name=None, dry_run=False):
+def cp_files(s3_client, file_list, dry_run=False):
+    failed_uploads = []
     for filename in sorted(file_list):
         # In dry run, we skip the existence check for temp files because they weren't actually created
         if not dry_run and not os.path.exists(filename):
              print(f"Error: File not found for upload: {filename}")
+             failed_uploads.append(filename)
              continue
 
-        cp_command = [
-            'aws', 's3', 'cp',
-            filename,
-            's3://ami-carnegie-servicecopies'
-        ]
+        key = os.path.basename(filename)
         
-        if profile_name:
-            cp_command.extend(['--profile', profile_name])
-            
         if dry_run:
-            print(f"[DRY RUN] Would upload: {os.path.basename(filename)}")
-            # print(f"           Command: {' '.join(cp_command)}") # Optional: print full command
+            print(f"[DRY RUN] Would upload: {filename} to s3://{BUCKET_NAME}/{key}")
         else:
-            print(f"Uploading: {os.path.basename(filename)}")
-            subprocess.call(cp_command)
+            print(f"Uploading: {key}")
+            try:
+                s3_client.upload_file(filename, BUCKET_NAME, key)
+            except Exception as e:
+                 print(f"Failed to upload {filename}: {e}")
+                 failed_uploads.append(filename)
+    return failed_uploads
 
-def process_single_directory(directory, arguments):
+def process_single_directory(directory, arguments, s3_client):
     bags, bag_ids = find_bags(directory)
 
     summary = {
@@ -356,6 +411,7 @@ def process_single_directory(directory, arguments):
         'json_mismatch_ls': [],
         'bc_mismatch_ls': [],
         'incomplete_in_bucket': [],
+        'failed_uploads': [],
         'uploaded_counts': {
             'mp4': 0,
             'wav': 0,
@@ -386,7 +442,7 @@ def process_single_directory(directory, arguments):
                 if arguments.check_only or arguments.check_and_upload:
                     # Note: We perform the REAL S3 check even in Dry Run to give accurate info
                     print(f'Now checking if {bag} is in the bucket:\n')
-                    missing_filenames = check_bucket(all_files, arguments.profile)
+                    missing_filenames = check_bucket(s3_client, all_files)
                     
                     if missing_filenames:
                         summary['incomplete_in_bucket'].append(bag)
@@ -412,7 +468,8 @@ def process_single_directory(directory, arguments):
 
                         mp4_ct, wav_ct, flac_ct, json_ct = file_type_counts(files_to_process_paths)
                         
-                        cp_files(files_to_process_paths, arguments.profile, dry_run=arguments.dry_run)
+                        failures = cp_files(s3_client, files_to_process_paths, dry_run=arguments.dry_run)
+                        summary['failed_uploads'].extend(failures)
                         
                         summary['uploaded_counts']['mp4'] += mp4_ct
                         summary['uploaded_counts']['wav'] += wav_ct
@@ -448,6 +505,9 @@ Bags with invalid filename(s): {summary['invalid_fn_ls']}
 Media/JSON mismatched bag(s): {summary['fn_mismatch_ls']}
 JSON reference mismatched bag(s): {summary['json_mismatch_ls']}
 Barcode mismatched bag(s): {summary['bc_mismatch_ls']}"""
+    
+    if summary['failed_uploads']:
+        issues_msg += f"\n\n[ERROR] Failed Uploads ({len(summary['failed_uploads'])} files):\n" + "\n".join(summary['failed_uploads'])
 
     if arguments.check_only:
         print(issues_msg)
@@ -465,10 +525,13 @@ def main():
         print("S3 bucket checks are REAL (read-only).")
         print("******************************************************\n")
 
+    # Initialize S3 client once
+    s3_client = get_s3_client(arguments.profile)
+
     all_summaries = []
     for directory in arguments.directories:
         print(f"\nProcessing directory: {directory}")
-        summary = process_single_directory(directory, arguments)
+        summary = process_single_directory(directory, arguments, s3_client)
         all_summaries.append(summary)
     
     for summary in all_summaries:
@@ -476,4 +539,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    exit(0)
