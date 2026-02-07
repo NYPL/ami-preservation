@@ -8,6 +8,8 @@ import re
 import json
 import warnings
 import tempfile
+import sys
+
 try:
     import boto3
     from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound, TokenRetrievalError, SSOTokenLoadError
