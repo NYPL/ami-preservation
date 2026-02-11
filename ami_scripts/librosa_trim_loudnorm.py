@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Audio Processing Pipeline (Preservation -> Edit Master)
-ENHANCED VERSION with Multi-Feature Silence Detection
+ENHANCED VERSION with Multi-Feature Silence Detection + Advanced Topology Analysis
 Focus: Robust analog tape noise rejection while preserving content
 """
 import argparse
@@ -10,7 +10,8 @@ import sys
 import subprocess
 import logging
 import json
-from typing import Tuple, Dict, Optional
+import math
+from typing import Tuple, Dict, Optional, List
 
 # Strict Dependency Check
 try:
@@ -44,6 +45,16 @@ def get_args():
                    help='Analyze files and print cut points without processing.')
     p.add_argument('--force', action='store_true',
                    help='Bypass safety checks (use with caution!)')
+
+    # TOPOLOGY SETTINGS
+    p.add_argument('--sum-mono', action='store_true',
+                   help='If analyzed as dual-mono, sum the channels to a single center channel mono Edit Master')
+    p.add_argument('--dm-corr-min', type=float, default=0.97,
+                   help='Minimum correlation to classify as dual-mono (default: 0.97)')
+    p.add_argument('--dm-resid-max', type=float, default=0.15,
+                   help='Maximum residual ratio to classify as dual-mono (default: 0.15)')
+    p.add_argument('--dm-lag-max', type=int, default=8,
+                   help='Maximum sample lag to classify as dual-mono (default: 8)')
 
     # DETECTION SETTINGS
     p.add_argument('--noise-scan-duration', type=float, default=20.0,
@@ -108,11 +119,188 @@ def get_audio_duration(path: str) -> float:
         return 0.0
 
 
-def detect_noise_floor_multiband(
-    path: str,
-    scan_duration: float,
-    show_stats: bool
-) -> Dict[str, float]:
+# ---------------------------------------------------------
+# TOPOLOGY MATH (Phase-Aligned Residual Analysis)
+# ---------------------------------------------------------
+
+def rms_flat(x: np.ndarray) -> float:
+    """Calculate flat RMS for a 1D array, avoiding mean of empty slice warnings."""
+    if x.size == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(x.astype(np.float64) ** 2)))
+
+def _safe_corrcoef(a: np.ndarray, b: np.ndarray) -> float:
+    """Safely compute Pearson correlation coefficient."""
+    if a.size < 8 or b.size < 8:
+        return 1.0
+    sa = float(np.std(a))
+    sb = float(np.std(b))
+    if sa <= 1e-12 or sb <= 1e-12:
+        return 1.0
+    c = float(np.corrcoef(a, b)[0, 1])
+    if not math.isfinite(c):
+        return 1.0
+    return max(-1.0, min(1.0, c))
+
+def best_fit_gain(a: np.ndarray, b: np.ndarray) -> float:
+    """Find the optimal gain scaler to match signal 'a' to signal 'b'."""
+    denom = float(np.dot(a, a))
+    if denom <= 1e-20:
+        return 1.0
+    return float(np.dot(b, a)) / denom
+
+def estimate_lag_samples(a: np.ndarray, b: np.ndarray, max_lag: int = 2000) -> int:
+    """Estimate the sub-sample lag/delay between two channels using cross-correlation."""
+    if a.size < 2048 or b.size < 2048:
+        return 0
+    # Downsample for faster cross-correlation on large arrays
+    step = max(1, a.size // 50000)
+    aa = a[::step].astype(np.float64, copy=False)
+    bb = b[::step].astype(np.float64, copy=False)
+
+    aa = aa - np.mean(aa)
+    bb = bb - np.mean(bb)
+
+    max_lag_ds = max(1, max_lag // step)
+    if max_lag_ds >= aa.size - 1:
+        max_lag_ds = max(1, aa.size // 4)
+
+    corr = np.correlate(bb, aa, mode="full")
+    mid = corr.size // 2
+
+    lo = max(0, mid - max_lag_ds)
+    hi = min(corr.size, mid + max_lag_ds + 1)
+    window = corr[lo:hi]
+    idx = int(np.argmax(window))
+    lag_ds = (lo + idx) - mid
+
+    return int(lag_ds * step)
+
+def align_by_lag(a: np.ndarray, b: np.ndarray, lag: int) -> Tuple[np.ndarray, np.ndarray]:
+    """Shift the arrays to align them based on the estimated lag."""
+    if lag == 0:
+        n = min(a.size, b.size)
+        return a[:n], b[:n]
+    if lag > 0:
+        if lag >= b.size:
+            return a[:0], b[:0]
+        b2 = b[lag:]
+        n = min(a.size, b2.size)
+        return a[:n], b2[:n]
+    else:
+        lag2 = -lag
+        if lag2 >= a.size:
+            return a[:0], b[:0]
+        a2 = a[lag2:]
+        n = min(a2.size, b.size)
+        return a2[:n], b[:n]
+
+def pair_metrics_aligned(L: np.ndarray, R: np.ndarray, lag: int) -> Dict[str, float]:
+    """
+    Align channels, calculate correlation, and calculate the residual ratio.
+    The residual ratio proves if the channels contain unique spatial information (Stereo) 
+    or just slight tape phase differences (Mono).
+    """
+    a, b = align_by_lag(L, R, lag)
+    if a.size == 0 or b.size == 0:
+        return {"corr": 1.0, "gain": 1.0, "resid_ratio": 0.0}
+
+    l = a.astype(np.float64, copy=False)
+    r = b.astype(np.float64, copy=False)
+
+    l = l - np.mean(l)
+    r = r - np.mean(r)
+
+    corr = _safe_corrcoef(l, r)
+    gain = best_fit_gain(l, r)
+    
+    # Subtract scaled Left from Right to find the residual difference
+    resid = r - (gain * l)
+
+    r_rms = rms_flat(r)
+    resid_rms = rms_flat(resid)
+    resid_ratio = (resid_rms / r_rms) if r_rms > 1e-12 else 0.0
+
+    return {"corr": float(corr), "gain": float(gain), "resid_ratio": float(resid_ratio)}
+
+# ---------------------------------------------------------
+
+def check_dual_mono(
+    path: str, 
+    corr_min: float, 
+    resid_max: float, 
+    lag_max: int, 
+    scan_duration: float = 60.0
+) -> Tuple[bool, Dict[str, float], List[str]]:
+    """
+    Analyzes a stereo file using phase-aligned residual math and 2-window confirmation.
+    
+    WITH: lag-aligned pair metrics + 2-window confirmation for dual-mono
+    Returns (is_dual_mono, metrics_dict, logs).
+    """
+    try:
+        total_duration = get_audio_duration(path)
+        scan_dur = min(scan_duration, total_duration)
+        if scan_dur <= 0:
+            return False, {}, ["Failed: File has no duration."]
+            
+        # Target the middle of the file where content is most likely
+        offset = max(0.0, (total_duration / 2) - (scan_dur / 2))
+        
+        # Load audio at 48kHz (crucial so lag_max=8 samples means the same thing consistently)
+        y, sr = librosa.load(path, offset=offset, duration=scan_dur, sr=48000, mono=False)
+        
+        # If it's already a 1-channel file
+        if y.ndim == 1 or y.shape[0] == 1:
+            return True, {}, ["File is already a 1-channel mono file."]
+
+        L = y[0]
+        R = y[1]
+        
+        # Filter out absolute digital silence to prevent correlating 0s
+        active_frames = (np.abs(L) > 1e-4) & (np.abs(R) > 1e-4)
+        if not np.any(active_frames):
+            return False, {}, ["Failed: Analysis window is dead silent."]
+
+        # Split into two windows (Early/Late) for 2-window confirmation
+        mid = L.size // 2
+        L1, R1 = L[:mid], R[:mid]
+        L2, R2 = L[mid:], R[mid:]
+
+        # Window 1 Math
+        lag1 = estimate_lag_samples(L1, R1)
+        m1 = pair_metrics_aligned(L1, R1, lag1)
+        dm1 = (abs(m1['corr']) >= corr_min and m1['resid_ratio'] <= resid_max and abs(lag1) <= lag_max)
+
+        # Window 2 Math
+        lag2 = estimate_lag_samples(L2, R2)
+        m2 = pair_metrics_aligned(L2, R2, lag2)
+        dm2 = (abs(m2['corr']) >= corr_min and m2['resid_ratio'] <= resid_max and abs(lag2) <= lag_max)
+
+        # Dual-mono requires window 1 AND window 2 to pass
+        is_mono = dm1 and dm2
+
+        metrics = {
+            'corr1': m1['corr'], 'resid1': m1['resid_ratio'], 'lag1': lag1,
+            'corr2': m2['corr'], 'resid2': m2['resid_ratio'], 'lag2': lag2,
+        }
+        
+        flags = []
+        if is_mono:
+            flags.append("Confirmed DUAL-MONO in both windows.")
+        elif dm1 and not dm2:
+            flags.append("Contradiction: W1 passed Dual-Mono criteria, but W2 failed.")
+        else:
+            flags.append("Analyzed as STEREO (Failed Dual-Mono criteria).")
+
+        return is_mono, metrics, flags
+
+    except Exception as e:
+        logging.warning(f"Dual-mono analysis failed: {e}")
+        return False, {}, [f"Error: {str(e)}"]
+
+
+def detect_noise_floor_multiband(path: str, scan_duration: float, show_stats: bool) -> Dict[str, float]:
     """
     Enhanced multi-band noise floor detection.
     Analyzes different frequency bands to better characterize tape noise.
@@ -129,20 +317,13 @@ def detect_noise_floor_multiband(
             scan_regions.append(('MID', total_duration / 2 - scan_duration / 2))
 
         # Frequency bands for analysis
-        bands = {
-            'low': (150, 500),      # Low fundamentals
-            'mid': (500, 2000),     # Speech clarity
-            'high': (2000, 8000),   # Presence/sibilance
-            'air': (8000, 15000)    # Tape hiss territory
-        }
-
+        bands = {'low': (150, 500), 'mid': (500, 2000), 'high': (2000, 8000), 'air': (8000, 15000)}
         best_floor_overall = 0.0
         best_region = "NONE"
         band_floors = {band: [] for band in bands.keys()}
 
         for name, start in scan_regions:
             y, sr = librosa.load(path, offset=start, duration=scan_duration, sr=16000, mono=True)
-
             if len(y) < sr * 1.0:
                 continue
 
@@ -151,11 +332,9 @@ def detect_noise_floor_multiband(
             for band_name, (low_freq, high_freq) in bands.items():
                 sos = signal.butter(4, [low_freq, high_freq], 'bandpass', fs=sr, output='sos')
                 y_band = signal.sosfiltfilt(sos, y)
-
                 frame_len = int(sr * 0.1)
                 rms = librosa.feature.rms(y=y_band, frame_length=frame_len, hop_length=frame_len//2)[0]
                 rms_db = librosa.amplitude_to_db(rms, ref=1.0)
-
                 valid_rms = rms_db[rms_db > -90]
                 if len(valid_rms) > 0:
                     p15 = np.percentile(valid_rms, 15)
@@ -165,7 +344,6 @@ def detect_noise_floor_multiband(
             # Overall analysis (broadband)
             sos = signal.butter(4, 100, 'hp', fs=sr, output='sos')
             y_filtered = signal.sosfiltfilt(sos, y)
-
             frame_len = int(sr * 0.1)
             rms = librosa.feature.rms(y=y_filtered, frame_length=frame_len, hop_length=frame_len//2)[0]
             rms_db = librosa.amplitude_to_db(rms, ref=1.0)
@@ -181,11 +359,11 @@ def detect_noise_floor_multiband(
 
             # Check if this region is relatively clean
             is_dense = spread > 15.0 or median > -45.0
-
+            
             # Tape noise signature: High energy in 'air' band relative to others
             air_level = region_band_levels.get('air', -80)
             mid_level = region_band_levels.get('mid', -80)
-            noise_signature = air_level - mid_level  # Positive = likely just noise
+            noise_signature = air_level - mid_level
 
             if show_stats:
                 d_mark = "(!)" if is_dense else "   "
@@ -199,7 +377,7 @@ def detect_noise_floor_multiband(
 
         # Compile results
         result = {'overall': best_floor_overall if best_floor_overall != 0.0 else -65.0}
-
+        
         # Average band floors across regions
         for band_name, levels in band_floors.items():
             if levels:
@@ -210,18 +388,12 @@ def detect_noise_floor_multiband(
                         " | ".join([f"{k}={v:.1f}dB" for k, v in result.items() if k != 'overall']))
 
         return result
-
     except Exception as e:
         logging.warning(f"Multi-band noise floor detection failed: {e}")
         return {'overall': -65.0}
 
 
-def detect_noise_floor_spectral(
-    path: str,
-    scan_duration: float,
-    show_stats: bool,
-    use_multiband: bool = False
-) -> float:
+def detect_noise_floor_spectral(path: str, scan_duration: float, show_stats: bool, use_multiband: bool = False) -> float:
     """
     Measure noise floor with High-Pass filtering and multi-region scanning.
     Can optionally use multi-band analysis for enhanced accuracy.
@@ -244,19 +416,18 @@ def detect_noise_floor_spectral(
 
         for name, start in scan_regions:
             y, sr = librosa.load(path, offset=start, duration=scan_duration, sr=16000, mono=True)
-
             if len(y) < sr * 1.0:
                 continue
 
             # High-pass filter (100Hz)
             sos = signal.butter(4, 100, 'hp', fs=sr, output='sos')
             y_filtered = signal.sosfiltfilt(sos, y)
-
+            
             # RMS
             frame_len = int(sr * 0.1)
             rms = librosa.feature.rms(y=y_filtered, frame_length=frame_len, hop_length=frame_len//2)[0]
             rms_db = librosa.amplitude_to_db(rms, ref=1.0)
-
+            
             # Filter -inf
             valid_rms = rms_db[rms_db > -90]
 
@@ -270,24 +441,15 @@ def detect_noise_floor_spectral(
             p1 = np.percentile(valid_rms, 1)
             p15 = np.percentile(valid_rms, 15)
             median = np.median(valid_rms)
-
+            
             # Density Check
             spread = p15 - min_db
             is_dense = spread > 15.0 or median > -45.0
 
-            floor_est = p15
-            if spread > 25.0:
-                floor_est = p1
-
+            floor_est = p15 if spread <= 25.0 else p1
             candidates.append({
-                'floor': floor_est,
-                'min': min_db,
-                'p1': p1,
-                'p15': p15,
-                'median': median,
-                'spread': spread,
-                'is_dense': is_dense,
-                'region': name
+                'floor': floor_est, 'min': min_db, 'p1': p1, 'p15': p15,
+                'median': median, 'spread': spread, 'is_dense': is_dense, 'region': name
             })
 
             if show_stats:
@@ -297,7 +459,6 @@ def detect_noise_floor_spectral(
 
         # DECISION LOGIC
         clean_candidates = [c for c in candidates if not c['is_dense']]
-
         if clean_candidates:
             winner = min(clean_candidates, key=lambda x: x['p15'])
             logging.info(f"   [Floor] Selected {winner['region']} (Clean): {winner['p15']:.1f}dB")
@@ -308,7 +469,6 @@ def detect_noise_floor_spectral(
             logging.warning(f"   [Floor] → Fallback: Using P1 from {winner['region']}.")
             logging.info(f"   [Floor] Selected {winner['region']} (Fallback P1): {winner['p1']:.1f}dB")
             return winner['p1']
-
     except Exception as e:
         logging.warning(f"Spectral noise floor detection failed: {e}")
         return -65.0
@@ -325,20 +485,14 @@ def calculate_spectral_features(y: np.ndarray, sr: int, hop_length: int) -> Dict
         - spectral_rolloff: 85th percentile frequency
     """
     # Spectral centroid (brightness)
-    spectral_centroids = librosa.feature.spectral_centroid(
-        y=y, sr=sr, hop_length=hop_length
-    )[0]
-
+    spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)[0]
+    
     # Zero-crossing rate
-    zcr = librosa.feature.zero_crossing_rate(
-        y, frame_length=2048, hop_length=hop_length
-    )[0]
-
+    zcr = librosa.feature.zero_crossing_rate(y, frame_length=2048, hop_length=hop_length)[0]
+    
     # Spectral rolloff
-    spectral_rolloff = librosa.feature.spectral_rolloff(
-        y=y, sr=sr, hop_length=hop_length, roll_percent=0.85
-    )[0]
-
+    spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, hop_length=hop_length, roll_percent=0.85)[0]
+    
     # Spectral flux (change in spectrum over time)
     S = np.abs(librosa.stft(y, hop_length=hop_length))
     spectral_flux = np.concatenate([[0], np.sqrt(np.sum(np.diff(S, axis=1)**2, axis=0))])
@@ -349,24 +503,13 @@ def calculate_spectral_features(y: np.ndarray, sr: int, hop_length: int) -> Dict
     elif len(spectral_flux) > len(spectral_centroids):
         spectral_flux = spectral_flux[:len(spectral_centroids)]
 
-    return {
-        'flux': spectral_flux,
-        'centroid': spectral_centroids,
-        'zcr': zcr,
-        'rolloff': spectral_rolloff
-    }
+    return {'flux': spectral_flux, 'centroid': spectral_centroids, 'zcr': zcr, 'rolloff': spectral_rolloff}
 
 
 def detect_silence_boundaries_enhanced(
-    audio_path: str,
-    noise_floor_db: float,
-    headroom_db: float,
-    min_silence_duration: float,
-    show_stats: bool,
-    flux_sensitivity: float = 1.5,
-    centroid_threshold: float = 200.0,
-    content_score_min: int = 2,
-    use_adaptive: bool = False
+    audio_path: str, noise_floor_db: float, headroom_db: float,
+    min_silence_duration: float, show_stats: bool, flux_sensitivity: float = 1.5,
+    centroid_threshold: float = 200.0, content_score_min: int = 2, use_adaptive: bool = False
 ) -> Tuple[float, float, Dict]:
     """
     Enhanced silence detection using multi-feature analysis.
@@ -389,7 +532,7 @@ def detect_silence_boundaries_enhanced(
     y_filt = signal.sosfiltfilt(sos, y)
 
     # RMS Energy
-    hop_length = int(sr * 0.02)  # 20ms
+    hop_length = int(sr * 0.02)
     frame_length = int(sr * 0.05)
     rms = librosa.feature.rms(y=y_filt, frame_length=frame_length, hop_length=hop_length)[0]
     rms_db = librosa.amplitude_to_db(rms, ref=1.0)
@@ -408,7 +551,7 @@ def detect_silence_boundaries_enhanced(
 
     # Adaptive threshold (optional)
     if use_adaptive:
-        window_size = int(2.0 * sr / hop_length)  # 2-second window
+        window_size = int(2.0 * sr / hop_length)
         local_floor = median_filter(rms_db, size=window_size, mode='nearest')
         threshold_adaptive = local_floor + headroom_db
         if show_stats:
@@ -423,13 +566,12 @@ def detect_silence_boundaries_enhanced(
     flux_median = np.median(features['flux'])
     flux_std = np.std(features['flux'])
     flux_norm = (features['flux'] - flux_median) / (flux_std + 1e-10)
-
+    
     # Spectral flux mask (detecting spectral change)
     flux_mask = flux_norm > flux_sensitivity
 
     # Spectral centroid variation (detecting tonal movement)
-    # Use rolling window standard deviation
-    centroid_window = 10  # frames
+    centroid_window = 10
     centroid_std_windowed = np.array([
         np.std(features['centroid'][max(0, i-centroid_window):min(len(features['centroid']), i+centroid_window)])
         for i in range(len(features['centroid']))
@@ -442,7 +584,7 @@ def detect_silence_boundaries_enhanced(
         np.std(features['zcr'][max(0, i-zcr_window):min(len(features['zcr']), i+zcr_window)])
         for i in range(len(features['zcr']))
     ])
-    zcr_mask = zcr_std_windowed > np.percentile(zcr_std_windowed, 50)  # Above median variation
+    zcr_mask = zcr_std_windowed > np.percentile(zcr_std_windowed, 50)
 
     # Multi-criteria content mask
     # Content needs energy AND at least one spectral indicator
@@ -489,25 +631,21 @@ def detect_silence_boundaries_enhanced(
     # Enhanced onset verification with multiple features
     check_duration = 0.5
     check_frames = int(check_duration * sr / hop_length)
-
     onset_iterations = 0
-    max_iterations = 20  # Safety limit
+    max_iterations = 20
 
     while start_idx + check_frames < len(rms_db) and onset_iterations < max_iterations:
         region_slice = slice(start_idx, start_idx + check_frames)
-
-        # Multi-feature analysis of this region
         r_rms_spread = np.max(rms_db[region_slice]) - np.min(rms_db[region_slice])
         r_rms_median = np.median(rms_db[region_slice])
         r_flux_mean = np.mean(flux_norm[region_slice])
         r_centroid_std = np.std(features['centroid'][region_slice])
-        r_zcr_std = np.std(features['zcr'][region_slice])
 
         # Score the region (4 possible indicators)
-        has_dynamic_rms = r_rms_spread > 4.0  # Dynamic energy
-        has_spectral_change = r_flux_mean > 1.0  # Changing timbre
-        has_tonal_movement = r_centroid_std > centroid_threshold  # Varying pitch/brightness
-        is_loud_enough = r_rms_median > -35.0  # Above tape noise level
+        has_dynamic_rms = r_rms_spread > 4.0
+        has_spectral_change = r_flux_mean > 1.0
+        has_tonal_movement = r_centroid_std > centroid_threshold
+        is_loud_enough = r_rms_median > -35.0
 
         content_score = sum([has_dynamic_rms, has_spectral_change, has_tonal_movement, is_loud_enough])
 
@@ -517,26 +655,17 @@ def detect_silence_boundaries_enhanced(
                            f"(Score: {content_score}/4 | RMS_spread={r_rms_spread:.1f}dB | "
                            f"Flux={r_flux_mean:.2f} | Centroid_std={r_centroid_std:.0f}Hz)")
             break
-
-        if show_stats:
-            logging.info(f"     [Smart Onset] Skipping noise at {times[start_idx]:.2f}s "
-                       f"(Score: {content_score}/4 < {content_score_min} threshold)")
-
         start_idx += check_frames
         onset_iterations += 1
 
         if start_idx >= end_idx:
-            logging.warning("     [Smart Onset] No clear content found, using original detection")
             start_idx = content_indices[0]
             break
 
     # Enhanced OFFSET verification (Backwards from end)
-    # This mirrors the onset detection to find where the content truly ends
     offset_iterations = 0
     while end_idx - check_frames > start_idx and offset_iterations < max_iterations:
         region_slice = slice(end_idx - check_frames, end_idx)
-
-        # Multi-feature analysis of this region
         r_rms_spread = np.max(rms_db[region_slice]) - np.min(rms_db[region_slice])
         r_rms_median = np.median(rms_db[region_slice])
         r_flux_mean = np.mean(flux_norm[region_slice])
@@ -555,36 +684,25 @@ def detect_silence_boundaries_enhanced(
                 logging.info(f"     [Smart Offset] Content ends at {times[end_idx]:.2f}s "
                            f"(Score: {content_score}/4 | Flux={r_flux_mean:.2f})")
             break
-
-        if show_stats:
-            logging.info(f"     [Smart Offset] Trimming tail noise at {times[end_idx]:.2f}s "
-                       f"(Score: {content_score}/4 < {content_score_min})")
-
         end_idx -= check_frames
         offset_iterations += 1
 
-    # Update times
     start_time = max(0, times[start_idx] - 0.1)
     end_time = min(total_duration, times[end_idx] + 0.1)
-
+    
     # Calculate metrics
     content_rms = np.median(rms_db[content_indices])
     snr = content_rms - noise_floor_db
     content_duration = end_time - start_time
-
+    
     # Calculate average spectral characteristics of detected content
     content_flux_avg = np.mean(flux_norm[content_indices])
     content_centroid_std = np.std(features['centroid'][content_indices])
 
     metadata = {
-        'snr': snr,
-        'content_duration': content_duration,
-        'content_rms_median': content_rms,
-        'noise_floor': noise_floor_db,
-        'threshold': threshold_db,
-        'spectral_features_used': True,
-        'avg_spectral_flux': content_flux_avg,
-        'centroid_variation': content_centroid_std,
+        'snr': snr, 'content_duration': content_duration, 'content_rms_median': content_rms,
+        'noise_floor': noise_floor_db, 'threshold': threshold_db, 'spectral_features_used': True,
+        'avg_spectral_flux': content_flux_avg, 'centroid_variation': content_centroid_std,
         'content_score_min': content_score_min
     }
 
@@ -605,48 +723,26 @@ def calculate_adaptive_padding(snr: float, base_padding: float, min_padding: flo
     - SNR 25-35dB (good): Scale from ~60% to ~80% of base
     - SNR 15-25dB (fair): Scale from ~80% to full base padding
     - SNR < 15dB (poor): Use full base padding (noisy analog tape)
-
-    Args:
-        snr: Signal-to-noise ratio in dB
-        base_padding: Default padding value from args
-        min_padding: Minimum allowed padding value
-
-    Returns:
-        Calculated padding in seconds
     """
     if snr >= 45.0:
-        # Excellent quality - minimal padding needed
         padding = min_padding
     elif snr >= 35.0:
-        # Very good - interpolate from min to 60% of base
-        ratio = (45.0 - snr) / 10.0  # 0.0 to 1.0
+        ratio = (45.0 - snr) / 10.0
         padding = min_padding + ratio * (0.6 * base_padding - min_padding)
     elif snr >= 25.0:
-        # Good - interpolate from 60% to 80% of base
-        ratio = (35.0 - snr) / 10.0  # 0.0 to 1.0
+        ratio = (35.0 - snr) / 10.0
         padding = 0.6 * base_padding + ratio * (0.2 * base_padding)
     elif snr >= 15.0:
-        # Fair - interpolate from 80% to 100% of base
-        ratio = (25.0 - snr) / 10.0  # 0.0 to 1.0
+        ratio = (25.0 - snr) / 10.0
         padding = 0.8 * base_padding + ratio * (0.2 * base_padding)
     else:
-        # Poor quality - use full padding
         padding = base_padding
-
     return padding
 
 
 def validate_trim_safety(
-    orig_dur: float,
-    start: float,
-    end: float,
-    padding: float,
-    max_percent: float,
-    min_content_dur: float,
-    metadata: Dict,
-    min_snr: float,
-    min_flux_avg: float,
-    force: bool
+    orig_dur: float, start: float, end: float, padding: float, max_percent: float,
+    min_content_dur: float, metadata: Dict, min_snr: float, min_flux_avg: float, force: bool
 ) -> Tuple[bool, str, float, float]:
     """
     Validate that the proposed trim is safe.
@@ -654,38 +750,31 @@ def validate_trim_safety(
     """
     cut_start = max(0, start - padding)
     cut_end = min(orig_dur, end + padding)
-
     head_cut = cut_start
     tail_cut = max(0, orig_dur - cut_end)
     trim_percent = ((head_cut + tail_cut) / orig_dur) * 100
 
     content_duration = metadata.get('content_duration', end - start)
     snr = metadata.get('snr', 0)
-
     warnings = []
 
     # Check 1: Trim percentage
     if trim_percent > max_percent:
-        warnings.append(f"TRIM EXCEEDS SAFETY LIMIT: {trim_percent:.1f}% > {max_percent}% "
-                       f"(would remove {head_cut+tail_cut:.1f}s of {orig_dur:.1f}s)")
-
+        warnings.append(f"TRIM EXCEEDS LIMIT: {trim_percent:.1f}% > {max_percent}%")
     # Check 2: Content duration
     if content_duration < min_content_dur:
-        warnings.append(f"SUSPICIOUSLY SHORT CONTENT: {content_duration:.1f}s < {min_content_dur}s minimum")
-
+        warnings.append(f"SHORT CONTENT: {content_duration:.1f}s < {min_content_dur}s")
     # Check 3: SNR check
     if snr < min_snr and snr > 0:
-        warnings.append(f"LOW SNR: {snr:.1f}dB < {min_snr}dB threshold (content may be questionable)")
-
+        warnings.append(f"LOW SNR: {snr:.1f}dB < {min_snr}dB")
     # Check 4: No content detected
     if metadata.get('warning') == 'no_content_detected':
-        warnings.append("NO CONTENT DETECTED above threshold")
-
+        warnings.append("NO CONTENT DETECTED")
     # Check 5: Low spectral activity (might be just noise)
     if metadata.get('spectral_features_used'):
         avg_flux = metadata.get('avg_spectral_flux', 0)
         if avg_flux < min_flux_avg:
-            warnings.append(f"LOW SPECTRAL ACTIVITY: Flux={avg_flux:.2f} < {min_flux_avg} (content may lack variation)")
+            warnings.append(f"LOW SPECTRAL ACTIVITY: Flux={avg_flux:.2f}")
 
     if warnings:
         if force:
@@ -696,7 +785,7 @@ def validate_trim_safety(
     return True, "", cut_start, cut_end
 
 
-def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: float):
+def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: float, do_sum_mono: bool = False):
     """Execute the actual trimming using ffmpeg"""
     orig_dur = get_audio_duration(src)
     p_start = max(0, start - padding)
@@ -705,6 +794,10 @@ def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: flo
 
     ext = os.path.splitext(dst)[1].lower()
     cmd = ['ffmpeg', '-hide_banner', '-y', '-ss', str(p_start), '-t', str(dur), '-i', src]
+
+    # Mix down to mono if explicitly requested and analyzed as safe
+    if do_sum_mono:
+        cmd += ['-ac', '1']
 
     if ext == '.wav':
         cmd += ['-f', 'wav', '-rf64', 'auto', '-c:a', 'pcm_s24le', '-ar', '96k']
@@ -716,7 +809,7 @@ def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: flo
 
 
 def process_trimming(args):
-    """Phase 1: Detect Silence & Trim with Enhanced Features"""
+    """Phase 1: Detect Silence, Analyze Topology & Trim"""
     src_files = [
         os.path.join(r, f)
         for r, _, fs in os.walk(args.source)
@@ -731,52 +824,54 @@ def process_trimming(args):
     edit_dir = args.source.replace('PreservationMasters', 'EditMasters')
     os.makedirs(edit_dir, exist_ok=True)
 
-    # Statistics tracking
-    stats = {
-        'processed': 0,
-        'skipped': 0,
-        'warnings': 0,
-        'forced': 0
-    }
+    stats = {'processed': 0, 'skipped': 0, 'warnings': 0, 'forced': 0}
 
     for src in sorted(src_files):
         fn = os.path.basename(src)
         base, ext = os.path.splitext(fn)
 
-        # Output naming
         out_suffix = '_trim' if args.trim_only else '_temp'
         out_name = base.replace('_pm', out_suffix) + ext
         if out_name == fn:
             out_name = base + out_suffix + ext
-
         dst = os.path.join(edit_dir, out_name)
 
         logging.info(f"▶ Processing: {fn}")
 
         try:
-            # 1. Measure Noise Floor
-            nf = detect_noise_floor_spectral(
-                src,
-                args.noise_scan_duration,
-                args.show_stats,
-                args.use_multiband
+            # 1. Analyze Channel Topology
+            is_mono, metrics, flags = check_dual_mono(
+                src, 
+                corr_min=args.dm_corr_min, 
+                resid_max=args.dm_resid_max, 
+                lag_max=args.dm_lag_max
             )
+            
+            for flag in flags:
+                logging.info(f"   [Topology] {flag}")
+                
+            if metrics:
+                logging.info(f"   [Topology] Window 1: Corr={metrics.get('corr1',0):.3f} | Resid={metrics.get('resid1',0):.3f} | Lag={metrics.get('lag1',0)}")
+                logging.info(f"   [Topology] Window 2: Corr={metrics.get('corr2',0):.3f} | Resid={metrics.get('resid2',0):.3f} | Lag={metrics.get('lag2',0)}")
+
+            do_sum_mono = is_mono and args.sum_mono
+            if do_sum_mono:
+                logging.info(f"   [Topology] Action: Will sum to single-channel MONO.")
+            elif args.sum_mono and not is_mono:
+                logging.info(f"   [Topology] Action: Retaining STEREO (Did not pass strict dual-mono criteria).")
+
+            # 2. Measure Noise Floor
+            nf = detect_noise_floor_spectral(src, args.noise_scan_duration, args.show_stats, args.use_multiband)
             logging.info(f"   [Floor] Noise floor detected: {nf:.1f}dB")
 
-            # 2. Detect Content with Enhanced Features
+            # 3. Detect Content with Enhanced Features
             start, end, metadata = detect_silence_boundaries_enhanced(
-                src,
-                nf,
-                args.headroom,
-                args.min_silence_duration,
-                args.show_stats,
-                flux_sensitivity=args.flux_sensitivity,
-                centroid_threshold=args.centroid_threshold,
-                content_score_min=args.content_score_min,
-                use_adaptive=args.adaptive_threshold
+                src, nf, args.headroom, args.min_silence_duration, args.show_stats,
+                flux_sensitivity=args.flux_sensitivity, centroid_threshold=args.centroid_threshold,
+                content_score_min=args.content_score_min, use_adaptive=args.adaptive_threshold
             )
 
-            # 2.5. Calculate adaptive padding if enabled
+            # 4. Calculate adaptive padding if enabled
             snr = metadata.get('snr', 0)
             if args.adaptive_padding and snr > 0:
                 actual_padding = calculate_adaptive_padding(snr, args.padding, args.min_padding)
@@ -784,12 +879,11 @@ def process_trimming(args):
             else:
                 actual_padding = args.padding
 
-            # 3. Validate Safety
+            # 5. Validate Safety
             orig_dur = get_audio_duration(src)
             is_safe, warning_msg, cut_start, cut_end = validate_trim_safety(
-                orig_dur, start, end, actual_padding,
-                args.max_trim_percent, args.min_content_duration,
-                metadata, args.min_snr, args.min_flux_avg, args.force
+                orig_dur, start, end, actual_padding, args.max_trim_percent, 
+                args.min_content_duration, metadata, args.min_snr, args.min_flux_avg, args.force
             )
 
             head_cut = cut_start
@@ -797,7 +891,6 @@ def process_trimming(args):
             trim_percent = ((head_cut + tail_cut) / orig_dur) * 100
             content_dur = metadata.get('content_duration', end - start)
 
-            # Display results
             logging.info(f"   [Detection] Content: {start:.2f}s → {end:.2f}s ({content_dur:.1f}s)")
             logging.info(f"   [Trim] Head: -{head_cut:.2f}s | Tail: -{tail_cut:.2f}s | Total: {trim_percent:.1f}%")
 
@@ -805,11 +898,9 @@ def process_trimming(args):
                 logging.info(f"   [Quality] SNR: {metadata['snr']:.1f}dB")
 
             if args.preview:
-                if warning_msg:
-                    logging.warning(f"   ⚠️ {warning_msg}")
+                if warning_msg: logging.warning(f"   ⚠️ {warning_msg}")
                 continue
 
-            # Handle unsafe detections
             if not is_safe:
                 logging.error(f"   ❌ SKIPPED: {warning_msg}")
                 logging.error(f"   → Use --force to override, or adjust parameters")
@@ -827,8 +918,8 @@ def process_trimming(args):
                 stats['processed'] += 1
                 continue
 
-            # 4. Execute Trim with calculated padding
-            trim_audio_ffmpeg(src, dst, start, end, actual_padding)
+            # 6. Execute Trim (Passing the do_sum_mono flag)
+            trim_audio_ffmpeg(src, dst, start, end, actual_padding, do_sum_mono)
 
             logging.info(f"   ✓ Created → {os.path.basename(dst)}")
             stats['processed'] += 1
@@ -840,7 +931,6 @@ def process_trimming(args):
                 traceback.print_exc()
             stats['skipped'] += 1
 
-    # Summary
     logging.info("\n" + "="*60)
     logging.info(f"TRIMMING SUMMARY:")
     logging.info(f"  Processed: {stats['processed']}")
@@ -913,7 +1003,7 @@ def loudnorm_pass(edit_path, target_I, target_LRA, target_TP, dry_run):
             subprocess.run(cmd2, check=True, capture_output=True)
 
             if os.path.exists(dst):
-                os.remove(f)  # Remove intermediate file
+                os.remove(f)  
                 logging.info(f"   ✓ Normalized → {os.path.basename(dst)}")
 
         except Exception as e:
@@ -925,19 +1015,22 @@ def main():
     setup_logging()
 
     logging.info("="*60)
-    logging.info(f"AUDIO PROCESSING PIPELINE - ENHANCED v2.0")
-    logging.info(f"Multi-Feature Silence Detection for Analog Sources")
+    logging.info(f"AUDIO PROCESSING PIPELINE - ENHANCED v2.5")
+    logging.info(f"Multi-Feature Silence Detection + Advanced Topology Analysis")
     logging.info("="*60)
     logging.info(f"Source: {args.source}")
 
-    if args.trim_only:
-        logging.info("Mode: TRIM ONLY (Review Mode)")
-    if args.dry_run:
-        logging.info("Mode: DRY RUN (No files will be modified)")
-    if args.preview:
-        logging.info("Mode: PREVIEW (Analysis only)")
-    if args.force:
-        logging.warning("Mode: FORCE (Safety checks will be bypassed!)")
+    if args.trim_only: logging.info("Mode: TRIM ONLY (Review Mode)")
+    if args.dry_run: logging.info("Mode: DRY RUN (No files will be modified)")
+    if args.preview: logging.info("Mode: PREVIEW (Analysis only)")
+    if args.force: logging.warning("Mode: FORCE (Safety checks will be bypassed!)")
+
+    logging.info(f"\nTopology Settings:")
+    if args.sum_mono:
+        logging.info(f"  Sum to Mono: ENABLED")
+        logging.info(f"  Rules: Corr >= {args.dm_corr_min} | Resid <= {args.dm_resid_max} | Lag <= {args.dm_lag_max}")
+    else:
+        logging.info(f"  Sum to Mono: DISABLED (Files will retain original channel layout)")
 
     logging.info(f"\nDetection Settings:")
     logging.info(f"  Noise scan: {args.noise_scan_duration}s")
@@ -949,10 +1042,8 @@ def main():
     logging.info(f"  Flux sensitivity: {args.flux_sensitivity} std devs")
     logging.info(f"  Centroid threshold: {args.centroid_threshold}Hz")
     logging.info(f"  Content score min: {args.content_score_min}/4")
-    if args.use_multiband:
-        logging.info(f"  Multi-band analysis: ENABLED")
-    if args.adaptive_threshold:
-        logging.info(f"  Adaptive threshold: ENABLED")
+    if args.use_multiband: logging.info(f"  Multi-band analysis: ENABLED")
+    if args.adaptive_threshold: logging.info(f"  Adaptive threshold: ENABLED")
 
     logging.info(f"\nSafety Settings:")
     logging.info(f"  Max trim: {args.max_trim_percent}%")
@@ -960,21 +1051,18 @@ def main():
     logging.info(f"  Min SNR: {args.min_snr}dB")
     logging.info("="*60 + "\n")
 
-    # 1. Trim
     edit_dir = process_trimming(args)
 
     if args.preview or args.dry_run or args.trim_only:
         logging.info("\n✅ Batch Complete")
         sys.exit(0)
 
-    # 2. Loudnorm
     logging.info("\n" + "="*60)
     logging.info("Step 2: Loudness Normalization")
     logging.info("="*60)
     loudnorm_pass(edit_dir, args.target_I, args.target_LRA, args.target_TP, False)
 
     logging.info("\n✅ Processing Complete!")
-
 
 if __name__ == '__main__':
     main()
