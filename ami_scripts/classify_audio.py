@@ -855,7 +855,7 @@ def main():
         logger.info(f"Scanning directory: {args.input}")
         for root, _, files in os.walk(args.input):
             for file in files:
-                if not file.startswith(".") and file.lower().endswith(('.mov', '.mkv', '.mp4', '.mxf', '.avi', '.wav')):
+                if not file.startswith(".") and file.lower().endswith(('.mov', '.mkv', '.mp4', '.mxf', '.avi', '.wav', '.flac')):
                     files_to_process.append(os.path.join(root, file))
 
     if not files_to_process:
