@@ -423,25 +423,30 @@ class DataTransformer:
             return val
     
     def _should_skip_field(self, col: str, val: Any, media_type: str, obj_type: str) -> bool:
-        """Determine if a field should be skipped."""
-        
-        # Ref: Data Optical Disc Update
-        # Explicitly drop audio tracks for data optical discs, regardless of value (0 or otherwise)
-        if (obj_type == 'data optical disc' and 
-            col == 'source.audioRecording.numberOfAudioTracks'):
-            return True
+            """Determine if a field should be skipped."""
+            
+            # Ref: Data Optical Disc Update
+            # Explicitly drop audio tracks for data optical discs, regardless of value (0 or otherwise)
+            if (obj_type == 'data optical disc' and 
+                col == 'source.audioRecording.numberOfAudioTracks'):
+                return True
 
-        # Skip None or empty values
-        if val is None or val == '':
-            return True
-        
-        # For audio files, skip zero track entries (Generic rule)
-        if (media_type == 'audio' and 
-            col == 'source.audioRecording.numberOfAudioTracks' and 
-            val == 0):
-            return True
-        
-        return False
+            # Skip None or empty values
+            if val is None or val == '':
+                return True
+            
+            # LOGIC UPDATE:
+            # Check if this is an audio object (e.g. 'audio optical disc', 'audio cassette')
+            # This catches cases where an audio object has a video service copy (.mp4)
+            is_audio_object = obj_type.lower().startswith('audio')
+
+            # For audio files (or audio objects in video containers), skip zero track entries
+            if ((media_type == 'audio' or is_audio_object) and 
+                col == 'source.audioRecording.numberOfAudioTracks' and 
+                val == 0):
+                return True
+            
+            return False
     
     def _convert_dot_key_to_nested(self, tree: Dict, key: str, value: Any) -> Dict:
         """Convert dot-delimited key to nested dictionary structure."""
