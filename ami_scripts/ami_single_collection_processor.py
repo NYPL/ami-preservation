@@ -905,15 +905,19 @@ def parse_arguments() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s -u username -p password -c COLL123
-  %(prog)s -u username -p password -c COLL123 -o custom_report.xlsx --pdf --verbose
+  # Using environment variables (FM_DATABASE_USERNAME, FM_DATABASE_PASSWORD)
+  %(prog)s -c COLL123
+
+  # Manually specifying credentials (overrides environment variables)
+  %(prog)s -u myuser -p mypass -c COLL123
         """
     )
     
-    parser.add_argument('-u', '--username', required=True,
-                       help='FileMaker database username')
-    parser.add_argument('-p', '--password', required=True,
-                       help='FileMaker database password')
+    parser.add_argument('-u', '--username',
+                       help='FileMaker database username (overrides FM_DATABASE_USERNAME)')
+    parser.add_argument('-p', '--password',
+                       help='FileMaker database password (overrides FM_DATABASE_PASSWORD)')
+    
     parser.add_argument('-c', '--collection-id', required=True,
                        help='Collection ID to query')
     parser.add_argument('-o', '--output',
@@ -949,6 +953,15 @@ def main() -> int:
         args = parse_arguments()
         setup_logging(args.verbose)
 
+        # Prioritize CLI args, fall back to Environment Variables
+        username = args.username or os.getenv('FM_DATABASE_USERNAME')
+        password = args.password or os.getenv('FM_DATABASE_PASSWORD')
+        
+        if not username or not password:
+            logging.error("Missing credentials. Please set FM_DATABASE_USERNAME/PASSWORD "
+                          "environment variables or use -u/-p flags.")
+            return 1
+        
         logging.info("Starting AMI Collection Processor")
         logging.info(f"Collection ID: {args.collection_id}")
 
@@ -981,7 +994,7 @@ def main() -> int:
 
         try:
             # Connect to FileMaker
-            fm_client.connect(args.username, args.password)
+            fm_client.connect(username, password)
 
             # Fetch and process items
             processor = CollectionProcessor(fm_client)
