@@ -388,7 +388,7 @@ install_gui_apps() {
         return 0
     fi
     
-    local apps=(the-unarchiver google-chrome zoom vlc qctools hex-fiend visual-studio-code)
+    local apps=(the-unarchiver google-chrome zoom vlc qctools hex-fiend visual-studio-code virtualbuddy)
     
     info "Installing GUI applications (${#apps[@]} total)..."
     
