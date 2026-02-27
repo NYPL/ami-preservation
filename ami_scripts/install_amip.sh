@@ -597,7 +597,42 @@ install_language_runtimes() {
 install_language_runtimes
 
 # ----------------------------------
-# 14. VS Code extensions
+# 14. NYPL AMIP Python Package
+# ----------------------------------
+install_amip_package() {
+    info "Installing NYPL AMI Preservation Python package..."
+    
+    if [[ "$DRY_RUN" == true ]]; then
+        info "[DRY RUN] Would run: pip install git+https://github.com/NYPL/ami-preservation"
+        return 0
+    fi
+    
+    # Force the use of the pyenv python we just installed
+    local pyenv_python="$HOME/.pyenv/shims/python3"
+    
+    if [[ ! -x "$pyenv_python" ]]; then
+        warn "Pyenv python not found, trying system python3 as fallback..."
+        pyenv_python="python3"
+    fi
+
+    info "Using python binary: $pyenv_python"
+
+    # Upgrade pip first (best practice)
+    "$pyenv_python" -m pip install --upgrade pip >> "$LOG_FILE" 2>&1 || true
+    
+    # Install the repository
+    if "$pyenv_python" -m pip install -v git+https://github.com/NYPL/ami-preservation >> "$LOG_FILE" 2>&1; then
+        success "ami-preservation python package installed successfully"
+    else
+        error "Failed to install ami-preservation python package"
+        return 1
+    fi
+}
+
+install_amip_package
+
+# ----------------------------------
+# 15. VS Code extensions
 # ----------------------------------
 install_vscode_extensions() {
     if [[ "$SKIP_GUI" == true ]]; then
@@ -659,7 +694,7 @@ install_vscode_extensions() {
 install_vscode_extensions
 
 # ----------------------------------
-# 15. System Preferences (DS_Store)
+# 16. System Preferences (DS_Store)
 # ----------------------------------
 configure_system_prefs() {
     info "Configuring macOS System Preferences..."
@@ -687,7 +722,7 @@ configure_system_prefs() {
 configure_system_prefs
 
 # ----------------------------------
-# 16. Post-installation verification
+# 17. Post-installation verification
 # ----------------------------------
 verify_critical_tools() {
     info "Verifying critical AV preservation tools..."
@@ -727,7 +762,7 @@ verify_critical_tools() {
 verify_critical_tools
 
 # ----------------------------------
-# 17. Installation summary
+# 18. Installation summary
 # ----------------------------------
 print_summary() {
     local end_time=$(date '+%Y-%m-%d %H:%M:%S')
