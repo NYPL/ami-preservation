@@ -10,12 +10,12 @@ IFS=$'\n\t'
 # Configuration & Constants
 # ----------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly LOG_FILE="${SCRIPT_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
+readonly LOG_FILE="$HOME/Desktop/install-$(date +%Y%m%d-%H%M%S).log"
 readonly XCODE_TIMEOUT=600  # 10 minutes
 readonly NETWORK_TIMEOUT=30
 
 # Default versions (can be overridden by environment variables)
-readonly RUBY_VERSION="${RUBY_VERSION:-2.7.3}"
+readonly RUBY_VERSION="${RUBY_VERSION:-3.2.2}"
 readonly PYTHON_VERSION="${PYTHON_VERSION:-3.10.12}"
 readonly JAVA_VERSION="${JAVA_VERSION:-11}"
 
@@ -235,13 +235,23 @@ install_homebrew() {
 
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 2>&1 | tee -a "$LOG_FILE"
     
+    local brew_path
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        brew_path="/opt/homebrew/bin/brew"
+        
+        info "Apple Silicon detected. Installing Rosetta 2..."
+        softwareupdate --install-rosetta --agree-to-license >> "$LOG_FILE" 2>&1 || true
+    else
+        brew_path="/usr/local/bin/brew"
+    fi
+
     {
         echo
         echo '# Homebrew environment'
-        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+        echo "eval \"\$($brew_path shellenv)\""
     } >> "$PROFILE"
     
-    eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
+    eval "$($brew_path shellenv)" 2>/dev/null || true
     
     if ! verify_installation brew "Homebrew"; then
         error "Homebrew installation failed"
@@ -305,7 +315,7 @@ install_cli_packages() {
         git coreutils grep jq xmlstarlet tree wget trash
         p7zip rsync rclone gnu-tar awscli clamav npm
         graphicsmagick ffmpeg mediainfo mpv flac sox exiftool mkvtoolnix mediaconch qcli
-        bagit rbenv jenv pyenv openjdk@11
+        bagit rbenv jenv pyenv openjdk@11 vrecord ltc-tools
     )
     
     info "Installing CLI packages (${#packages[@]} total)..."
@@ -468,9 +478,25 @@ setup_toolchain_profile() {
         return 0
     fi
     
+    echo "" >> "$PROFILE"
+    echo "$marker" >> "$PROFILE"
+    
     cat >> "$PROFILE" << 'EOF'
+# Java (Dynamic Path)
+export PATH="$(brew --prefix)/opt/openjdk@11/bin:$PATH"
+EOF
 
-# — NYPL AMIP toolchains —
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        cat >> "$PROFILE" << 'EOF'
+export JAVA_HOME="/Library/Java/JavaVirtualMachines/openjdk-11.jdk/Contents/Home"
+EOF
+    else
+        cat >> "$PROFILE" << 'EOF'
+export JAVA_HOME="$(brew --prefix)/opt/openjdk@11"
+EOF
+    fi
+
+    cat >> "$PROFILE" << 'EOF'
 # rbenv
 export PATH="$HOME/.rbenv/bin:$PATH"
 if command -v rbenv &>/dev/null; then
@@ -530,25 +556,38 @@ install_language_runtimes() {
     # Ruby
     info "Installing Ruby $RUBY_VERSION..."
     if ! rbenv versions 2>/dev/null | grep -q "$RUBY_VERSION"; then
-        rbenv install "$RUBY_VERSION" 2>&1 | tee -a "$LOG_FILE"
+        if ! rbenv install "$RUBY_VERSION" 2>&1 | tee -a "$LOG_FILE"; then
+            error "Failed to install Ruby $RUBY_VERSION"
+            return 1
+        fi
     fi
     rbenv global "$RUBY_VERSION"
     
     # Java
     info "Configuring Java $JAVA_VERSION..."
-    local java_home
-    java_home="$(brew --prefix openjdk@11)/libexec/openjdk.jdk/Contents/Home"
-    if [[ -d "$java_home" ]]; then
-        jenv add "$java_home" 2>&1 | tee -a "$LOG_FILE" || true
-        jenv global "$JAVA_VERSION"
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        info "Apple Silicon detected. Symlinking OpenJDK..."
+        sudo ln -sfn "$(brew --prefix openjdk@11)/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk-11.jdk
+        jenv add /Library/Java/JavaVirtualMachines/openjdk-11.jdk/Contents/Home 2>&1 | tee -a "$LOG_FILE" || true
+        jenv enable-plugin export 2>&1 | tee -a "$LOG_FILE" || true
     else
-        warn "Java home not found at $java_home"
+        info "Intel Mac detected. Skipping OpenJDK symlink..."
+        local java_home="$(brew --prefix openjdk@11)/libexec/openjdk.jdk/Contents/Home"
+        if [[ -d "$java_home" ]]; then
+            jenv add "$java_home" 2>&1 | tee -a "$LOG_FILE" || true
+        else
+            warn "Java home not found at $java_home"
+        fi
     fi
+    jenv global "$JAVA_VERSION" 2>&1 | tee -a "$LOG_FILE" || true
     
     # Python
     info "Installing Python $PYTHON_VERSION..."
     if ! pyenv versions 2>/dev/null | grep -q "$PYTHON_VERSION"; then
-        pyenv install "$PYTHON_VERSION" 2>&1 | tee -a "$LOG_FILE"
+        if ! pyenv install "$PYTHON_VERSION" 2>&1 | tee -a "$LOG_FILE"; then
+            error "Failed to install Python $PYTHON_VERSION"
+            return 1
+        fi
     fi
     pyenv global "$PYTHON_VERSION"
     
