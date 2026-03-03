@@ -265,7 +265,10 @@ install_homebrew
 # 5. Homebrew taps
 # ----------------------------------
 install_taps() {
-    local taps=(amiaopensource/amiaos)
+    local taps=(
+        amiaopensource/amiaos
+        homebrew-ffmpeg/ffmpeg
+    )
     
     info "Installing Homebrew taps..."
     
@@ -314,8 +317,8 @@ install_cli_packages() {
     local packages=(
         git coreutils grep jq xmlstarlet tree wget trash
         p7zip rsync rclone gnu-tar awscli clamav npm
-        graphicsmagick ffmpeg mediainfo mpv flac sox exiftool mkvtoolnix mediaconch qcli
-        bagit rbenv jenv pyenv openjdk@11 vrecord ltc-tools
+        graphicsmagick homebrew-ffmpeg/ffmpeg/ffmpeg mediainfo mpv flac sox exiftool mkvtoolnix mediaconch qcli
+        bagit rbenv jenv pyenv openjdk@11
     )
     
     info "Installing CLI packages (${#packages[@]} total)..."
