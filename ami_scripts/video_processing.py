@@ -423,10 +423,10 @@ def detect_audio_pan(input_file, audio_pan, probe_duration=240,
 
 
 def convert_to_mp4(input_file, input_directory, audio_pan, force_16x9=False):
-    def get_video_resolution(input_file):
+    def get_video_metadata(input_file):
         ffprobe_command = [
             "ffprobe", "-v", "error", "-select_streams", "v:0",
-            "-show_entries", "stream=width,height", "-of", "csv=p=0"
+            "-show_entries", "stream=width,height,sample_aspect_ratio", "-of", "csv=p=0"
         ]
         result = subprocess.run(
             ffprobe_command + [str(input_file)],
@@ -436,7 +436,7 @@ def convert_to_mp4(input_file, input_directory, audio_pan, force_16x9=False):
         stdout = result.stdout.strip()
         if result.returncode != 0 or not stdout:
             raise ValueError(
-                f"Could not determine resolution for {input_file!r}: "
+                f"Could not determine metadata for {input_file!r}: "
                 f"{result.stderr.strip() or 'no output'}"
             )
 
@@ -445,10 +445,15 @@ def convert_to_mp4(input_file, input_directory, audio_pan, force_16x9=False):
         parts = clean.split(",")
         if len(parts) < 2 or not parts[0].isdigit() or not parts[1].isdigit():
             raise ValueError(
-                f"Unexpected resolution format for {input_file!r}: '{stdout}'"
+                f"Unexpected metadata format for {input_file!r}: '{stdout}'"
             )
+        
+        width = int(parts[0])
+        height = int(parts[1])
+        # Safely grab SAR if it exists, otherwise default to "0:1"
+        sar = parts[2] if len(parts) > 2 else "0:1"
 
-        return int(parts[0]), int(parts[1])
+        return width, height, sar
 
     output_file_name = f"{input_file.stem.replace('_pm', '')}_sc.mp4"
     output_file = input_directory / output_file_name
@@ -478,24 +483,27 @@ def convert_to_mp4(input_file, input_directory, audio_pan, force_16x9=False):
     elif audio_pan == "auto":
         pan_filters = detect_audio_pan(input_file, audio_pan)
 
-    # Get resolution and choose video filter
+    # Get resolution and SAR, then choose video filter
     try:
-        width, height = get_video_resolution(input_file)
+        width, height, sar = get_video_metadata(input_file)
     except ValueError as e:
         print(f"Skipping {input_file.name}: {e}")
         return None
 
     if (width, height) == (720, 486):         # NTSC
-        # default 4:3 DAR; override to 16:9 if requested
-        if force_16x9:
+        # Trigger 16:9 if natively anamorphic or manually forced
+        if force_16x9 or sar == "40:33":
             video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=16/9"
         else:
+            # Default 4:3
             video_filter = "idet,bwdif=1,crop=w=720:h=480:x=0:y=4,setdar=4/3"
+            
     elif (width, height) == (720, 576):       # PAL
-        # default has no DAR change; add 16:9 if requested
-        if force_16x9:
+        # Trigger 16:9 if natively anamorphic or manually forced
+        if force_16x9 or sar == "16:11":
             video_filter = "idet,bwdif=1,setdar=16/9"
         else:
+            # Default PAL processing
             video_filter = "idet,bwdif=1"
 
     elif (width, height) == (1440, 1080):     # HDV 1080-line
