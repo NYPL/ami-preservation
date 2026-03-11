@@ -44,8 +44,9 @@ def setup_logging():
 def get_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description='Move files into object dirs and bag')
-    parser.add_argument('-s', '--source',
-                        help='path to the source directory files', required=True)
+    # CHANGED: -s/--source to -d/--directory
+    parser.add_argument('-d', '--directory',
+                        help='path to the directory of object files', required=True)
     args = parser.parse_args()
     return args
 
@@ -297,7 +298,8 @@ def clean_up(source_directory: Path) -> int:
     deleted_count = 0
     logging.info('Starting cleanup of empty directories...')
     
-    for directory in sorted(source_directory.glob('**/*'), reverse=True):
+    # CHANGED: Reverted to rglob and sorting by len(parts) for a true bottom-up traversal
+    for directory in sorted(source_directory.rglob('*'), key=lambda p: len(p.parts), reverse=True):
         if directory.is_dir() and not any(directory.iterdir()):
             try:
                 logging.info(f'Deleting empty directory: {directory}')
@@ -315,7 +317,8 @@ def main():
     arguments = get_args()
     
     try:
-        source_directory = Path(arguments.source)
+        # CHANGED: arguments.source to arguments.directory
+        source_directory = Path(arguments.directory)
         if not source_directory.is_dir():
             logging.critical(f'Source directory not found: {source_directory}')
             return
