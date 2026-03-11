@@ -57,33 +57,35 @@ def move_files_to_subfolders(source_directory):
     return file_mappings
 
 
-def clean_up(source_directory, file_mappings):
-    """Remove empty directories and directories not containing files matching file_mappings."""
-    for directory in source_directory.iterdir():
-        cms = re.search(r'(\d{6})', directory.name)
-        if cms and directory.is_dir():
-            valid_files = False
-            for filepath in directory.glob('*'):
-                if filepath.is_file():
-                    for extensions, folder_name in file_mappings:
-                        if filepath.suffix[1:] in extensions or any(name in filepath.name for name in extensions):
-                            valid_files = True
-                            break
-                if valid_files:
-                    break
+def clean_up(source_directory):
+    """Remove empty directories and BagIt residue files recursively."""
+    # 1. Clean up known BagIt files that prevent directory deletion
+    bagit_files = {'bagit.txt', 'bag-info.txt', 'fetch.txt'}
+    for filepath in source_directory.rglob('*'):
+        if filepath.is_file():
+            if filepath.name in bagit_files or filepath.name.startswith('manifest-') or filepath.name.startswith('tagmanifest-'):
+                try:
+                    filepath.unlink()
+                    print(f'Deleted BagIt residue: {filepath.name}')
+                except Exception as e:
+                    print(f'Could not delete file {filepath.name}: {e}')
 
-            if not valid_files:
-                print(f'Deleting directory (no matching files): {directory.name}')
-                shutil.rmtree(directory)
-            else:
-                print(f'Skipping directory with matching files: {directory.name}')
+    # 2. Walk the tree bottom-up to safely delete nested empty directories
+    for directory in sorted(source_directory.rglob('*'), key=lambda p: len(p.parts), reverse=True):
+        if directory.is_dir():
+            try:
+                if not any(directory.iterdir()):
+                    print(f'Deleting empty directory: {directory.name}')
+                    directory.rmdir()
+            except Exception as e:
+                print(f'Could not delete directory {directory.name}: {e}')
 
 
 def main():
     arguments = get_args()
     source = get_directory(arguments)
     file_mappings = move_files_to_subfolders(source)
-    clean_up(source, file_mappings)
+    clean_up(source)
 
 if __name__ == '__main__':
     main()
