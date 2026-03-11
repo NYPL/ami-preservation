@@ -58,15 +58,20 @@ def move_files_to_subfolders(source_directory):
 
 
 def clean_up(source_directory):
-    """Remove empty directories and BagIt residue files recursively."""
-    # 1. Clean up known BagIt files that prevent directory deletion
-    bagit_files = {'bagit.txt', 'bag-info.txt', 'fetch.txt'}
+    """Remove empty directories and BagIt/OS residue files recursively."""
+    # 1. Clean up known BagIt files AND hidden OS files that prevent directory deletion
+    residue_files = {'bagit.txt', 'bag-info.txt', 'fetch.txt', '.DS_Store', 'Thumbs.db'}
+    
     for filepath in source_directory.rglob('*'):
         if filepath.is_file():
-            if filepath.name in bagit_files or filepath.name.startswith('manifest-') or filepath.name.startswith('tagmanifest-'):
+            # Check for exact matches in our set, OR specific prefixes (manifests and AppleDouble files)
+            if (filepath.name in residue_files or 
+                filepath.name.startswith('manifest-') or 
+                filepath.name.startswith('tagmanifest-') or
+                filepath.name.startswith('._')):
                 try:
                     filepath.unlink()
-                    print(f'Deleted BagIt residue: {filepath.name}')
+                    print(f'Deleted residue file: {filepath.name}')
                 except Exception as e:
                     print(f'Could not delete file {filepath.name}: {e}')
 
