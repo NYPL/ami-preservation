@@ -66,7 +66,6 @@ def main():
                 total_projects += 1
 
             list_name = prod_lists.get(card['idList'], "Unknown List")
-            # Store the actual card name instead of just counting
             if list_name not in report_data[mdr]['Prod']:
                 report_data[mdr]['Prod'][list_name] = []
             report_data[mdr]['Prod'][list_name].append(card['name'])
@@ -81,7 +80,6 @@ def main():
             mdr = match.group(1)
             if mdr in report_data:
                 list_name = qc_lists.get(card['idList'], "Unknown List")
-                # Store the actual card name instead of just counting
                 if list_name not in report_data[mdr]['QC']:
                     report_data[mdr]['QC'][list_name] = []
                 report_data[mdr]['QC'][list_name].append(card['name'])
@@ -89,8 +87,9 @@ def main():
                 report_data[mdr]['Total'] += 1
                 total_active_cards += 1
 
-    # --- FILTERING & SORTING LOGIC ---
-    filtered_report = []
+    # --- FILTERING & PARTITIONING LOGIC ---
+    single_card_projects = []
+    multi_card_projects = []
     hidden_count = 0
 
     for mdr, data in report_data.items():
@@ -100,82 +99,102 @@ def main():
             hidden_count += 1
             continue
             
-        filtered_report.append((mdr, data))
+        if data['Total'] == 1:
+            single_card_projects.append((mdr, data))
+        else:
+            multi_card_projects.append((mdr, data))
 
+    # --- SORTING LOGIC ---
+    # Sort Single Projects alphabetically by MDR
+    sorted_single = sorted(single_card_projects, key=lambda x: x[0])
+
+    # Sort Multi Projects by Completion Percentage (Descending), then Total Cards
     def sort_by_completion(item):
         mdr, data = item
         total_qc = sum(len(cards) for cards in data['QC'].values())
         completion_ratio = total_qc / data['Total'] if data['Total'] > 0 else 0
         return (-completion_ratio, -data['Total'], mdr)
 
-    sorted_report = sorted(filtered_report, key=sort_by_completion)
+    sorted_multi = sorted(multi_card_projects, key=sort_by_completion)
+
+    # --- HELPER FUNCTION FOR TERMINAL PRINTING ---
+    def print_project_block(project_list):
+        for mdr, data in project_list:
+            total_qc = sum(len(cards) for cards in data['QC'].values())
+            pct = int((total_qc / data['Total']) * 100)
+            
+            if pct >= 80:
+                pct_color = Color.GREEN
+            elif pct >= 30:
+                pct_color = Color.YELLOW
+            else:
+                pct_color = Color.RED
+
+            print(f"{Color.BOLD}Project {mdr}:{Color.END} [{pct_color}{pct}% in QC{Color.END}] - {data['Total']} Total Cards")
+            
+            if data['Prod']:
+                print(f"  {Color.BLUE}[Production Board]{Color.END}")
+                for list_name, cards in data['Prod'].items():
+                    count = len(cards)
+                    cards_str = ", ".join(cards)
+                    
+                    if "ON HOLD" in list_name.upper():
+                        print(f"    {Color.RED}- {count} cards in '{list_name}' [{cards_str}]{Color.END}")
+                    else:
+                        print(f"    - {count} cards in '{list_name}' [{Color.DIM}{cards_str}{Color.END}]")
+                    
+            if data['QC']:
+                print(f"  {Color.GREEN}[QC Board]{Color.END}")
+                for list_name, cards in data['QC'].items():
+                    count = len(cards)
+                    cards_str = ", ".join(cards)
+                    print(f"    - {count} cards in '{list_name}' [{Color.DIM}{cards_str}{Color.END}]")
+                    
+            print("-" * 40)
 
     # --- TERMINAL REPORT GENERATION ---
-    print(f"{Color.BOLD}=== ACTIVE PROJECT STATUS REPORT ==={Color.END}\n")
-    for mdr, data in sorted_report:
-        total_qc = sum(len(cards) for cards in data['QC'].values())
-        pct = int((total_qc / data['Total']) * 100)
-        
-        if pct >= 80:
-            pct_color = Color.GREEN
-        elif pct >= 30:
-            pct_color = Color.YELLOW
-        else:
-            pct_color = Color.RED
+    if sorted_single:
+        print(f"{Color.BOLD}=== SINGLE-CARD PROJECTS (ONE-OFFS) ==={Color.END}\n")
+        print_project_block(sorted_single)
 
-        print(f"{Color.BOLD}Project {mdr}:{Color.END} [{pct_color}{pct}% in QC{Color.END}] - {data['Total']} Total Cards")
-        
-        if data['Prod']:
-            print(f"  {Color.BLUE}[Production Board]{Color.END}")
-            for list_name, cards in data['Prod'].items():
-                count = len(cards)
-                cards_str = ", ".join(cards)
-                
-                if "ON HOLD" in list_name.upper():
-                    print(f"    {Color.RED}- {count} cards in '{list_name}' [{cards_str}]{Color.END}")
-                else:
-                    print(f"    - {count} cards in '{list_name}' [{Color.DIM}{cards_str}{Color.END}]")
-                
-        if data['QC']:
-            print(f"  {Color.GREEN}[QC Board]{Color.END}")
-            for list_name, cards in data['QC'].items():
-                count = len(cards)
-                cards_str = ", ".join(cards)
-                print(f"    - {count} cards in '{list_name}' [{Color.DIM}{cards_str}{Color.END}]")
-                
-        print("-" * 40)
+    if sorted_multi:
+        print(f"{Color.BOLD}=== MULTI-BOX PROJECTS (RANKED BY % IN QC) ==={Color.END}\n")
+        print_project_block(sorted_multi)
 
     # Print Summary
     active_display_count = total_projects - hidden_count
-    print(f"\n{Color.BOLD}SUMMARY: {active_display_count} Active Projects Displayed | {hidden_count} Completed Projects Hidden | {total_active_cards} Total Cards Tracked{Color.END}")
+    print(f"\n{Color.BOLD}SUMMARY: {active_display_count} Active Projects Displayed ({len(sorted_single)} Single / {len(sorted_multi)} Multi) | {hidden_count} Completed Hidden | {total_active_cards} Total Cards{Color.END}")
 
     # --- CSV EXPORT GENERATION ---
     desktop_path = os.path.expanduser("~/Desktop")
     date_str = datetime.now().strftime("%Y-%m-%d_%H%M")
     csv_filename = os.path.join(desktop_path, f"MDR_Active_Report_{date_str}.csv")
 
+    # Combine lists so they print in the exact same order in the CSV
+    final_export_list = sorted_single + sorted_multi
+
     try:
         with open(csv_filename, mode='w', newline='') as file:
             writer = csv.writer(file)
-            # Added "Card Names" column
-            writer.writerow(["MDR Project", "Completion %", "Total Cards in Project", "Board", "List", "Card Count", "Card Names"])
+            writer.writerow(["Project Type", "MDR Project", "Completion %", "Total Cards in Project", "Board", "List", "Card Count", "Card Names"])
             
-            for mdr, data in sorted_report:
+            for mdr, data in final_export_list:
                 total_qc = sum(len(cards) for cards in data['QC'].values())
                 pct = int((total_qc / data['Total']) * 100)
                 pct_str = f"{pct}%"
+                proj_type = "Single-Card" if data['Total'] == 1 else "Multi-Card"
 
                 # Write Prod Data
                 for list_name, cards in data['Prod'].items():
                     count = len(cards)
                     cards_str = ", ".join(cards)
-                    writer.writerow([mdr, pct_str, data['Total'], "Production", list_name, count, cards_str])
+                    writer.writerow([proj_type, mdr, pct_str, data['Total'], "Production", list_name, count, cards_str])
                 
                 # Write QC Data
                 for list_name, cards in data['QC'].items():
                     count = len(cards)
                     cards_str = ", ".join(cards)
-                    writer.writerow([mdr, pct_str, data['Total'], "QC", list_name, count, cards_str])
+                    writer.writerow([proj_type, mdr, pct_str, data['Total'], "QC", list_name, count, cards_str])
                     
         print(f"\n{Color.GREEN}✓ CSV Successfully saved to: {csv_filename}{Color.END}\n")
     except Exception as e:
