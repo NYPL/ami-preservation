@@ -25,6 +25,9 @@ DATA_EXTENSIONS = {
     '.aea', '.csv', '.wav', '.mka', '.tar'
 }
 
+# NEW: Set of extensions to be treated as asset images 
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.tif', '.tiff', '.png'}
+
 # Pre-compiled regex patterns
 AMI_ID_RE = re.compile(r'_(\d{6})_')
 ROLE_RE = re.compile(r'(_pm|_em|_mz|_sc)', re.IGNORECASE)
@@ -154,13 +157,7 @@ def classify_ami_ids(source_directory: Path, file_list: list[Path]) -> dict[str,
 def make_object_dirs(source_directory: Path, file_list: list[Path], media_mapping: dict[str, str]) -> tuple[set[str], list[Path], list[Path], int]:
     """
     Sorts files into AMI ID and role-based directories under their media type.
-
-    Returns:
-        A tuple containing:
-        - A set of all AMI IDs found.
-        - A list of relative paths for files that were not moved.
-        - A list of absolute paths for files identified as tags.
-        - An integer count of data files successfully moved.
+    Now also catches role-less image files and places them in an 'Images' directory.
     """
     ami_ids = set()
     unmoved = []
@@ -181,35 +178,40 @@ def make_object_dirs(source_directory: Path, file_list: list[Path], media_mappin
         
         if old_file_path.suffix.lower() in DATA_EXTENSIONS:
             role_match = ROLE_RE.search(file_path.name)
+            is_image = old_file_path.suffix.lower() in IMAGE_EXTENSIONS
             
+            # Determine the target directory based on role OR image status
             if role_match:
                 role_key = role_match.group(1).lower()
-                role_directory = ROLE_MAP.get(role_key)
-                
-                new_file_path = source_directory / media_type / ami_id / role_directory / file_path.name
-                new_file_path.parent.mkdir(parents=True, exist_ok=True)
-
-                if new_file_path.exists():
-                    if old_file_path.resolve() == new_file_path.resolve():
-                        pass # already correctly placed
-                    else:
-                        logging.error(f'File collision detected! Not moving: {old_file_path}')
-                        logging.error(f'File already exists at: {new_file_path}')
-                        unmoved.append(file_path)
-                else:
-                    shutil.move(str(old_file_path), str(new_file_path))
-                    logging.info(f'Moved: {file_path.name} -> {media_type}/{ami_id}/{role_directory}')
-                    data_files_moved_count += 1
+                target_dir_name = ROLE_MAP.get(role_key)
+            elif is_image:
+                target_dir_name = 'Images'
             else:
-                logging.warning(f'Data file has no role, skipping: {file_path}')
+                logging.warning(f'Data file has no role and is not an image, skipping: {file_path}')
                 unmoved.append(file_path)
+                continue # Skip the move logic below
+                
+            # Build the new path and execute the move
+            new_file_path = source_directory / media_type / ami_id / target_dir_name / file_path.name
+            new_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            if new_file_path.exists():
+                if old_file_path.resolve() == new_file_path.resolve():
+                    pass # already correctly placed
+                else:
+                    logging.error(f'File collision detected! Not moving: {old_file_path}')
+                    logging.error(f'File already exists at: {new_file_path}')
+                    unmoved.append(file_path)
+            else:
+                shutil.move(str(old_file_path), str(new_file_path))
+                logging.info(f'Moved: {file_path.name} -> {media_type}/{ami_id}/{target_dir_name}')
+                data_files_moved_count += 1
                 
         else:
             logging.debug(f'Identified as tag file: {old_file_path}')
             tags.append(old_file_path)
 
     return ami_ids, unmoved, tags, data_files_moved_count
-
 
 def make_object_bags(source_directory: Path, ami_objects: set[str], media_mapping: dict[str, str]) -> tuple[int, int]:
     """
