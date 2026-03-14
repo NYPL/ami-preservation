@@ -131,9 +131,17 @@ def process_iso_with_makemkv(iso_path, output_directory):
         return None
     
 
-def build_ffmpeg_command(input_file, output_file):
-    ffmpeg_command = [
-        "ffmpeg", "-i", str(input_file),
+def build_ffmpeg_command(input_file, output_file, srt_files=None):
+    if srt_files is None:
+        srt_files = []
+
+    ffmpeg_command = ["ffmpeg", "-i", str(input_file)]
+
+    # 1. Add each generated SRT file as a separate input
+    for srt_path, _ in srt_files:
+        ffmpeg_command.extend(["-i", str(srt_path)])
+
+    ffmpeg_command.extend([
         "-c:v", "libx264",
         "-movflags", "faststart",
         "-pix_fmt", "yuv420p",
@@ -141,9 +149,27 @@ def build_ffmpeg_command(input_file, output_file):
         "-vf", "idet,bwdif=1",
         "-c:a", "aac",
         "-b:a", "320000",
-        "-ar", "48000",
-        str(output_file)
-    ]
+        "-ar", "48000"
+    ])
+
+    # 2. Map video and audio from the original MKV (input 0)
+    # Mapping explicitly prevents FFmpeg's default behavior of copying unwanted VobSub tracks
+    ffmpeg_command.extend(["-map", "0:v", "-map", "0:a"])
+
+    # 3. Map each subtitle input and set its language
+    if srt_files:
+        # Codec for subtitles in an MP4 container must be mov_text
+        ffmpeg_command.extend(["-c:s", "mov_text"])
+        
+        for i, (_, lang) in enumerate(srt_files):
+            # Input 0 is the video, so SRTs start at input 1
+            input_index = i + 1 
+            ffmpeg_command.extend([
+                "-map", f"{input_index}:s",
+                f"-metadata:s:s:{i}", f"language={lang}"
+            ])
+
+    ffmpeg_command.append(str(output_file))
     return ffmpeg_command
 
 
@@ -172,10 +198,11 @@ def get_subtitle_tracks(mkv_file):
 def extract_and_ocr(mkv_file, output_dir, final_base_name):
     """Extract VobSub tracks from an MKV using mkvextract and OCR them."""
     sub_tracks = get_subtitle_tracks(mkv_file)
+    generated_srts = [] # Keep track of what we successfully create
             
     if not sub_tracks:
         logging.info(f"No VobSub tracks found in {mkv_file.name} for extraction.")
-        return
+        return generated_srts
 
     with tempfile.TemporaryDirectory() as temp_dir:
         for track_id, lang in sub_tracks:
@@ -224,8 +251,13 @@ def extract_and_ocr(mkv_file, output_dir, final_base_name):
                     
                 shutil.move(str(temp_srt), str(final_srt))
                 logging.info(f"Success -> Created SRT: {final_srt.name}")
+                
+                # Append the path and language so FFmpeg can grab it later
+                generated_srts.append((final_srt, lang))
             else:
                 logging.error(f"OCR failed to produce an SRT for track {track_id}")
+                
+    return generated_srts
 
 # --- End Subtitle Processing Functions ---
 
@@ -329,12 +361,12 @@ def transcode_mkv_files(mkv_directory, iso_basename, output_directory, force_con
             final_base_name = f"{iso_basename}_sc"
             output_file = output_directory / f"{final_base_name}.mp4"
             
-            # Run Subtitle Extraction on the concatenated file
-            extract_and_ocr(concatenated_mkv, output_directory, final_base_name)
+            # Run Subtitle Extraction and capture generated SRTs
+            generated_srts = extract_and_ocr(concatenated_mkv, output_directory, final_base_name)
             
             logging.info(f"Transcoding concatenated MKV to {output_file}")
             try:
-                ffmpeg_command = build_ffmpeg_command(concatenated_mkv, output_file)
+                ffmpeg_command = build_ffmpeg_command(concatenated_mkv, output_file, generated_srts)
                 subprocess.run(ffmpeg_command, check=True)
                 return True
             except subprocess.CalledProcessError as e:
@@ -349,16 +381,15 @@ def transcode_mkv_files(mkv_directory, iso_basename, output_directory, force_con
     else:
         success = True
         for idx, mkv_file in enumerate(mkv_files, start=1):
-            # Determine the exact base name for this specific file
             final_base_name = f"{iso_basename}f01r{str(idx).zfill(2)}_sc" if len(mkv_files) > 1 else f"{iso_basename}_sc"
             output_file = output_directory / f"{final_base_name}.mp4"
             
-            # Run Subtitle Extraction on the individual file
-            extract_and_ocr(mkv_file, output_directory, final_base_name)
+            # Run Subtitle Extraction and capture generated SRTs
+            generated_srts = extract_and_ocr(mkv_file, output_directory, final_base_name)
             
             logging.info(f"Transcoding {mkv_file} to {output_file}")
             try:
-                ffmpeg_command = build_ffmpeg_command(mkv_file, output_file)
+                ffmpeg_command = build_ffmpeg_command(mkv_file, output_file, generated_srts)
                 subprocess.run(ffmpeg_command, check=True)
             except subprocess.CalledProcessError as e:
                 logging.error(f"Transcoding failed for {mkv_file}: {e}")
