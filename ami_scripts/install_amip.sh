@@ -318,7 +318,7 @@ install_cli_packages() {
         git coreutils grep jq xmlstarlet tree wget trash
         p7zip rsync rclone gnu-tar awscli clamav npm
         graphicsmagick homebrew-ffmpeg/ffmpeg/ffmpeg mediainfo mpv flac sox exiftool mkvtoolnix mediaconch qcli
-        bagit rbenv jenv pyenv openjdk@11
+        bagit rbenv jenv pyenv openjdk@11 vrecord ltc-tools
     )
     
     info "Installing CLI packages (${#packages[@]} total)..."
