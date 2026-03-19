@@ -4,6 +4,11 @@
 iso_transcoder_makemkv.py
 DVD ISO -> MKV -> MP4 workflow with OCR subtitle extraction.
 
+Modes:
+  - Default: MakeMKV -> OCR subtitles -> transcode MP4
+  - --extract-subs-only: extract bitmap subtitle tracks only (.idx/.sub), no OCR, no MP4
+  - --srt-only: extract + OCR subtitles only, no MP4
+
 Dependencies:
   - MakeMKV CLI: makemkvcon
   - MKVToolNix: mkvmerge, mkvextract
@@ -159,7 +164,9 @@ COMMON_ENGLISH_WORDS = {
     "the", "and", "of", "to", "in", "is", "it", "you", "that", "he", "was", "for",
     "on", "are", "as", "with", "his", "they", "i", "at", "be", "this", "have", "from",
     "or", "one", "had", "by", "not", "but", "what", "all", "were", "when", "we", "there",
-    "can", "an", "your", "which", "their", "if", "do", "will", "each", "how", "them"
+    "can", "an", "your", "which", "their", "if", "do", "will", "each", "how", "them",
+    "like", "still", "real", "life", "lights", "stage", "down", "up", "blank", "jump",
+    "kill", "might", "feel", "write", "white", "hate", "gonna", "drawin"
 }
 
 SUBTILE_OCR_INSTALL_MSG = """
@@ -209,7 +216,7 @@ def warn_on_duplicate_sub_languages(sub_tracks, mkv_name):
         logging.warning(f"[{mkv_name}] Duplicate subtitle language tags detected: {duplicates}")
 
 
-def verify_dependencies(extract_subs_only=False):
+def verify_dependencies(extract_subs_only=False, srt_only=False):
     try:
         subprocess.run(
             ["makemkvcon", "-r", "info", "disc:9999"],
@@ -223,7 +230,7 @@ def verify_dependencies(extract_subs_only=False):
         logging.error("makemkvcon is not found in PATH. Please install MakeMKV.")
         sys.exit(1)
 
-    if shutil.which("ffmpeg") is None and not extract_subs_only:
+    if shutil.which("ffmpeg") is None and not (extract_subs_only or srt_only):
         logging.error("Required command 'ffmpeg' not found in PATH.")
         logging.error("Install FFmpeg with: brew install ffmpeg")
         sys.exit(1)
@@ -272,7 +279,6 @@ def build_ffmpeg_command(input_file, output_file, srt_files=None):
         srt_files = []
 
     ffmpeg_command = ["ffmpeg", "-i", str(input_file)]
-
     ffmpeg_command.extend([
         "-c:v", "libx264",
         "-movflags", "faststart",
@@ -283,9 +289,7 @@ def build_ffmpeg_command(input_file, output_file, srt_files=None):
         "-b:a", "320000",
         "-ar", "48000"
     ])
-
     ffmpeg_command.extend(["-map", "0:v", "-map", "0:a"])
-
     ffmpeg_command.append(str(output_file))
     return ffmpeg_command
 
@@ -380,36 +384,76 @@ def count_chars_in_ranges(text, ranges):
     return total
 
 
-def english_text_plausibility(text):
-    cleaned = strip_srt_structure(text).lower()
-    tokens = re.findall(r"[a-z']+", cleaned)
+def _alpha_tokens_with_case(text):
+    return re.findall(r"[A-Za-z']+", text)
 
-    if len(tokens) < 12:
+
+def _looks_gibberish_line(line):
+    tokens = _alpha_tokens_with_case(line)
+    if len(tokens) < 2:
+        return False
+
+    lower_tokens = [t.lower() for t in tokens]
+    common_hits = sum(1 for t in lower_tokens if t in COMMON_ENGLISH_WORDS)
+    uppercaseish = sum(1 for t in tokens if len(t) >= 4 and t.upper() == t)
+    weird = sum(1 for t in lower_tokens if len(t) >= 7 and not re.search(r"[aeiou].*[aeiou]", t))
+    vowelish = sum(1 for t in lower_tokens if re.search(r"[aeiouy]", t))
+
+    upper_ratio = uppercaseish / len(tokens)
+    weird_ratio = weird / len(tokens)
+    vowel_ratio = vowelish / len(tokens)
+
+    return common_hits == 0 and upper_ratio >= 0.5 and (weird_ratio >= 0.4 or vowel_ratio < 0.7)
+
+
+def english_text_plausibility(text, strict=False):
+    cleaned = strip_srt_structure(text)
+    lower_cleaned = cleaned.lower()
+    tokens = re.findall(r"[a-z']+", lower_cleaned)
+
+    if len(tokens) < 4:
         return False
 
     common_hits = sum(1 for t in tokens if t in COMMON_ENGLISH_WORDS)
     common_ratio = common_hits / len(tokens)
 
+    vowelish = sum(1 for t in tokens if re.search(r"[aeiouy]", t))
+    vowel_ratio = vowelish / len(tokens)
+
     weird_tokens = sum(
         1 for t in tokens
-        if len(t) >= 7 and not re.search(r"[aeiou].*[aeiou]", t)
+        if len(t) >= 8 and not re.search(r"[aeiou].*[aeiou]", t)
     )
     weird_ratio = weird_tokens / len(tokens)
 
-    short_function_words = sum(1 for t in tokens if t in {"the", "and", "of", "to", "in", "is", "it", "you"})
-    function_ratio = short_function_words / len(tokens)
+    text_lines = [ln.strip() for ln in cleaned.splitlines() if ln.strip()]
+    substantive_lines = [ln for ln in text_lines if len(re.findall(r"[A-Za-z']+", ln)) >= 2]
+    gibberish_lines = sum(1 for ln in substantive_lines if _looks_gibberish_line(ln))
+    gibberish_ratio = gibberish_lines / max(len(substantive_lines), 1)
 
-    return common_ratio >= 0.05 and weird_ratio < 0.25 and function_ratio >= 0.02
+    if strict:
+        if common_ratio >= 0.04 and weird_ratio < 0.28 and gibberish_ratio < 0.35:
+            return True
+        if common_ratio >= 0.025 and vowel_ratio >= 0.78 and weird_ratio < 0.22 and gibberish_ratio < 0.25:
+            return True
+        return False
+
+    if common_ratio >= 0.02 and gibberish_ratio < 0.55:
+        return True
+    if vowel_ratio >= 0.70 and weird_ratio < 0.35 and gibberish_ratio < 0.45:
+        return True
+
+    return False
 
 
 def latin_text_plausibility(text):
     cleaned = strip_srt_structure(text)
     visible = "".join(ch for ch in cleaned if not ch.isspace())
-    if len(visible) < 80:
+    if len(visible) < 25:
         return False
 
     tokens = re.findall(r"[A-Za-zÀ-ÿ']+", cleaned)
-    if len(tokens) < 12:
+    if len(tokens) < 4:
         return False
 
     lower_tokens = [t.lower() for t in tokens]
@@ -417,19 +461,19 @@ def latin_text_plausibility(text):
     vowelish = sum(1 for t in lower_tokens if re.search(r"[aeiouyà-ÿ]", t))
     very_weird = sum(
         1 for t in lower_tokens
-        if len(t) >= 7 and not re.search(r"[aeiouyà-ÿ].*[aeiouyà-ÿ]", t)
+        if len(t) >= 8 and not re.search(r"[aeiouyà-ÿ].*[aeiouyà-ÿ]", t)
     )
 
     common_ratio = common_hits / max(len(lower_tokens), 1)
     vowel_ratio = vowelish / max(len(lower_tokens), 1)
     weird_ratio = very_weird / max(len(lower_tokens), 1)
 
-    if common_ratio < 0.03 and vowel_ratio < 0.65:
-        return False
-    if weird_ratio > 0.30:
-        return False
+    if common_ratio >= 0.02:
+        return True
+    if vowel_ratio >= 0.70 and weird_ratio < 0.35:
+        return True
 
-    return True
+    return False
 
 
 def script_matches_expected_lang(text, lang):
@@ -457,7 +501,7 @@ def script_matches_expected_lang(text, lang):
     if lang in KR_LANGS:
         return hangul_count >= 10
     if lang == "eng":
-        return english_text_plausibility(cleaned)
+        return english_text_plausibility(cleaned, strict=False)
     if lang in LATIN_LANGS:
         return latin_text_plausibility(cleaned)
 
@@ -476,15 +520,15 @@ def srt_is_suspicious(srt_path, expected_lang=None):
     if not text.strip():
         return True
 
-    if srt_path.stat().st_size < 1000:
+    if srt_path.stat().st_size < 250:
         return True
 
     visible = "".join(ch for ch in text if not ch.isspace())
-    if len(visible) < 80:
+    if len(visible) < 25:
         return True
 
     alnum_like = sum(ch.isalnum() for ch in visible)
-    if alnum_like < 20:
+    if alnum_like < 8:
         return True
 
     if expected_lang and not script_matches_expected_lang(text, expected_lang):
@@ -511,7 +555,7 @@ def move_failed_ocr_outputs(output_dir, final_base_name, track_id, temp_srt, ext
         )
 
 
-def extract_and_ocr(mkv_file, output_dir, final_base_name, extract_subs_only=False):
+def extract_and_ocr(mkv_file, output_dir, final_base_name, bitmap_only=False):
     sub_tracks = get_subtitle_tracks(mkv_file)
     generated_srts = []
 
@@ -560,7 +604,7 @@ def extract_and_ocr(mkv_file, output_dir, final_base_name, extract_subs_only=Fal
             + (f" and {extracted_sub.name}" if extracted_sub.exists() else "")
         )
 
-        if extract_subs_only:
+        if bitmap_only:
             logging.info(
                 f"Skipping OCR for track ID {track_id} because --extract-subs-only is set."
             )
@@ -613,7 +657,7 @@ def extract_and_ocr(mkv_file, output_dir, final_base_name, extract_subs_only=Fal
                 text = temp_srt.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 text = ""
-            if not english_text_plausibility(text):
+            if not english_text_plausibility(text, strict=True):
                 logging.warning(
                     f"Track {track_id} is a duplicate 'eng' subtitle track that required fallback OCR "
                     f"and still does not look convincingly English."
@@ -631,7 +675,7 @@ def extract_and_ocr(mkv_file, output_dir, final_base_name, extract_subs_only=Fal
                 f"({temp_srt.stat().st_size} bytes): {temp_srt.name}"
             )
             logging.warning(
-                f"Track {track_id} will be treated as undefined / OCR-failed and will not be muxed into the MP4."
+                f"Track {track_id} OCR looks weak; saving as review output with undefined language."
             )
             move_failed_ocr_outputs(output_dir, final_base_name, track_id, temp_srt, extracted_idx, extracted_sub)
             continue
@@ -750,13 +794,14 @@ def transcode_mkv_files(
     output_directory,
     force_concat,
     extract_subs_only=False,
+    srt_only=False,
 ):
     mkv_files = sorted(mkv_directory.glob("*.mkv"))
     if not mkv_files:
         logging.error(f"No MKV files found in {mkv_directory}")
         return False
 
-    if force_concat and not extract_subs_only:
+    if force_concat and not (extract_subs_only or srt_only):
         logging.info(f"Found {len(mkv_files)} MKV files to concatenate")
         concatenated_mkv = concatenate_mkvs(mkv_files)
 
@@ -764,16 +809,16 @@ def transcode_mkv_files(
             final_base_name = f"{iso_basename}_sc"
             output_file = output_directory / f"{final_base_name}.mp4"
 
-            generated_srts = extract_and_ocr(
+            _generated_srts = extract_and_ocr(
                 concatenated_mkv,
                 output_directory,
                 final_base_name,
-                extract_subs_only=extract_subs_only,
+                bitmap_only=extract_subs_only,
             )
 
             logging.info(f"Transcoding concatenated MKV to {output_file}")
             try:
-                ffmpeg_command = build_ffmpeg_command(concatenated_mkv, output_file, generated_srts)
+                ffmpeg_command = build_ffmpeg_command(concatenated_mkv, output_file, _generated_srts)
                 subprocess.run(ffmpeg_command, check=True)
                 return True
             except subprocess.CalledProcessError as e:
@@ -790,6 +835,7 @@ def transcode_mkv_files(
                 output_directory,
                 force_concat=False,
                 extract_subs_only=extract_subs_only,
+                srt_only=srt_only,
             )
 
     else:
@@ -805,12 +851,18 @@ def transcode_mkv_files(
                 mkv_file,
                 output_directory,
                 final_base_name,
-                extract_subs_only=extract_subs_only,
+                bitmap_only=extract_subs_only,
             )
 
             if extract_subs_only:
                 logging.info(
                     f"Skipping MP4 transcode for {mkv_file.name} because --extract-subs-only is set."
+                )
+                continue
+
+            if srt_only:
+                logging.info(
+                    f"Skipping MP4 transcode for {mkv_file.name} because --srt-only is set."
                 )
                 continue
 
@@ -916,7 +968,7 @@ def summarize_classifications(classification_counts, outliers):
 
     print("\nOutliers:")
     if outliers:
-        for outlier in outliers:
+        for outlier in sorted(outliers):
             print(f"- {outlier}")
     else:
         print("None")
@@ -939,10 +991,18 @@ def main():
     parser.add_argument("-f", "--force", action="store_true",
                         help="Force concatenation of MKV files before transcoding")
     parser.add_argument("--extract-subs-only", action="store_true",
-                        help="Extract VobSub subtitle tracks (.idx/.sub) only; skip OCR and MP4 transcoding")
+                        help="Extract bitmap subtitle tracks only (.idx/.sub); skip OCR and MP4 transcoding")
+    parser.add_argument("--srt-only", action="store_true",
+                        help="Extract and OCR subtitle tracks only; skip MP4 transcoding")
     args = parser.parse_args()
 
-    verify_dependencies(extract_subs_only=args.extract_subs_only)
+    if args.extract_subs_only and args.srt_only:
+        parser.error("Use only one of --extract-subs-only or --srt-only.")
+
+    verify_dependencies(
+        extract_subs_only=args.extract_subs_only,
+        srt_only=args.srt_only
+    )
 
     input_directory = Path(args.i)
     output_directory = Path(args.o)
@@ -963,6 +1023,7 @@ def main():
                 output_directory,
                 args.force,
                 extract_subs_only=args.extract_subs_only,
+                srt_only=args.srt_only,
             )
             if transcode_success:
                 processed_iso_paths.append(iso_file)
@@ -978,6 +1039,15 @@ def main():
 
     if args.extract_subs_only:
         print(f"\n{Style.BRIGHT}Subtitle Extraction Summary:{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Total ISOs processed: {len(processed_iso_paths) + len(make_mkv_failures)}{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Successfully processed: {len(processed_iso_paths)}{Style.RESET_ALL}")
+        print(f"{Fore.RED}Failed to process: {len(make_mkv_failures)}{Style.RESET_ALL}")
+        if make_mkv_failures:
+            print(f"\n{Fore.RED}List of failed ISOs:{Style.RESET_ALL}")
+            for iso in make_mkv_failures:
+                print(f" - {iso}")
+    elif args.srt_only:
+        print(f"\n{Style.BRIGHT}Subtitle OCR Summary:{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Total ISOs processed: {len(processed_iso_paths) + len(make_mkv_failures)}{Style.RESET_ALL}")
         print(f"{Fore.GREEN}Successfully processed: {len(processed_iso_paths)}{Style.RESET_ALL}")
         print(f"{Fore.RED}Failed to process: {len(make_mkv_failures)}{Style.RESET_ALL}")
