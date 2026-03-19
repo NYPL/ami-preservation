@@ -256,6 +256,8 @@ class FileMakerClient:
                             if fs is not None:
                                 d[key] = [row.to_dict() for row in fs]
                     records.append(d)
+                    
+                logging.info(f"Fetched {len(records)} records (offset {offset})")
 
                 all_records.extend(records)
 
