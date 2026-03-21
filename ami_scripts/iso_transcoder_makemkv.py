@@ -980,6 +980,35 @@ def post_process_check(output_directory):
     summarize_classifications(classification_counts, outliers)
 
 
+def organize_files(input_directory, output_directory):
+    pm_dir = output_directory / "PreservationMasters"
+    sc_dir = output_directory / "ServiceCopies"
+    
+    pm_dir.mkdir(exist_ok=True)
+    sc_dir.mkdir(exist_ok=True)
+    
+    iso_files_moved = 0
+    for iso_file in input_directory.glob("*.iso"):
+        if iso_file.is_file() and not iso_file.name.startswith("._"):
+            try:
+                shutil.move(str(iso_file), str(pm_dir / iso_file.name))
+                iso_files_moved += 1
+            except Exception as e:
+                logging.error(f"Failed to move {iso_file.name} to PreservationMasters: {e}")
+                
+    sc_files_moved = 0
+    for file in output_directory.glob("*_sc*"):
+        if file.is_file() and not file.name.startswith("._"):
+            try:
+                shutil.move(str(file), str(sc_dir / file.name))
+                sc_files_moved += 1
+            except Exception as e:
+                logging.error(f"Failed to move {file.name} to ServiceCopies: {e}")
+
+    logging.info(f"Moved {iso_files_moved} ISO files to PreservationMasters")
+    logging.info(f"Moved {sc_files_moved} service copy files to ServiceCopies")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Transcode MKV files created from ISO images to H.264 MP4s and extract OCR subtitles."
@@ -1058,6 +1087,9 @@ def main():
     else:
         verify_transcoding(processed_iso_paths, make_mkv_failures, output_directory)
         post_process_check(output_directory)
+
+    print(f"\n{Style.BRIGHT}Organizing Files...{Style.RESET_ALL}")
+    organize_files(input_directory, output_directory)
 
 
 if __name__ == "__main__":
