@@ -28,6 +28,9 @@ DATA_EXTENSIONS = {
 # NEW: Set of extensions to be treated as asset images 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.tif', '.tiff', '.png'}
 
+# NEW: Set of extensions to be treated as timed text
+TIMEDTEXT_EXTENSIONS = {'.srt', '.scc', '.vtt'}
+
 # Pre-compiled regex patterns
 AMI_ID_RE = re.compile(r'_(\d{6})_')
 ROLE_RE = re.compile(r'(_pm|_em|_mz|_sc)', re.IGNORECASE)
@@ -176,18 +179,23 @@ def make_object_dirs(source_directory: Path, file_list: list[Path], media_mappin
         old_file_path = source_directory / file_path
         media_type = media_mapping.get(ami_id, 'Unknown')
         
-        if old_file_path.suffix.lower() in DATA_EXTENSIONS:
+        is_data = old_file_path.suffix.lower() in DATA_EXTENSIONS
+        is_image = old_file_path.suffix.lower() in IMAGE_EXTENSIONS
+        is_timedtext = old_file_path.suffix.lower() in TIMEDTEXT_EXTENSIONS
+
+        if is_data or is_image or is_timedtext:
             role_match = ROLE_RE.search(file_path.name)
-            is_image = old_file_path.suffix.lower() in IMAGE_EXTENSIONS
             
-            # Determine the target directory based on role OR image status
-            if role_match:
+            # Determine the target directory based on timed text, role, OR image status
+            if is_timedtext:
+                target_dir_name = 'TimedText'
+            elif role_match:
                 role_key = role_match.group(1).lower()
                 target_dir_name = ROLE_MAP.get(role_key)
             elif is_image:
                 target_dir_name = 'Images'
             else:
-                logging.warning(f'Data file has no role and is not an image, skipping: {file_path}')
+                logging.warning(f'Data file has no role, is not an image, and is not timed text, skipping: {file_path}')
                 unmoved.append(file_path)
                 continue # Skip the move logic below
                 
