@@ -149,7 +149,7 @@ def convert_dotKeyToNestedDict(tree: Dict[str, Any], key: str, value: Any) -> Di
 # =============================================================================
 
 FILENAME_REGEX = re.compile(
-    r"([a-z]{3}_[a-z0-9]+_v\d{2}(([frspt]\d{2})+)?_(ao|pm|mz|em|sc|pf|assetfront|assetback|assetside|boxfront|boxback|boxside|reelfront|ephemera)([~\d\-]+)?\.[a-z0-9]+)"
+    r"([a-z]{3}_[a-z0-9]+_v\d{2}(([frspt]\d{2})+)?_(ao|pm|mz|em|sc|pf|assetfront|assetback|assetside|boxfront|boxback|boxside|reelfront|ephemera)([~\d\-]+)?(?:_[a-z]{2,3})?\.[a-z0-9]+)"
     r"|(\d{4}_\d{3}_[\da-zA-Z_]+\.(json))",  # removed xlsx/old references
     re.IGNORECASE
 )
@@ -162,6 +162,7 @@ EM_DIR = "EditMasters"
 SC_DIR = "ServiceCopies"
 AO_DIR = "ArchiveOriginals"
 IM_DIR = "Images"
+TT_DIR = "TimedText"
 
 MOV_EXT_FULL = ".mov"
 DV_EXT_FULL = ".dv"
@@ -181,6 +182,7 @@ SRT_EXT = ".srt"
 CUE_EXT = ".cue"
 CSV_EXT = ".csv"
 SCC_EXT = ".scc"
+VTT_EXT = ".vtt"
 
 MEDIA_EXTS_FULL = [
     MOV_EXT_FULL, DV_EXT_FULL, MKV_EXT_FULL, MKA_EXT_FULL, MP4_EXT_FULL,
@@ -196,10 +198,10 @@ UNCOMPRESSED_EXTS = [MOV_EXT_FULL, WAV_EXT_FULL]
 JSON_SUBTYPES = {
     "film": (set([PM_DIR, MZ_DIR, SC_DIR, IM_DIR]),
              set([JSON_EXT, MKV_EXT_FULL, MOV_EXT_FULL, MP4_EXT_FULL, JPEG_EXT, JPG_EXT,
-                  GZ_EXT, SRT_EXT, SCC_EXT])),
-    "video": (set([PM_DIR, SC_DIR, IM_DIR]),
+                  GZ_EXT, SRT_EXT, SCC_EXT, VTT_EXT])),
+    "video": (set([PM_DIR, SC_DIR, IM_DIR, TT_DIR]),
               set([JSON_EXT, MOV_EXT_FULL, MKV_EXT_FULL, DV_EXT_FULL, MP4_EXT_FULL,
-                   JPEG_EXT, JPG_EXT, GZ_EXT, SRT_EXT, SCC_EXT, ISO_EXT_FULL])),
+                   JPEG_EXT, JPG_EXT, GZ_EXT, SRT_EXT, SCC_EXT, VTT_EXT, ISO_EXT_FULL])),
     "audio": (set([PM_DIR, EM_DIR, SC_DIR, IM_DIR]),
               set([JSON_EXT, WAV_EXT_FULL, FLAC_EXT_FULL, AEA_EXT_FULL, MP4_EXT_FULL, JPEG_EXT, JPG_EXT, CUE_EXT, CSV_EXT])),
     "data":  (set([PM_DIR, IM_DIR]),
@@ -1291,9 +1293,13 @@ class ami_bag(bagit.Bag):
         try:
             self.check_simple_filenames()
         except ami_bagError as e:
-            LOGGER.warning(f"Filenames represent complex subobject: {e.message}")
-            self.warning_messages.append("Complex subobject filenames")
-            warning = True
+            pm_iso = hasattr(self, 'pm_filepaths') and any(f.lower().endswith(".iso") for f in self.pm_filepaths)
+            if pm_iso:
+                LOGGER.info("Filenames represent complex subobject (acceptable for video optical)")
+            else:
+                LOGGER.warning(f"Filenames represent complex subobject: {e.message}")
+                self.warning_messages.append("Complex subobject filenames")
+                warning = True
 
         # Part filenames
         try:
@@ -1344,10 +1350,8 @@ class ami_bag(bagit.Bag):
             except ami_bagError as e:
                 pm_iso = any(f.lower().endswith(".iso") for f in self.pm_filepaths)
                 if pm_iso:
-                    # For optical media, only warn
-                    LOGGER.warning(f"Asset balance out of spec (but acceptable) for video optical bag: {e.message}")
-                    self.warning_messages.append("Mismatch of PM & SC for DVDs")
-                    warning = True
+                    # For optical media, 1:many PM to SC is often expected and completely acceptable
+                    LOGGER.info("1:many PM & SC mapping detected for video optical bag; this is acceptable.")
                 else:
                     LOGGER.error(f"Asset balance out of spec: {e.message}")
                     self.error_messages.append("Mismatch of PM & SC")
