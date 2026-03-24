@@ -46,6 +46,41 @@ def process_mov_files(input_directory, audio_pan, force_16x9=False):
         convert_mov_file(mov_file, input_directory, audio_pan, force_16x9)
 
 
+def rename_mkv_parts(input_directory):
+    """
+    Rename packaged MKV files (e.g., from vrecord) that have a _partX suffix 
+    prior to processing, applying the same region naming strategy as dvpackager.
+    """
+    mkv_files = list(input_directory.glob("*_part*.mkv"))
+    if not mkv_files:
+        return
+        
+    from collections import defaultdict
+    groups = defaultdict(list)
+    part_pattern = re.compile(r"^(.*?)_part\d+$")
+    
+    for mkv in mkv_files:
+        match = part_pattern.match(mkv.stem)
+        if match:
+            base_stem = match.group(1)
+            groups[base_stem].append(mkv)
+            
+    for base_stem, files in groups.items():
+        clean_stem = base_stem
+        if clean_stem.endswith("_pm"):
+            clean_stem = clean_stem[:-3]
+            
+        if len(files) == 1:
+            new_file = input_directory / f"{base_stem}.mkv"
+            files[0].rename(new_file)
+            print(f"Renamed single MKV part: {files[0].name} -> {new_file.name}")
+        elif len(files) > 1:
+            for i, mkv_file in enumerate(sorted(files), start=1):
+                new_file = input_directory / f"{clean_stem}f01r{i:02}_pm.mkv"
+                mkv_file.rename(new_file)
+                print(f"Renamed MKV part: {mkv_file.name} -> {new_file.name}")
+
+
 def process_dv_files(input_directory):
     """Process .dv files using dvpackager, creating .mkv files."""
     dv_files = list(input_directory.glob("*.dv"))  # Store the .dv files in a list
@@ -65,7 +100,7 @@ def process_dv_files(input_directory):
             mkv_files[0].rename(input_directory / f"{dv_file.stem}.mkv")
         elif len(mkv_files) > 1:  # rename multiple files with region naming system
             for i, mkv_file in enumerate(sorted(mkv_files), start=1):
-                mkv_file.rename(input_directory / f"{dv_file.stem}r{i:02}_pm.mkv")
+                mkv_file.rename(input_directory / f"{dv_file.stem}f01r{i:02}_pm.mkv")
     return dv_files  # Return the list of .dv files
 
 
@@ -782,6 +817,9 @@ def main():
     # Remove hidden files before processing
     print("Removing hidden files...")
     remove_hidden_files(input_dir)
+
+    print("Renaming existing MKV part files...")
+    rename_mkv_parts(input_dir)
 
     print("Processing DV files...")
     process_dv_files(input_dir)
