@@ -82,26 +82,34 @@ def rename_mkv_parts(input_directory):
 
 
 def process_dv_files(input_directory):
-    """Process .dv files using dvpackager, creating .mkv files."""
-    dv_files = list(input_directory.glob("*.dv"))  # Store the .dv files in a list
+    """
+    Process .dv files. If they don't have corresponding .mkv files, run dvpackager.
+    Move all .dv files to ProcessedDV folder.
+    """
+    dv_files = list(input_directory.glob("*.dv"))
+    if not dv_files:
+        return []
+        
     processed_directory = input_directory / "ProcessedDV"
     processed_directory.mkdir(exist_ok=True)
+    
     for dv_file in dv_files:
-        if not shutil.which("dvpackager"):
-            raise FileNotFoundError("dvpackager is not found, please install dvrescue with Homebrew.")
-        command = ['dvpackager', '-e', 'mkv', str(dv_file)]
-        subprocess.run(command, check=True, input='y', encoding='ascii')
-        # after processing, move the file to the processed directory
-        shutil.move(str(dv_file), processed_directory)
+        # Check if corresponding MKVs exist (dvpackager makes _part*.mkv)
+        corresponding_mkvs = list(input_directory.glob(f"{dv_file.stem}*.mkv"))
         
-        # rename files based on count
-        mkv_files = list(input_directory.glob(f"{dv_file.stem}_part*.mkv"))
-        if len(mkv_files) == 1:  # rename the single file to exclude "_part1"
-            mkv_files[0].rename(input_directory / f"{dv_file.stem}.mkv")
-        elif len(mkv_files) > 1:  # rename multiple files with region naming system
-            for i, mkv_file in enumerate(sorted(mkv_files), start=1):
-                mkv_file.rename(input_directory / f"{dv_file.stem}f01r{i:02}_pm.mkv")
-    return dv_files  # Return the list of .dv files
+        if not corresponding_mkvs:
+            print(f"No corresponding MKVs found for {dv_file.name}, running dvpackager...")
+            if not shutil.which("dvpackager"):
+                raise FileNotFoundError("dvpackager is not found, please install dvrescue with Homebrew.")
+            command = ['dvpackager', '-e', 'mkv', str(dv_file)]
+            subprocess.run(command, check=True, input='y', encoding='ascii')
+        else:
+            print(f"Found existing MKVs for {dv_file.name}, skipping dvpackager.")
+            
+        # Move the .dv file to ProcessedDV
+        shutil.move(str(dv_file), processed_directory / dv_file.name)
+        
+    return dv_files
 
 
 def process_hdv_files(input_directory):
@@ -818,11 +826,11 @@ def main():
     print("Removing hidden files...")
     remove_hidden_files(input_dir)
 
-    print("Renaming existing MKV part files...")
-    rename_mkv_parts(input_dir)
-
     print("Processing DV files...")
     process_dv_files(input_dir)
+
+    print("Renaming MKV part files...")
+    rename_mkv_parts(input_dir)
 
     print("Processing HDV (.m2t) files...")
     process_hdv_files(input_dir)
