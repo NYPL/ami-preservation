@@ -331,18 +331,18 @@ class FileMakerClient:
         
         return record_dict
     
-    def update_sidecar_fields(self, reference_filename: str, formats: str, langs: str) -> bool:
-        """Push comma-separated sidecar metrics back to FileMaker's new flat fields."""
+    def update_timed_text_fields(self, reference_filename: str, filenames: str) -> bool:
+        """Push comma-separated timed text filenames back to FileMaker's new flat field."""
         if not self.connection:
             return False
             
         cursor = self.connection.cursor()
         try:
-            query = 'UPDATE tbl_metadata SET "technical.sidecarFormats" = ?, "technical.sidecarLanguages" = ? WHERE "asset.referenceFilename" = ?'
-            cursor.execute(query, [formats, langs, reference_filename])
+            query = 'UPDATE tbl_metadata SET "technical.timedTextFiles" = ? WHERE "asset.referenceFilename" = ?'
+            cursor.execute(query, [filenames, reference_filename])
             return True
         except Exception as e:
-            logging.error(f"Failed to push sidecar updates to FM for {reference_filename}: {e}")
+            logging.error(f"Failed to push timed text updates to FM for {reference_filename}: {e}")
             return False
         finally:
             cursor.close()
@@ -451,8 +451,9 @@ class DataTransformer:
             if val is None or val == '':
                 return True
                 
-            # Drop the flat sidecar fields to prevent them from populating the JSON
-            if col in ('technical.sidecarFormats', 'technical.sidecarLanguages'):
+            # Drop the flat timed text field so it doesn't automatically populate as a string.
+            # We will manually inject it as an array in the FileProcessor step.
+            if col == 'technical.timedTextFiles':
                 return True
             
             
@@ -545,25 +546,16 @@ class FileProcessor:
         
         return result
         
-    def _find_sidecar_files(self, media_file: Path) -> List[Dict[str, str]]:
-        """Find matching sidecar files and extract their language codes directly from the filename."""
-        sidecars = []
+    def _find_timed_text_files(self, media_file: Path) -> List[str]:
+        """Find matching timed text files and return their exact filenames."""
+        timed_text_files = []
         valid_exts = {'.srt', '.scc', '.vtt'}
         
         for p in media_file.parent.glob(f"{media_file.stem}*"):
             if p.is_file() and p.suffix.lower() in valid_exts:
-                ext = p.suffix.lower()[1:]
-                name_without_ext = p.stem
+                timed_text_files.append(p.name)
                 
-                lang_code = 'eng'  # Default if no language tag is present
-                if name_without_ext != media_file.stem:
-                    remainder = name_without_ext[len(media_file.stem):]
-                    if remainder.startswith('_'):
-                        lang_code = remainder[1:].lower()
-                        
-                sidecars.append({"format": ext, "language": lang_code})
-                
-        return sidecars
+        return timed_text_files
     
     def export_json_for_file(self, media_file: Path, output_root: Path) -> bool:
         """Export JSON for a single media file."""
@@ -578,12 +570,11 @@ class FileProcessor:
         role = parsed['role']
         refname = parsed['filename']
         
-        # 1. Gather sidecars from disk and update DB
-        sidecars = self._find_sidecar_files(media_file)
-        if sidecars:
-            formats_str = ", ".join(s['format'] for s in sidecars)
-            langs_str = ", ".join(s['language'] for s in sidecars)
-            self.db_client.update_sidecar_fields(refname, formats_str, langs_str)
+        # 1. Gather timed text files from disk and update DB
+        timed_text_files = self._find_timed_text_files(media_file)
+        if timed_text_files:
+            filenames_str = ", ".join(timed_text_files)
+            self.db_client.update_timed_text_fields(refname, filenames_str)
             
         # 2. Fetch and transform record
         record = self.db_client.fetch_record(refname)
@@ -594,11 +585,11 @@ class FileProcessor:
         # 3. Transform record to JSON structure
         json_data = self.transformer.transform_record(record, media_type, is_iso)
         
-        # 4. Inject sidecar JSON data directly to bypass the flat structure
-        if sidecars:
+        # 4. Inject timed text array directly to bypass the flat FileMaker structure
+        if timed_text_files:
             if 'technical' not in json_data:
                 json_data['technical'] = {}
-            json_data['technical']['sidecarFiles'] = sidecars
+            json_data['technical']['timedTextFiles'] = timed_text_files
 
         
         # Write JSON file
