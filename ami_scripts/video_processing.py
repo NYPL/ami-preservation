@@ -690,30 +690,35 @@ def convert_mov_file(input_file, input_directory, audio_pan, force_16x9=False):
 
 
 def create_directories(input_directory, directories):
-    for directory in directories:
-        (input_directory / directory).mkdir(exist_ok=True)
+    pass
+
 
 
 def move_files(input_directory):
     for file in itertools.chain(input_directory.glob("*.mp4"), input_directory.glob("*.mov"), input_directory.glob("*.mkv"), input_directory.glob("*.framemd5"), input_directory.glob("*.vtt")):
-        target_dir = {
+        target_dir_name = {
             ".mov": "V210",
             ".mkv": "PreservationMasters",
             ".framemd5": "PreservationMasters",
             ".vtt": "PreservationMasters",
             ".mp4": "ServiceCopies"
-            }.get(file.suffix)
+        }.get(file.suffix)
 
-        shutil.move(file, input_directory / target_dir)
+        if target_dir_name:
+            target_dir = input_directory / target_dir_name
+            target_dir.mkdir(exist_ok=True)
+            shutil.move(str(file), str(target_dir / file.name))
 
 
-def move_log_files_to_auxiliary_files(input_directory):
+def process_log_and_xml_files(input_directory):
     for file in input_directory.glob("*.log"):
-        shutil.move(file, input_directory / "AuxiliaryFiles" / file.name)
+        file.unlink()
     for file in input_directory.glob("*.xml.gz"):
-        shutil.move(file, input_directory / "PreservationMasters" / file.name)
+        pm_dir = input_directory / "PreservationMasters"
+        pm_dir.mkdir(exist_ok=True)
+        shutil.move(str(file), str(pm_dir / file.name))
     for file in input_directory.glob("*.xml"):
-        shutil.move(file, input_directory / "AuxiliaryFiles" / file.name)        
+        file.unlink()
 
 
 def delete_empty_directories(input_directory, directories):
@@ -835,9 +840,6 @@ def main():
     print("Processing HDV (.m2t) files...")
     process_hdv_files(input_dir)
 
-    print("Creating directories...")
-    create_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies"])
-
     print("Converting MKV and DV to MP4...")
     convert_mkv_dv_to_mp4(input_dir, args.audio_pan, args.force_16x9)
 
@@ -853,15 +855,15 @@ def main():
     print("Moving files...")
     move_files(input_dir)
 
-    print("Moving log files...")
-    move_log_files_to_auxiliary_files(input_dir)
+    print("Processing log and xml files...")
+    process_log_and_xml_files(input_dir)
 
     if args.transcribe:
         print("Transcribing directory...")
         transcribe_directory(input_dir, args.model, args.format)
 
     print("Deleting empty directories...")
-    delete_empty_directories(input_dir, ["AuxiliaryFiles", "V210", "PreservationMasters", "ServiceCopies", "ProcessedDV"])
+    delete_empty_directories(input_dir, ["V210", "PreservationMasters", "ServiceCopies", "ProcessedDV", "ProcessedHDV"])
 
     if args.output:
         project_code_pattern = re.compile(r'(\d{4}_\d{2}_\d{2})')
