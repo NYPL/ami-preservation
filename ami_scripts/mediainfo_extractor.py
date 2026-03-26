@@ -44,6 +44,29 @@ JDBC_FIELDS: List[str] = [
     "inhouse_bag_batch_id"
 ]
 
+VENDOR_JDBC_FIELDS: List[str] = [
+    "asset.referenceFilename",
+    "bibliographic.vernacularDivisionCode",
+    "driveID",
+    "filePath",
+    "mediaType",
+    "bibliographic.primaryID",
+    "asset.fileRole",
+    "technical.audioCodec",
+    "technical.dateCreated",
+    "technical.durationHuman",
+    "technical.durationMilli.measure",
+    "technical.extension",
+    "technical.fileFormat",
+    "technical.filename",
+    "technical.fileSize.measure",
+    "technical.videoCodec",
+    "workOrderID",
+    "source.object.type",
+    "source.object.format",
+    "bibliographic.cmsCollectionID"
+]
+
 # Complete field mapping for CSV output
 CSV_FIELD_NAMES: List[str] = [
     'asset.referenceFilename',
@@ -124,6 +147,11 @@ def create_argument_parser() -> argparse.ArgumentParser:
         "-v", "--vendor", 
         action='store_true',
         help="Process as BagIt with sidecar JSON metadata"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run without writing to CSV or database (if DB, still connects to check records)"
     )
     return parser
 
@@ -452,9 +480,15 @@ class DatabaseManager:
         self.password = os.getenv('AMI_DATABASE_PASSWORD')
         self.jdbc_path = os.path.expanduser('~/Desktop/ami-preservation/ami_scripts/jdbc/fmjdbc.jar')
 
-    def filter_for_jdbc(self, record: Dict) -> Dict:
+    def filter_for_jdbc(self, record: Dict, is_vendor: bool = False) -> Dict:
         """Filter record to include only JDBC-compatible fields."""
-        return {k: record[k] for k in JDBC_FIELDS if k in record}
+        if is_vendor:
+            # Map inhouse_bag_batch_id to workOrderID for vendor
+            if 'inhouse_bag_batch_id' in record:
+                record['workOrderID'] = record['inhouse_bag_batch_id']
+            return {k: record[k] for k in VENDOR_JDBC_FIELDS if k in record}
+        else:
+            return {k: record[k] for k in JDBC_FIELDS if k in record}
 
     def connect(self):
         """Establish database connection."""
@@ -465,19 +499,19 @@ class DatabaseManager:
             self.jdbc_path
         )
 
-    def insert_records(self, conn, insert_data: List[Dict]) -> None:
+    def insert_records(self, conn, insert_data: List[Dict], table_name: str = "tbl_techinfo") -> None:
         """Insert records into the database."""
         curs = conn.cursor()
         try:
             for record in insert_data:
                 placeholders = ', '.join(['?'] * len(record))
                 columns = ', '.join(f'"{col}"' for col in record.keys())
-                sql = f"INSERT INTO tbl_techinfo ({columns}) VALUES ({placeholders})"
+                sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
                 print(f"Executing SQL: {sql} with values {list(record.values())}")
                 curs.execute(sql, list(record.values()))
             
             conn.commit()
-            logging.info("Records inserted successfully into tbl_techinfo.")
+            logging.info(f"Records inserted successfully into {table_name}.")
             
         except Exception as e:
             logging.error(f"Failed to insert records: {e}")
@@ -618,7 +652,7 @@ class MediaInfoExtractor:
         """Output processed data to CSV file."""
         self.csv_exporter.export_to_csv(file_data, output_path)
 
-    def output_to_database(self, file_data: List[List]) -> None:
+    def output_to_database(self, file_data: List[List], dry_run: bool = False, use_vendor_mode: bool = False) -> None:
         """Output processed data to database."""
         # Convert file data to record dictionaries
         all_records = []
@@ -626,18 +660,26 @@ class MediaInfoExtractor:
 
         for row in file_data:
             full_record = dict(zip(CSV_FIELD_NAMES, row[1:]))  # Skip filePath
+            full_record['filePath'] = str(row[0])  # Add filePath explicitly for vendor table
             all_records.append(full_record)
             filenames.append(full_record['asset.referenceFilename'])
 
         # Filter for JDBC insertion
-        insert_data = [self.db_manager.filter_for_jdbc(r) for r in all_records]
+        insert_data = [self.db_manager.filter_for_jdbc(r, is_vendor=use_vendor_mode) for r in all_records]
 
         try:
             conn = self.db_manager.connect()
             logging.info("Connection to AMIDB successful!")
             
-            self.db_manager.check_corresponding_records(conn, filenames)
-            self.db_manager.insert_records(conn, insert_data)
+            table_name = "tbl_vendor_mediainfo" if use_vendor_mode else "tbl_techinfo"
+            
+            if not use_vendor_mode:
+                self.db_manager.check_corresponding_records(conn, filenames)
+            
+            if dry_run:
+                logging.info(f"DRY RUN: Skipping insertion of {len(insert_data)} records into {table_name}.")
+            else:
+                self.db_manager.insert_records(conn, insert_data, table_name)
             
         except Exception as e:
             logging.error(f"Database connection or execution error: {e}")
@@ -673,9 +715,12 @@ class MediaInfoExtractor:
 
         # Output results
         if args.output:
-            self.output_to_csv(prepared_data, args.output)
+            if args.dry_run:
+                logging.info(f"DRY RUN: Would have written {len(prepared_data)} records to CSV at {args.output}")
+            else:
+                self.output_to_csv(prepared_data, args.output)
         else:
-            self.output_to_database(prepared_data)
+            self.output_to_database(prepared_data, dry_run=args.dry_run, use_vendor_mode=args.vendor)
 
 
 def main() -> None:
