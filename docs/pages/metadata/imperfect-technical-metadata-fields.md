@@ -18,7 +18,7 @@ We use these fields as **best-effort technical metadata** generated through a co
 
 ## Our approach
 
-In our workflows, these fields are generated through a constrained set of tools and processes that we use consistently in-house, and through established delivery workflows with outside vendors. Within those environments, the values are often useful enough for operational and descriptive purposes.
+In our workflows, these fields are generated through a constrained set of tools and processes that we use in-house, and through established delivery workflows with outside vendors. Within those environments, the values are often useful enough for operational and descriptive purposes.
 
 At the same time, we recognize that these fields are imperfect. They are subject to variation depending on:
 
@@ -29,8 +29,6 @@ At the same time, we recognize that these fields are imperfect. They are subject
 - software interpretation
 - authoring or encoding history
 - transfer, copying, or remuxing events
-
-For that reason, these fields should generally be treated as **best-effort technical metadata**, not as authoritative preservation facts in every case.
 
 ---
 
@@ -66,7 +64,7 @@ WAV files do not reliably contain a universal creation-date field. Broadcast WAV
 
 #### MOV and MP4
 
-MOV and MP4 more commonly contain container-level date fields, but these may reflect the creation of the container, a transcode event, a remux, or another software-mediated action. Even when present, these values are not always semantically equivalent to “the date this preservation file was created” in a broader workflow sense. These formats are also highly susceptible to UTC vs. Local Time shifts; i.e. a file moved from a server in New York to one in London may "shift" its creation time by 5 hours depending on how the software reads the header.
+MOV and MP4 more commonly contain container-level date fields, but these may reflect the creation of the container, a transcode event, a remux, or another software-mediated action. Even when present, these values are not always semantically equivalent to “the date this preservation file was created” in a broader workflow sense.
 
 #### ISO images and DV files
 
@@ -114,7 +112,7 @@ These are not necessarily equivalent.
 
 ### MediaInfo and DVD-style ISOs
 
-For DVD-Video structures, MediaInfo's reported General duration should not be understood as “the total runtime of everything on the disc.” Rather, it is better understood as **the retained primary-duration content MediaInfo associates with the parsed DVD structure**.
+For DVD-Video structures, MediaInfo's reported General duration should not be understood as “the total runtime of everything on the disc.” Rather, it is better understood as **the retained primary-content duration MediaInfo associates with the parsed DVD structure**.
 
 In practice, this means the reported duration may align with the main title while excluding shorter supplementary content such as:
 
@@ -124,7 +122,7 @@ In practice, this means the reported duration may align with the main title whil
 - menu animations
 - alternate title structures
 
-So if a disc contains a feature plus several shorter extras, MediaInfo may report only the duration most closely associated with the primary retained content, rather than a disc-wide total of all playable material.
+So if a disc contains a feature plus several shorter extras, MediaInfo may report only the duration most closely associated with the primary  content, rather than a disc-wide total of all playable material.
 
 ### Why “total duration” can be misleading
 
@@ -140,7 +138,7 @@ As a result, attempting to compute one “perfect” total duration can lead to 
 
 ### Our position
 
-For ISO images, especially DVD-style ISOs, `technical.duration` should be interpreted cautiously. In many cases it is most useful as a best-effort technical indicator generated through a consistent workflow, rather than as an exact statement of total playable disc runtime.
+For ISO images, especially DVD-style ISOs, `technical.duration` should be interpreted cautiously. In many cases it is most useful as a best-effort technical indicator, rather than as an exact statement of total playable disc runtime.
 
 Within our own workflows, this approach is workable because we use a constrained set of tools and processes consistently. Likewise, with outside vendors, we establish delivery expectations and technical workflows in advance, which makes the resulting values usable in context.
 
