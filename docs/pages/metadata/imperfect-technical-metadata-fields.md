@@ -18,7 +18,7 @@ We use these fields as **best-effort technical metadata** generated through a co
 
 ## Our approach
 
-In our workflows, these fields are generated through a constrained set of tools and processes that we use in-house, and through established delivery workflows with outside vendors. Within those environments, the values are often useful enough for operational and descriptive purposes.
+In our workflows, these fields are generated through a set of tools and processes that we use in-house, and through established delivery workflows with outside vendors. Within those environments, the values are often useful enough for operational and descriptive purposes.
 
 At the same time, we recognize that these fields are imperfect. They are subject to variation depending on:
 
@@ -138,8 +138,8 @@ As a result, attempting to compute one “perfect” total duration can lead to 
 
 ### Our position
 
-For ISO images, especially DVD-style ISOs, `technical.duration` should be interpreted cautiously. In many cases it is most useful as a best-effort technical indicator, rather than as an exact statement of total playable disc runtime.
+For ISO images, especially DVD-style ISOs, `technical.duration` should be interpreted cautiously. In many cases it is most useful as a technical indicator, rather than as an exact statement of total playable disc runtime.
 
-Within our own workflows, this approach is workable because we use a constrained set of tools and processes consistently. Likewise, with outside vendors, we establish delivery expectations and technical workflows in advance, which makes the resulting values usable in context.
+Within our own workflows, this approach is workable because we use a constrained set of tools and processes. Likewise, with outside vendors, we establish delivery expectations and technical workflows in advance, which makes the resulting values usable in context.
 
 However, we recognize that the field remains imperfect and format-dependent. Variation in reported duration does not necessarily indicate a problem with the file or disc image.
