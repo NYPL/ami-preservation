@@ -601,8 +601,13 @@ def convert_mov_file(input_file, input_directory, audio_pan, force_16x9=False):
         ]
         result = subprocess.run(ffprobe_command, capture_output=True, text=True)
         if result.returncode == 0 and result.stdout.strip():
-            w, h = map(int, result.stdout.strip().split(","))
-            return w, h
+            # Handle potential multi-line output or trailing commas
+            clean_out = result.stdout.strip().split('\n')[0].rstrip(',')
+            parts = clean_out.split(',')
+            if len(parts) >= 2 and parts[0].strip().isdigit() and parts[1].strip().isdigit():
+                return int(parts[0].strip()), int(parts[1].strip())
+            else:
+                raise ValueError(f"Could not parse video resolution for {path} from output: '{result.stdout.strip()}'")
         else:
             raise ValueError(f"Could not determine video resolution for {path}")
 
