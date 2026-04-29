@@ -67,8 +67,14 @@ def parse_args():
     parser.add_argument('-p',
                         dest='policies_dir',
                         help='Path to directory of MediaConch policies'
-                        "\n  Optional: in absence of -p flag, default path will be used",
+                        '\n  Optional: without -p flag, a default path will be used',
                         type=dir_exists)
+    parser.add_argument('-t',
+                        default=300,
+                        dest='timeout',
+                        help='Time limit per MediaConch subcommand in seconds'
+                        '\n  Optional: default value is 300 seconds (5 min)',
+                        type=int)
     parser.add_argument('-v',
                         choices=[1, 2, 3, 4, 5],
                         default='2',
@@ -221,8 +227,7 @@ def assign_policy(jvals, f1, flex):
 def build_command(asset_path, policy, p_dir, flag):
     return ['mediaconch', '-p', p_dir.joinpath(policy), asset_path, f'-f{flag}']
 
-def run_command(command):
-    seconds = 300
+def run_command(command, seconds):
     try:
         process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=seconds, text=True)
         return process.stdout
@@ -360,7 +365,7 @@ def main():
     if elig_count > 0:
         df.command = [build_command(x.asset_path, x.policy, policies_dir, args.formatter) for x in df.itertuples()]
         print('\nRunning MediaConch commands in subprocess...')
-        df.output = [run_command(x) for x in tqdm(df.command)]
+        df.output = [run_command(x, args.timeout) for x in tqdm(df.command)]
         vb = set_verbosity(args.verbosity)
         if args.formatter == 'x':
             df.result = [format_xml_result(x.asset_path, x.output, vb) for x in df.itertuples()]
