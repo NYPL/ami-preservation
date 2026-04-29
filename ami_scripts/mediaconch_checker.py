@@ -59,7 +59,7 @@ def parse_args():
                                      'Assets *must* be packaged with valid JSON metadata '
                                      'according to NYPL specifications',
                                      formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-a',
+    parser.add_argument('-d',
                         dest='ami_directory',
                         help='Path to directory of AMI (dir of bags or single bag)',
                         required=True,
