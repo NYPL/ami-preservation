@@ -66,8 +66,8 @@ def parse_args():
                         type=dir_exists)
     parser.add_argument('-p',
                         dest='policies_dir',
-                        help='Path to directory of MediaConch policies',
-                        required=True,
+                        help='Path to directory of MediaConch policies'
+                        "\n  Optional: in absence of -p flag, default path will be used",
                         type=dir_exists)
     parser.add_argument('-v',
                         choices=[1, 2, 3, 4, 5],
@@ -103,6 +103,20 @@ def parse_args():
                         help="Relax film policies' audio rules (else strict silent/sound)",
                         action='store_true')
     return parser.parse_args()
+
+def get_policies_dir(p_arg_val):
+    if p_arg_val:
+        policies_dir = p_arg_val
+    else:
+        file_path = Path(__file__).resolve()
+        repo_dir = file_path.parents[0]
+        policies_dir = repo_dir.joinpath('MediaconchPolicies')
+        if not policies_dir.exists():
+            print(f"\nERROR - Path to directory of MediaConch policies not found in default location"
+                  f"\n('{policies_dir}')"
+                  f"\nPlease retry with '-p' and a valid policy directory\n")
+            exit()
+    return policies_dir
 
 def get_asset_paths(dir_path):
     non_asset_exts = ('.csv', '.cue', '.gz', '.jpeg', '.jpg', '.json', '.old', '.scc')
@@ -316,6 +330,9 @@ def summarize(asset_count, inelig_count, elig_count, outcome_list):
 def main():
     _configure_logging()
     args = parse_args()
+
+    policies_dir = get_policies_dir(args.policies_dir)
+
     cols = ['asset_path', 'json_values', 'policy', 'description', 'command', 'output', 'result', 'outcome']
     df = pd.DataFrame(columns=cols)
 
@@ -339,9 +356,9 @@ def main():
         report_sorted(df_inelig, 'description', 'asset_path')
     df = df.dropna(subset=['policy'])
     elig_count = len(df)
-    
+
     if elig_count > 0:
-        df.command = [build_command(x.asset_path, x.policy, args.policies_dir, args.formatter) for x in df.itertuples()]
+        df.command = [build_command(x.asset_path, x.policy, policies_dir, args.formatter) for x in df.itertuples()]
         print('\nRunning MediaConch commands in subprocess...')
         df.output = [run_command(x) for x in tqdm(df.command)]
         vb = set_verbosity(args.verbosity)
