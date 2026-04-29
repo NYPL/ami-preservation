@@ -119,7 +119,7 @@ def get_policies_dir(p_arg_val):
     return policies_dir
 
 def get_asset_paths(dir_path):
-    non_asset_exts = ('.csv', '.cue', '.gz', '.jpeg', '.jpg', '.json', '.old', '.scc')
+    non_asset_exts = ('.csv', '.cue', '.gz', '.jpeg', '.jpg', '.json', '.old', '.scc', '.srt')
     return sorted([item for item in dir_path.rglob('*.*') 
                    if 'data' in item.parts 
                    and not (item.suffix.lower() in non_asset_exts
