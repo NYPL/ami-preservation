@@ -32,7 +32,10 @@ PATTERNS = {
     'pm_aea': "**/*_pm.aea",
     'pm_wav': "**/*_pm.wav",
     'em_wav': "**/*_em.wav",
+    'pm_flac': "**/*_pm.flac",
+    'em_flac': "**/*_em.flac",
     'wav': "**/*.wav",
+    'flac': "**/*.flac",
     'cue': "**/*.cue",
     'csv': "**/*.csv",
     'iso': "**/*.iso",
@@ -126,6 +129,8 @@ class SimplifiedAudioProcessor:
             'PM AEA': len(list(self.config.source_dir.rglob(PATTERNS['pm_aea']))),
             'PM WAV': len(list(self.config.source_dir.rglob(PATTERNS['pm_wav']))),
             'EM WAV': len(list(self.config.source_dir.rglob(PATTERNS['em_wav']))),
+            'PM FLAC': len(list(self.config.source_dir.rglob(PATTERNS['pm_flac']))),
+            'EM FLAC': len(list(self.config.source_dir.rglob(PATTERNS['em_flac']))),
             'ISO': len(list(self.config.source_dir.rglob(PATTERNS['iso']))),
         }
         logger.info("Initial file summary: " + ", ".join(f"{k}: {v}" for k, v in counts.items()))
@@ -176,18 +181,34 @@ class SimplifiedAudioProcessor:
 
         # Gather all WAVs once
         wav_files = self._get_clean_files(self.config.source_dir.rglob(PATTERNS['wav']))
-        wav_files = sorted(wav_files, key=lambda p: p.name)  # sort by filename
+        wavs_to_transcode = []
+        for wav in wav_files:
+            expected_flac = wav.with_suffix('.flac')
+            if expected_flac.exists():
+                logger.info(f"Skipping transcoding for {wav.name} as {expected_flac.name} already exists")
+            else:
+                wavs_to_transcode.append(wav)
+                
+        wavs_to_transcode = sorted(wavs_to_transcode, key=lambda p: p.name)  # sort by filename
 
         # Transcode with a tqdm bar that names each file
-        pbar = tqdm(wav_files, unit="file")
-        for wav in pbar:
-            pbar.set_description(f"Transcoding {wav.name}")
-            output_file = self.config.new_dest_dir / f"{wav.stem}.flac"
-            if not self._transcode_single_file(wav, output_file):
-                self._handle_transcode_failure(wav, output_file)
+        if wavs_to_transcode:
+            pbar = tqdm(wavs_to_transcode, unit="file")
+            for wav in pbar:
+                pbar.set_description(f"Transcoding {wav.name}")
+                output_file = self.config.new_dest_dir / f"{wav.stem}.flac"
+                if not self._transcode_single_file(wav, output_file):
+                    self._handle_transcode_failure(wav, output_file)
 
         # After bar completes, report any fallbacks
         self._report_fallback_files()
+
+        # Handle pre-existing FLAC files
+        pm_flacs = self._get_clean_files(self.config.source_dir.rglob(PATTERNS['pm_flac']))
+        em_flacs = self._get_clean_files(self.config.source_dir.rglob(PATTERNS['em_flac']))
+        for flac in pm_flacs + em_flacs:
+            logger.info(f"Copying existing FLAC file: {flac.name}")
+            shutil.copy2(flac, self.config.new_dest_dir)
 
         # Organize into PM/EM dirs
         self._organize_files(pm_dir, em_dir)
@@ -342,6 +363,9 @@ class SimplifiedAudioProcessor:
         for aea_file in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['pm_aea'])):
             shutil.copy2(aea_file, pm_dir)
             logger.info(f"Copied PM AEA: {aea_file.name}")
+        for pm_flac in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['pm_flac'])):
+            shutil.copy2(pm_flac, pm_dir)
+            logger.info(f"Copied PM FLAC: {pm_flac.name}")
         for csv_file in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['csv'])):
             shutil.copy2(csv_file, pm_dir)
             logger.info(f"Copied CSV: {csv_file.name}")
@@ -349,12 +373,21 @@ class SimplifiedAudioProcessor:
     def _process_edit_masters_minidisc(self, em_dir: Path) -> None:
         """Process edit master files for Minidisc workflow."""
         for wav in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['em_wav'])):
+            expected_flac = wav.with_suffix('.flac')
+            if expected_flac.exists():
+                logger.info(f"Skipping transcoding for {wav.name} as {expected_flac.name} already exists")
+                continue
             logger.info(f"Transcoding {wav.name} to FLAC")
             output_flac = em_dir / f"{wav.stem}.flac"
             if self._transcode_single_file(wav, output_flac):
                 logger.info(f"Successfully transcoded: {output_flac.name}")
             else:
                 logger.error(f"Failed to transcode: {wav.name}")
+                
+        # Copy any existing EM FLAC files
+        for flac in self._get_clean_files(self.config.source_dir.rglob(PATTERNS['em_flac'])):
+            logger.info(f"Copying existing EM FLAC: {flac.name}")
+            shutil.copy2(flac, em_dir)
 
     def _verify_matching_flacs(self) -> None:
         """Ensure matching EM and PM FLAC files (names and counts)."""
