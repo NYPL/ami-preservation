@@ -1239,7 +1239,9 @@ class ami_bag(bagit.Bag):
             - May log ERRORS if part filenames are found or are severely malformed.
             3. Directory depth (`check_directory_depth`):
             - Logs WARNING if directories exceed allowed depth.
-            4. File location checks (`check_file_in_roledir`):
+            4. Unrecognized root items (`check_unrecognized_bag_files`):
+            - Logs ERROR if extra files or directories exist outside the payload.
+            5. File location checks (`check_file_in_roledir`):
             - Logs ERROR if files are in the wrong directory (e.g., a PM file 
                 is not in PreservationMasters).
             5. PM <-> MZ/EM/SC balance checks via `compare_fileset_pairs`:
@@ -1316,6 +1318,14 @@ class ami_bag(bagit.Bag):
             LOGGER.warning(f"File paths out of spec: {e.message}")
             self.warning_messages.append("Excess directory depth")
             warning = True
+
+        # Unrecognized root items
+        try:
+            self.check_unrecognized_bag_files()
+        except ami_bagError as e:
+            LOGGER.error(f"Bag root out of spec: {e.message}")
+            self.error_messages.append("Unrecognized items in bag root")
+            error = True
 
         # File location/role
         try:
@@ -1491,6 +1501,28 @@ class ami_bag(bagit.Bag):
                 bad_dirs.append(d)
         if bad_dirs:
             raise ami_bagError(f"Too many directory levels: {bad_dirs}")
+        return True
+
+    def check_unrecognized_bag_files(self) -> bool:
+        """
+        Check for unexpected files or directories at the root of the bag.
+        Only the data directory and standard BagIt files should be present.
+        """
+        unrecognized = []
+        for item in os.listdir(self.path):
+            if item == "data" and os.path.isdir(os.path.join(self.path, item)):
+                continue
+            if item in ["bagit.txt", "bag-info.txt", "fetch.txt", "package-info.txt"]:
+                continue
+            if re.match(r"^(tag)?manifest-.*\.txt$", item):
+                continue
+            if item == ".DS_Store" or item.startswith("._"):
+                continue
+            
+            unrecognized.append(item)
+            
+        if unrecognized:
+            raise ami_bagError(f"Unrecognized files or directories found in bag root: {unrecognized}")
         return True
 
     def check_file_in_roledir(self) -> bool:
