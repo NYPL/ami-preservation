@@ -74,24 +74,16 @@ def parse_filename(filename):
     # - myd_123456_v01f01r02_sc
     # - myd_330487_v01f01_sc (Audio Service Copy in MP4 container)
     
-    pattern = r'^(.+_v\d+)(f\d+)?([rs]\d+)?(t\d+)?_([a-z]+)$'
+    pattern = r'^(.+_v\d+)(f\d+)?(r\d+)?(s\d+)?(t\d+)?_([a-z]+)$'
     match = re.match(pattern, stem)
     
     if match:
         base_id = match.group(1)     # e.g., "scb_999999_v01"
         face = match.group(2)        # e.g., "f01" or None
-        region_or_stream = match.group(3)  # e.g., "r02", "s01" or None
-        take = match.group(4)        # e.g., "t01" or None
-        role = match.group(5)        # e.g., "pm", "sc", "em", "mz"
-        
-        # Determine if this is a region or stream
-        region = None
-        stream = None
-        if region_or_stream:
-            if region_or_stream.startswith('r'):
-                region = region_or_stream
-            elif region_or_stream.startswith('s'):
-                stream = region_or_stream
+        region = match.group(3)      # e.g., "r02" or None
+        stream = match.group(4)      # e.g., "s01" or None
+        take = match.group(5)        # e.g., "t01" or None
+        role = match.group(6)        # e.g., "pm", "sc", "em", "mz"
         
         return {
             'base_id': base_id,
