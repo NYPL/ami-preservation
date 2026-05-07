@@ -130,19 +130,19 @@ class FilenameParser:
     @staticmethod
     def parse_filename(filename: str) -> Optional[Dict[str, Any]]:
         """
-        Parse filename to extract base identifier, version, face, region/stream, take, role, and extension.
+        Parse filename to extract base identifier, version, face, region, stream, take, role, and extension.
         
         Examples:
         - myd_123456_v01_pm, myd_123456_v01f01_pm, myd_123456_v01f01r02_sc
         - scb_999999_v01f01s01_pm (multitrack audio with stream)
+        - mym_365599_v01f02r02s02_pm (with both region and stream)
         - myh_666666_v01f01t01_pm (with take)
-        - myh_666666_v01f01r01t01_pm (with region and take)
         """
         stem = Path(filename).stem
         ext = Path(filename).suffix.lower()
         
-        # Primary pattern: identifier_version[face][region/stream][take]_role
-        pattern = r'^(.+_v\d+)(f\d+)?([rs]\d+)?(t\d+)?_([a-z]+)$'
+        # Primary pattern updated: Separated region (r) and stream (s) into distinct optional groups
+        pattern = r'^(.+_v\d+)(f\d+)?(r\d+)?(s\d+)?(t\d+)?_([a-z]+)$'
         match = re.match(pattern, stem)
         
         if match:
@@ -154,20 +154,13 @@ class FilenameParser:
     @staticmethod
     def _build_parsed_result(match, ext: str, stem: str, filename: str) -> Dict[str, Any]:
         """Build parsed result from regex match."""
+        # Shifted groups to align with the new regex
         base_id = match.group(1)
         face = match.group(2)
-        region_or_stream = match.group(3)
-        take = match.group(4)   
-        role = match.group(5)    
-        
-        # Determine if this is a region or stream
-        region = None
-        stream = None
-        if region_or_stream:
-            if region_or_stream.startswith('r'):
-                region = region_or_stream
-            elif region_or_stream.startswith('s'):
-                stream = region_or_stream
+        region = match.group(3)
+        stream = match.group(4)
+        take = match.group(5)   
+        role = match.group(6)    
         
         return {
             'base_id': base_id,
