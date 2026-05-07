@@ -550,7 +550,7 @@ class FileProcessor:
                 
         return timed_text_files
     
-    def export_json_for_file(self, media_file: Path, output_root: Path) -> bool:
+    def export_json_for_file(self, media_file: Path, output_root: Path, data_root: Path) -> bool:
         """Export JSON for a single media file."""
         parsed = FilenameParser.parse_filename(media_file.name)
         if not parsed:
@@ -586,13 +586,14 @@ class FileProcessor:
 
         
         # Write JSON file
-        return self._write_json_file(json_data, media_file, output_root, role)
+        return self._write_json_file(json_data, media_file, output_root, data_root)
     
     def _write_json_file(self, json_data: Dict, media_file: Path, 
-                        output_root: Path, role: str) -> bool:
+                        output_root: Path, data_root: Path) -> bool:
         """Write JSON data to file."""
         try:
-            dest_dir = output_root / DirectoryStructure.ROLE_DIRS.get(role, 'other')
+            rel_dir = media_file.parent.relative_to(data_root)
+            dest_dir = output_root / rel_dir
             dest_dir.mkdir(parents=True, exist_ok=True)
             
             out_path = dest_dir / f"{media_file.stem}.json"
@@ -807,7 +808,7 @@ def main():
         # Process each file
         success_count = 0
         for media_file in media_files:
-            if processor.export_json_for_file(media_file, output_root):
+            if processor.export_json_for_file(media_file, output_root, data_root):
                 success_count += 1
         
         logging.info(f"Successfully exported {success_count}/{len(media_files)} JSON files")
