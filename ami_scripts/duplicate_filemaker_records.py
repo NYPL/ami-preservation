@@ -501,13 +501,23 @@ def process_standard_file_group(conn, base_id, pm_files, derivative_files):
 def process_multitrack_file_group(conn, base_id, pm_files, derivative_files):
     logging.info(f"Processing multitrack file group: {base_id}")
     
+    # Update 1: Create more specific fallback dictionaries to prevent region overwriting
+    pm_by_face_region_stream_take = {}
+    pm_by_face_region_stream = {}
     pm_by_face_stream = {}
     pm_by_face = {}
     
     for pm_file in pm_files:
         f = pm_file['parsed']['face']
+        r = pm_file['parsed']['region']
         s = pm_file['parsed']['stream']
-        pm_by_face_stream[(f, s)] = pm_file
+        t = pm_file['parsed']['take']
+        
+        pm_by_face_region_stream_take[(f, r, s, t)] = pm_file
+        if (f, r, s) not in pm_by_face_region_stream:
+            pm_by_face_region_stream[(f, r, s)] = pm_file
+        if (f, s) not in pm_by_face_stream:
+            pm_by_face_stream[(f, s)] = pm_file
         if f not in pm_by_face:
             pm_by_face[f] = pm_file
     
@@ -541,9 +551,12 @@ def process_multitrack_file_group(conn, base_id, pm_files, derivative_files):
             summary['skipped'] += 1
     
     for pm_file in missing_pm_streams:
+        # Update 2: Extract and pass ALL values, not just face and stream
         face_number = extract_face_number(pm_file['parsed'])
+        region_number = extract_region_number(pm_file['parsed'])
         stream_number = extract_stream_number(pm_file['parsed'])
-        insert_new_record(conn, original_record, pm_file, face_number, None, stream_number, None)
+        take_number = extract_take_number(pm_file['parsed'])
+        insert_new_record(conn, original_record, pm_file, face_number, region_number, stream_number, take_number)
     
     for derivative_file in derivative_files:
         parsed = derivative_file['parsed']
@@ -555,14 +568,20 @@ def process_multitrack_file_group(conn, base_id, pm_files, derivative_files):
             continue
         
         face = parsed['face']
+        region = parsed['region']
         stream = parsed['stream']
+        take = parsed['take']
         
-        source_pm = pm_by_face_stream.get((face, stream))
+        # Update 3: Cascade matching logic to grab the most specific PM match
+        source_pm = pm_by_face_region_stream_take.get((face, region, stream, take))
         if source_pm is None:
-            if face in pm_by_face:
-                source_pm = pm_by_face[face]
-            else:
-                source_pm = primary_pm
+            source_pm = pm_by_face_region_stream.get((face, region, stream))
+        if source_pm is None:
+            source_pm = pm_by_face_stream.get((face, stream))
+        if source_pm is None:
+            source_pm = pm_by_face.get(face)
+        if source_pm is None:
+            source_pm = primary_pm
         
         logging.info(f"Using {source_pm['parsed']['filename']} as source for {target_filename}")
         
@@ -571,9 +590,12 @@ def process_multitrack_file_group(conn, base_id, pm_files, derivative_files):
             logging.warning(f"Could not fetch record for {source_pm['parsed']['filename']}, falling back to primary")
             source_record = original_record
         
+        # Update 4: Extract and pass ALL values to the final insert call
         face_number = extract_face_number(parsed)
+        region_number = extract_region_number(parsed)
         stream_number = extract_stream_number(parsed)
-        insert_new_record(conn, source_record, derivative_file, face_number, None, stream_number, None)
+        take_number = extract_take_number(parsed)
+        insert_new_record(conn, source_record, derivative_file, face_number, region_number, stream_number, take_number)
 
 def duplicate_records(conn, file_groups):
     for base_id, file_group in file_groups.items():
