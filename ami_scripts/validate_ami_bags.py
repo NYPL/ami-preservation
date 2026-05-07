@@ -1510,7 +1510,7 @@ class ami_bag(bagit.Bag):
         """
         unrecognized = []
         for item in os.listdir(self.path):
-            if item == "data" and os.path.isdir(os.path.join(self.path, item)):
+            if item in ["data", "tags"] and os.path.isdir(os.path.join(self.path, item)):
                 continue
             if item in ["bagit.txt", "bag-info.txt", "fetch.txt", "package-info.txt"]:
                 continue
