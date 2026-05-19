@@ -189,7 +189,7 @@ def valid_json_barcode(json_files):
 
 def check_bucket(s3_client, filenames_list, bucket_name):
     if not filenames_list: return []
-    common_prefix = os.commonprefix(filenames_list)
+    common_prefix = os.path.commonprefix(filenames_list)
     found_keys = set()
     try:
         paginator = s3_client.get_paginator('list_objects_v2')
