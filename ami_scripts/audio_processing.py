@@ -244,6 +244,26 @@ class SimplifiedAudioProcessor:
             return 0.0
 
     @staticmethod
+    def _ffprobe_sample_rate(media_path: Path) -> str:
+        """
+        Return sample rate using ffprobe.
+        Falls back to '48000' if sample rate can't be determined.
+        """
+        cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-select_streams", "a:0",
+            "-show_entries", "stream=sample_rate",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            str(media_path),
+        ]
+        try:
+            out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout.strip()
+            return out if out and out.isdigit() else "48000"
+        except Exception:
+            return "48000"
+
+    @staticmethod
     def _parse_ffmpeg_time_to_seconds(line: str) -> Optional[float]:
         """
         Parse ffmpeg stderr status lines like:
@@ -331,6 +351,8 @@ class SimplifiedAudioProcessor:
             new_stem = flac.stem.replace('_em', '_sc')
             output_file = dest_dir / f"{new_stem}.mp4"
 
+            sample_rate = self._ffprobe_sample_rate(flac)
+
             command = [
                 "ffmpeg",
                 "-y",  # overwrite
@@ -338,7 +360,7 @@ class SimplifiedAudioProcessor:
                 "-c:a", "aac",
                 "-b:a", "320k",
                 "-movflags", "+faststart",
-                "-ar", "48000",
+                "-ar", sample_rate,
                 str(output_file),
             ]
 
