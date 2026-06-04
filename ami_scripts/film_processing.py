@@ -90,6 +90,26 @@ def copy_to_editmasters(pm_folder, flac_file):
     LOGGER.info("Copying %s to EditMasters folder as %s", flac_file, em_file)
     shutil.copy(str(flac_file), str(em_file))
 
+def generate_audio_service_copy(flac_file, film_folder):
+    sc_folder = film_folder / 'ServiceCopies'
+    sc_folder.mkdir(exist_ok=True)
+
+    output_file_name = f"{flac_file.stem.replace('_pm', '_sc').replace('_em', '_sc')}.mp4"
+    output_file = sc_folder / output_file_name
+
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i", str(flac_file),
+        "-c:a", "aac",
+        "-b:a", "320k",
+        "-movflags", "+faststart",
+        "-ar", "48000",
+        str(output_file)
+    ]
+    LOGGER.info("Generating audio Service Copy %s from %s", output_file, flac_file)
+    subprocess.run(command)
+
 def remove_hidden_files(directory):
     for item in directory.rglob('.*'):
         if item.is_file():
@@ -152,6 +172,7 @@ def process_directory(root_dir):
             if subprocess.call(flac_cmd) == 0:
                 wav_file.unlink()
                 copy_to_editmasters(pm_folder, output_flac)
+                generate_audio_service_copy(output_flac, film_folder)
             else:
                 LOGGER.error("FLAC conversion failed for %s", wav_file)
 
