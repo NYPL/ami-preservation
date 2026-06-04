@@ -352,6 +352,9 @@ class SimplifiedAudioProcessor:
             output_file = dest_dir / f"{new_stem}.mp4"
 
             sample_rate = self._ffprobe_sample_rate(flac)
+            
+            # Downsample to 48kHz if the source is 96kHz or higher, otherwise keep native
+            sc_sample_rate = "48000" if sample_rate.isdigit() and int(sample_rate) >= 96000 else sample_rate
 
             command = [
                 "ffmpeg",
@@ -360,7 +363,7 @@ class SimplifiedAudioProcessor:
                 "-c:a", "aac",
                 "-b:a", "320k",
                 "-movflags", "+faststart",
-                "-ar", sample_rate,
+                "-ar", sc_sample_rate,
                 str(output_file),
             ]
 
