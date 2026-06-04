@@ -119,6 +119,24 @@ def get_audio_duration(path: str) -> float:
         return 0.0
 
 
+def get_audio_properties(path: str) -> Tuple[str, str, str]:
+    """Get sample rate, codec name, and bit depth using ffprobe"""
+    cmd = ['ffprobe', '-v', 'quiet', '-select_streams', 'a:0', 
+           '-show_entries', 'stream=sample_rate,codec_name,bits_per_raw_sample', '-of', 'json', path]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        info = json.loads(res.stdout)
+        stream = info.get('streams', [{}])[0]
+        sr = stream.get('sample_rate', '96000')
+        if not sr or not str(sr).isdigit():
+            sr = '96000'
+        codec = stream.get('codec_name', 'pcm_s24le')
+        bits = stream.get('bits_per_raw_sample', '24')
+        return str(sr), str(codec), str(bits)
+    except:
+        return '96000', 'pcm_s24le', '24'
+
+
 # ---------------------------------------------------------
 # TOPOLOGY MATH (Phase-Aligned Residual Analysis)
 # ---------------------------------------------------------
@@ -785,7 +803,7 @@ def validate_trim_safety(
     return True, "", cut_start, cut_end
 
 
-def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: float, do_sum_mono: bool = False):
+def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: float, do_sum_mono: bool = False, sr: str = '96000', codec: str = 'pcm_s24le', bits: str = '24'):
     """Execute the actual trimming using ffmpeg"""
     orig_dur = get_audio_duration(src)
     p_start = max(0, start - padding)
@@ -800,9 +818,11 @@ def trim_audio_ffmpeg(src: str, dst: str, start: float, end: float, padding: flo
         cmd += ['-ac', '1']
 
     if ext == '.wav':
-        cmd += ['-f', 'wav', '-rf64', 'auto', '-c:a', 'pcm_s24le', '-ar', '96k']
+        c_a = codec if codec.startswith('pcm_') else 'pcm_s24le'
+        cmd += ['-f', 'wav', '-rf64', 'auto', '-c:a', c_a, '-ar', sr]
     else:
-        cmd += ['-c:a', 'flac', '-compression_level', '8', '-ar', '96k']
+        fmt_arg = ['-sample_fmt', 's16'] if bits == '16' else ['-sample_fmt', 's32']
+        cmd += ['-c:a', 'flac', '-compression_level', '8', '-ar', sr] + fmt_arg
 
     cmd.append(dst)
     subprocess.run(cmd, check=True, capture_output=True)
@@ -919,7 +939,8 @@ def process_trimming(args):
                 continue
 
             # 6. Execute Trim (Passing the do_sum_mono flag)
-            trim_audio_ffmpeg(src, dst, start, end, actual_padding, do_sum_mono)
+            sr, codec, bits = get_audio_properties(src)
+            trim_audio_ffmpeg(src, dst, start, end, actual_padding, do_sum_mono, sr, codec, bits)
 
             logging.info(f"   ✓ Created → {os.path.basename(dst)}")
             stats['processed'] += 1
@@ -971,6 +992,8 @@ def loudnorm_pass(edit_path, target_I, target_LRA, target_TP, dry_run):
             continue
 
         try:
+            sr, codec, bits = get_audio_properties(f)
+
             # Pass 1: Measure
             cmd1 = [
                 'ffmpeg', '-hide_banner', '-nostats', '-i', f,
@@ -995,9 +1018,11 @@ def loudnorm_pass(edit_path, target_I, target_LRA, target_TP, dry_run):
             ]
 
             if ext == '.wav':
-                cmd2 += ['-f', 'wav', '-rf64', 'auto', '-c:a', 'pcm_s24le', '-ar', '96k']
+                c_a = codec if codec.startswith('pcm_') else 'pcm_s24le'
+                cmd2 += ['-f', 'wav', '-rf64', 'auto', '-c:a', c_a, '-ar', sr]
             else:
-                cmd2 += ['-c:a', 'flac', '-compression_level', '8', '-ar', '96k']
+                fmt_arg = ['-sample_fmt', 's16'] if bits == '16' else ['-sample_fmt', 's32']
+                cmd2 += ['-c:a', 'flac', '-compression_level', '8', '-ar', sr] + fmt_arg
 
             cmd2.append(dst)
             subprocess.run(cmd2, check=True, capture_output=True)
