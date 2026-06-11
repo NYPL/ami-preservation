@@ -171,6 +171,22 @@ def ffprobe_audio_streams(input_file: str) -> List[Dict[str, Any]]:
         logger.error(f"ffprobe failed for {input_file}: {e}")
         return []
 
+def has_video_stream(input_file: str) -> bool:
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "v",
+        "-show_entries", "stream=index",
+        "-of", "json",
+        input_file
+    ]
+    try:
+        out = subprocess.check_output(cmd, text=True)
+        data = json.loads(out)
+        return len(data.get("streams", [])) > 0
+    except Exception as e:
+        logger.error(f"ffprobe video check failed for {input_file}: {e}")
+        return False
+
 def classify_silence_or_mono(rms_db: float) -> str:
     if rms_db == float("-inf") or rms_db <= SILENCE_THRESH_DB:
         return "None"
@@ -731,7 +747,12 @@ def analyze_file_per_stream(
     result = "; ".join(parts)
     status = "Exact Match" if result in KNOWN_CONFIGS else "New Configuration"
 
-    if input_file.lower().endswith(('.wav', '.flac')):
+    is_audio_only = input_file.lower().endswith(('.wav', '.flac'))
+    if input_file.lower().endswith('.mp4'):
+        if not has_video_stream(input_file):
+            is_audio_only = True
+
+    if is_audio_only:
         status = "Exact Match"
         if total_global_channels == 1:
             result = "mono"
