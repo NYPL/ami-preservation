@@ -731,6 +731,22 @@ def analyze_file_per_stream(
     result = "; ".join(parts)
     status = "Exact Match" if result in KNOWN_CONFIGS else "New Configuration"
 
+    if input_file.lower().endswith(('.wav', '.flac')):
+        status = "Exact Match"
+        if total_global_channels == 1:
+            result = "mono"
+        elif total_global_channels == 2:
+            if labels.get(1) == "Mono" and labels.get(2) == "Mono":
+                result = "mono"
+            else:
+                result = "stereo"
+        elif total_global_channels == 4:
+            result = "quadraphonic"
+        elif total_global_channels == 6:
+            result = "surround"
+        else:
+            result = "multi-track"
+
     return {
         "result": result,
         "status": status,
