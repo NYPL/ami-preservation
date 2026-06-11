@@ -161,7 +161,7 @@ def map_csv_columns(df):
     df['bibliographic.divisionCode'] = df['bibliographic.vernacularDivisionCode'].apply(map_division_code)
 
     # Drop unneeded columns
-    unneeded_columns = ['_account.entered', '_dtentered', 'cat_item_record_id',
+    unneeded_columns = ['_account.entered', '_dtentered',
                         'ref_acq_id', 'ux_loc_active_d', 'desc.catY', 
                         'cm.trans.type', 'cm.trans.dont', 'cm.de.recY', 
                         'cm.de.rationale', 'time', 'condition_average',
