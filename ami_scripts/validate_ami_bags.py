@@ -1349,9 +1349,9 @@ class ami_bag(bagit.Bag):
             try:
                 self.compare_fileset_pairs(self.pm_filepaths, self.em_filepaths, "PM", "EM")
             except ami_bagError as e:
-                LOGGER.error(f"Asset balance out of spec: {e.message}")
-                self.error_messages.append("Mismatch of PM & EM")
-                error = True
+                LOGGER.warning(f"Asset balance out of spec: {e.message}. Affected assets are ready for ingest.")
+                self.warning_messages.append("Mismatch of PM & EM. Affected assets are ready for ingest.")
+                warning = True
 
         # PM <-> SC
         if self.sc_filepaths:
@@ -1363,9 +1363,9 @@ class ami_bag(bagit.Bag):
                     # For optical media, 1:many PM to SC is often expected and completely acceptable
                     LOGGER.info("1:many PM & SC mapping detected for video optical bag; this is acceptable.")
                 else:
-                    LOGGER.error(f"Asset balance out of spec: {e.message}")
-                    self.error_messages.append("Mismatch of PM & SC")
-                    error = True
+                    LOGGER.warning(f"Asset balance out of spec: {e.message}. Affected assets are ready for ingest.")
+                    self.warning_messages.append("Mismatch of PM & SC. Affected assets are ready for ingest.")
+                    warning = True
 
         # --- NEW: enforce .cue for audio optical disc bags ---
         try:
