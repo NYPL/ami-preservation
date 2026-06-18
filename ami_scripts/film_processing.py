@@ -132,6 +132,7 @@ def process_directory(root_dir):
 
         # Detect files in PreservationMasters
         wav_file = next(pm_folder.glob('*.wav'), None)
+        flac_file = next(pm_folder.glob('*.flac'), None)
         dpx_files = list(pm_folder.glob('*.dpx'))
         mkv_file = next(pm_folder.glob('*.mkv'), None)
 
@@ -162,19 +163,24 @@ def process_directory(root_dir):
             else:
                 LOGGER.error("rawcooked failed for %s", film_folder)
 
-        # 2) Audio WAV processing (unchanged)
-        elif wav_file:
-            output_flac = wav_file.with_suffix('.flac')
-            flac_cmd = [
-                'flac', str(wav_file), '--best', '--preserve-modtime', '--verify', '-o', str(output_flac)
-            ]
-            LOGGER.info("Converting WAV %s to FLAC %s", wav_file, output_flac)
-            if subprocess.call(flac_cmd) == 0:
-                wav_file.unlink()
-                copy_to_editmasters(pm_folder, output_flac)
-                generate_audio_service_copy(output_flac, film_folder)
-            else:
-                LOGGER.error("FLAC conversion failed for %s", wav_file)
+        # 2) Audio processing
+        elif wav_file or flac_file:
+            if wav_file:
+                output_flac = wav_file.with_suffix('.flac')
+                flac_cmd = [
+                    'flac', str(wav_file), '--best', '--preserve-modtime', '--verify', '-o', str(output_flac)
+                ]
+                LOGGER.info("Converting WAV %s to FLAC %s", wav_file, output_flac)
+                if subprocess.call(flac_cmd) == 0:
+                    wav_file.unlink()
+                    copy_to_editmasters(pm_folder, output_flac)
+                    generate_audio_service_copy(output_flac, film_folder)
+                else:
+                    LOGGER.error("FLAC conversion failed for %s", wav_file)
+            elif flac_file:
+                LOGGER.info("Found direct-scanned FLAC: %s", flac_file)
+                copy_to_editmasters(pm_folder, flac_file)
+                generate_audio_service_copy(flac_file, film_folder)
 
         # 3) Direct-scanned MKV processing
         elif mkv_file:
@@ -193,7 +199,7 @@ def process_directory(root_dir):
 
         # 4) Nothing to do
         else:
-            LOGGER.error("No DPX, WAV, or MKV files found in %s", pm_folder)
+            LOGGER.error("No DPX, WAV, FLAC, or MKV files found in %s", pm_folder)
 
 def collect_media_files(directory):
     valid_extensions = video_extensions.union(audio_extensions)
