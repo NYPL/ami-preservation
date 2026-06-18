@@ -105,6 +105,7 @@ def map_csv_columns(df):
         'id_label_text': 'bibliographic.title',
         'id.classmark': 'bibliographic.classmark',
         'bnumber': 'bibliographic.catalogBNumber',
+        'reference': 'bibliographic.catalogBNumber',
         'id.legacy': 'bibliographic.formerClassmark',
         'division': 'bibliographic.vernacularDivisionCode',
         'ref_collection_id': 'bibliographic.cmsCollectionID',
@@ -166,8 +167,9 @@ def map_csv_columns(df):
                         'cm.trans.type', 'cm.trans.dont', 'cm.de.recY', 
                         'cm.de.rationale', 'time', 'condition_average',
                         '_inspected_y', '_inspected_by', '_inspected_dt', 
-                        '_inspected_time', 'batch.status', 'migration_status']
-    df.drop(unneeded_columns, axis=1, inplace=True)
+                        '_inspected_time', 'batch.status', 'migration_status',
+                        'cat_item_record_id', 'reference.1']
+    df.drop([col for col in unneeded_columns if col in df.columns], axis=1, inplace=True)
 
     df['asset.schemaVersion'] = '2.0.0'
     df['asset.fileRole'] = 'pm'
