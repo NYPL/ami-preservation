@@ -14,9 +14,6 @@ Scripts referenced in the documentation can be found within [AMI Production Scri
 
 ## Staff
 
-#### Noëlle Byer, Media Preservation Engineer - Audio
-{: .no_toc }
-
 #### Rhony Dostaly, Media Preservation Engineer - Moving Image
 {: .no_toc }
 
@@ -32,7 +29,7 @@ Scripts referenced in the documentation can be found within [AMI Production Scri
 #### Casey McNamara, Media Preservation Coordinator
 {: .no_toc }
 
-#### Benjamin Turkus, Senior Manager, Audio and Moving Image Preservation
+#### Benjamin Turkus, Associate Director, Digital Reformatting
 {: .no_toc }
 
 #### Jeff Willens, Media Preservation Engineer - Audio
