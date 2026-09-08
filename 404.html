@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Redirecting…</title>
+    <!-- SEO and Fallback for JS-disabled browsers -->
+    <meta http-equiv="refresh" content="0; url=https://nypl-research.github.io/ami-preservation/">
+    <link rel="canonical" href="https://nypl-research.github.io/ami-preservation/">
+    <script>
+      const TARGET_BASE = "https://nypl-research.github.io/ami-preservation/";
+
+      const cleanPath = window.location.pathname.replace(/^\/[^\/]+\/?/, '');
+
+      const targetUrl = new URL(cleanPath + window.location.search + window.location.hash, TARGET_BASE).href;
+
+      window.location.replace(targetUrl);
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a id="fallback-link" href="https://nypl-research.github.io/ami-preservation/">nypl-research.github.io/ami-preservation/</a>…</p>
+    <script>
+      if (typeof targetUrl !== 'undefined') {
+        document.getElementById("fallback-link").href = targetUrl;
+      }
+    </script>
+  </body>
+</html>
